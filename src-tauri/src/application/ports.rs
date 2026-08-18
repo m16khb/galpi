@@ -1,0 +1,64 @@
+use crate::application::error::AppError;
+use crate::application::model::{
+    CompletedTranscription, EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus,
+};
+use crate::domain::job::{SetupRequest, SpeakerHint};
+use crate::domain::worker::WorkerEvent;
+use async_trait::async_trait;
+use std::path::{Path, PathBuf};
+use tokio::sync::oneshot;
+use uuid::Uuid;
+
+#[async_trait]
+pub trait EnginePort: Send + Sync {
+    async fn diagnose(&self) -> Result<EnvironmentStatus, AppError>;
+
+    async fn prepare(
+        &self,
+        job_id: Uuid,
+        cancel: &mut oneshot::Receiver<()>,
+        request: &SetupRequest,
+    ) -> Result<EnvironmentStatus, AppError>;
+}
+
+#[async_trait]
+pub trait TranscriptionPort: Send + Sync {
+    async fn prepare_job(
+        &self,
+        input: &Path,
+        output_root: &Path,
+    ) -> Result<(PathBuf, PathBuf), AppError>;
+
+    async fn transcribe(
+        &self,
+        job_id: Uuid,
+        cancel: &mut oneshot::Receiver<()>,
+        input: &Path,
+        output: &Path,
+        hint: &SpeakerHint,
+    ) -> Result<CompletedTranscription, AppError>;
+}
+
+pub trait ArtifactPort: Send + Sync {
+    fn open_file(&self, path: &Path, trusted_root: &Path) -> Result<(), AppError>;
+    fn open_directory(&self, path: &Path) -> Result<(), AppError>;
+}
+
+pub trait JobEvents: Send + Sync {
+    fn emit(&self, job_id: Uuid, event: WorkerEvent) -> Result<(), AppError>;
+}
+
+#[async_trait]
+pub trait RecordingPort: Send + Sync {
+    async fn start(
+        &self,
+        recording_id: Uuid,
+        output_root: &Path,
+    ) -> Result<RecordingStatus, AppError>;
+    async fn stop(&self, recording_id: Uuid) -> Result<RecordingResult, AppError>;
+    async fn cancel(&self, recording_id: Uuid) -> Result<(), AppError>;
+}
+
+pub trait RecordingEvents: Send + Sync {
+    fn emit_failure(&self, failure: RecordingFailure) -> Result<(), AppError>;
+}

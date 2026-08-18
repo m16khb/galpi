@@ -1,0 +1,11 @@
+{
+  "include": ["worker"],
+  "stubPath": "worker/stubs",
+  "typeCheckingMode": "strict",
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": ["worker"]
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+mod capture;
+mod cleanup;
+mod failure;
+mod writer;
+
+use crate::application::error::AppError;
+use crate::application::model::{RecordingResult, RecordingStatus};
+use crate::application::ports::{RecordingEvents, RecordingPort};
+use async_trait::async_trait;
+use cpal::Stream;
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicU64;
+use std::sync::{Arc, Mutex};
+use uuid::Uuid;
+
+use cleanup::{cancel_and_remove, microphone_error, remove_if_exists, state_lock, with_cleanup};
+use failure::{SharedFailure, take_failure};
+struct ActiveRecording {
+    id: Uuid,
+    stream: Stream,
+    writer: writer::WriterHandle,
+    failure: SharedFailure,
+    partial_path: PathBuf,
+    final_path: PathBuf,
+    sample_rate: u32,
+    channels: u16,
+}
+
+pub struct NativeRecorder {
+    active: Arc<Mutex<Option<ActiveRecording>>>,
+    events: Arc<dyn RecordingEvents>,
+}
+
+impl NativeRecorder {
+    pub fn new(events: Arc<dyn RecordingEvents>) -> Self {
+        Self {
+            active: Arc::new(Mutex::new(None)),
+            events,
+        }
+    }
+}
+
+#[async_trait]
+impl RecordingPort for NativeRecorder {
+    async fn start(
+        &self,
+        recording_id: Uuid,
+        output_root: &Path,
+    ) -> Result<RecordingStatus, AppError> {
+        let active = self.active.clone();
+        let events = self.events.clone();
+        let output_root = output_root.to_owned();
+        tokio::task::spawn_blocking(move || start_sync(&active, recording_id, &output_root, events))
+            .await
+            .map_err(|error| AppError::new("RECORDING_ERROR", error.to_string()))?
+    }
+
+    async fn stop(&self, recording_id: Uuid) -> Result<RecordingResult, AppError> {
+        let active = self.active.clone();
+        tokio::task::spawn_blocking(move || stop_sync(&active, recording_id))
+            .await
+            .map_err(|error| AppError::new("RECORDING_ERROR", error.to_string()))?
+    }
+
+    async fn cancel(&self, recording_id: Uuid) -> Result<(), AppError> {
+        let active = self.active.clone();
+        tokio::task::spawn_blocking(move || cancel_sync(&active, recording_id))
+            .await
+            .map_err(|error| AppError::new("RECORDING_ERROR", error.to_string()))?
+    }
+}
+
+fn start_sync(
+    state: &Mutex<Option<ActiveRecording>>,
+    recording_id: Uuid,
+    output_root: &Path,
+    events: Arc<dyn RecordingEvents>,
+) -> Result<RecordingStatus, AppError> {
+    let mut active = state_lock(state)?;
+    if active.is_some() {
+        return Err(AppError::new(
+            "RECORDING_BUSY",
+            "이미 마이크 녹음이 진행 중입니다.",
+        ));
+    }
+    std::fs::create_dir_all(output_root)
+        .map_err(|error| AppError::io("녹음 폴더를 만들지 못했습니다", &error))?;
+    let root = std::fs::canonicalize(output_root)
+        .map_err(|error| AppError::io("녹음 폴더를 확인하지 못했습니다", &error))?;
+    let final_path = root.join(format!("galpi-recording-{recording_id}.wav"));
+    let partial_path = root.join(format!("galpi-recording-{recording_id}.wav.part"));
+
+    let host = cpal::default_host();
+    let device = host.default_input_device().ok_or_else(|| {
+        AppError::new(
+            "MICROPHONE_UNAVAILABLE",
+            "사용 가능한 마이크를 찾지 못했습니다.",
+        )
+    })?;
+    let supported = device
+        .default_input_config()
+        .map_err(|error| microphone_error(&error))?;
+    let sample_rate = supported.sample_rate();
+    let channels = supported.channels();
+    let failure = failure::new(recording_id, events);
+    let samples = Arc::new(AtomicU64::new(0));
+    let writer = writer::spawn(&partial_path, sample_rate, channels, failure.clone())?;
+    let stream = match capture::build(
+        &device,
+        &supported.config(),
+        supported.sample_format(),
+        writer.sender(),
+        failure.clone(),
+        samples.clone(),
+        channels,
+    ) {
+        Ok(stream) => stream,
+        Err(error) => {
+            return Err(with_cleanup(
+                error,
+                cancel_and_remove(writer, &partial_path),
+            ));
+        }
+    };
+    if let Err(error) = stream.play() {
+        drop(stream);
+        return Err(with_cleanup(
+            microphone_error(&error),
+            cancel_and_remove(writer, &partial_path),
+        ));
+    }
+
+    *active = Some(ActiveRecording {
+        id: recording_id,
+        stream,
+        writer,
+        failure,
+        partial_path: partial_path.clone(),
+        final_path,
+        sample_rate,
+        channels,
+    });
+    Ok(RecordingStatus {
+        recording_id,
+        path: partial_path.to_string_lossy().into_owned(),
+        sample_rate,
+        channels,
+    })
+}
+
+fn stop_sync(
+    state: &Mutex<Option<ActiveRecording>>,
+    recording_id: Uuid,
+) -> Result<RecordingResult, AppError> {
+    let recording = take_recording(state, recording_id)?;
+    drop(recording.stream);
+    let summary = match recording.writer.finish() {
+        Ok(summary) => summary,
+        Err(error) => {
+            return Err(with_cleanup(
+                error,
+                remove_if_exists(&recording.partial_path),
+            ));
+        }
+    };
+    let callback_failure = match take_failure(&recording.failure) {
+        Ok(failure) => failure,
+        Err(error) => {
+            return Err(with_cleanup(
+                error,
+                remove_if_exists(&recording.partial_path),
+            ));
+        }
+    };
+    if let Some((code, message)) = callback_failure {
+        return Err(with_cleanup(
+            AppError::new(&code, message),
+            remove_if_exists(&recording.partial_path),
+        ));
+    }
+    let frames = summary.samples / u64::from(recording.channels);
+    let Ok(duration_frames) = u32::try_from(frames) else {
+        return Err(with_cleanup(
+            AppError::new(
+                "WAV_TOO_LARGE",
+                "녹음 길이가 지원 가능한 PCM WAV 범위를 초과했습니다.",
+            ),
+            remove_if_exists(&recording.partial_path),
+        ));
+    };
+    let duration_seconds = f64::from(duration_frames) / f64::from(recording.sample_rate);
+    if let Err(error) = std::fs::rename(&recording.partial_path, &recording.final_path) {
+        return Err(with_cleanup(
+            AppError::io("완료된 녹음 파일 이름을 확정하지 못했습니다", &error),
+            remove_if_exists(&recording.partial_path),
+        ));
+    }
+    let path = std::fs::canonicalize(&recording.final_path)
+        .map_err(|error| AppError::io("완료된 녹음 파일을 확인하지 못했습니다", &error))?;
+    Ok(RecordingResult {
+        recording_id,
+        path: path.to_string_lossy().into_owned(),
+        sample_rate: recording.sample_rate,
+        channels: recording.channels,
+        frames,
+        duration_seconds,
+    })
+}
+
+fn cancel_sync(state: &Mutex<Option<ActiveRecording>>, recording_id: Uuid) -> Result<(), AppError> {
+    let recording = take_recording(state, recording_id)?;
+    drop(recording.stream);
+    cancel_and_remove(recording.writer, &recording.partial_path)
+}
+
+fn take_recording(
+    state: &Mutex<Option<ActiveRecording>>,
+    recording_id: Uuid,
+) -> Result<ActiveRecording, AppError> {
+    let mut active = state_lock(state)?;
+    if active
+        .as_ref()
+        .is_some_and(|recording| recording.id != recording_id)
+    {
+        return Err(AppError::new(
+            "RECORDING_ID_MISMATCH",
+            "다른 녹음 세션은 정지하거나 취소할 수 없습니다.",
+        ));
+    }
+    active
+        .take()
+        .ok_or_else(|| AppError::new("RECORDING_NOT_ACTIVE", "진행 중인 마이크 녹음이 없습니다."))
+}
+
+#[cfg(test)]
+mod tests;

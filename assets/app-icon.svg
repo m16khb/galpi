@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <title>갈피 파형 로고</title>
+  <rect width="1024" height="1024" rx="224" fill="#f7f6f2"/>
+  <path
+    d="M208 516c72 0 72-176 144-176s72 344 144 344 72-472 144-472 72 304 176 304"
+    fill="none"
+    stroke="#b85c38"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="72"
+  />
+  <circle cx="208" cy="516" r="36" fill="#24231f"/>
+  <circle cx="816" cy="516" r="36" fill="#24231f"/>
+</svg>
