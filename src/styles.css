@@ -228,6 +228,12 @@ summary:focus-visible {
   letter-spacing: -0.03em;
 }
 
+.topbar-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
 .engine-chip {
   flex: 0 0 auto;
   padding: 9px 13px;
@@ -256,6 +262,35 @@ summary:focus-visible {
   margin-top: 3px;
   color: var(--text-secondary);
   font-size: 10px;
+}
+
+.settings-button,
+.settings-close-button,
+.secret-visibility-button {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  color: var(--text-secondary);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: color 160ms ease-out, border-color 160ms ease-out, transform 100ms ease-out;
+}
+
+.settings-button:hover,
+.settings-close-button:hover,
+.secret-visibility-button:hover {
+  color: var(--accent-primary);
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-subtle));
+}
+
+.settings-button:active,
+.settings-close-button:active,
+.secret-visibility-button:active {
+  transform: scale(0.96);
 }
 
 .workspace-body {
@@ -348,6 +383,32 @@ summary:focus-visible {
   padding: var(--space-5);
   background: var(--surface-secondary);
   border-radius: 12px;
+}
+
+.token-summary {
+  display: grid;
+  align-content: start;
+}
+
+.token-summary-header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.token-summary-header strong {
+  font-size: 12px;
+}
+
+.token-summary-header span {
+  color: var(--status-warning);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.token-summary-header span[data-state="ready"] {
+  color: var(--status-success);
 }
 
 .token-field label,
@@ -456,6 +517,134 @@ summary:focus-visible {
   overflow-wrap: anywhere;
   color: var(--text-primary);
   font: 10px/1.5 "SFMono-Regular", Menlo, monospace;
+}
+
+.settings-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  color: var(--text-primary);
+  background: rgb(32 32 30 / 44%);
+  backdrop-filter: blur(4px);
+}
+
+.settings-sheet {
+  width: min(560px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  padding: 24px;
+  overflow: auto;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgb(32 32 30 / 28%);
+}
+
+.settings-header,
+.settings-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.settings-header h2 {
+  margin: 5px 0 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.settings-close-button {
+  border-radius: 50%;
+}
+
+.settings-section {
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--surface-secondary);
+  border-radius: 12px;
+}
+
+.settings-section-heading > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.settings-section-heading strong {
+  font-size: 13px;
+}
+
+.settings-section-heading span {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.settings-section-heading p,
+#settings-token-help {
+  margin: 7px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.secret-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.secret-field input {
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+}
+
+.secret-field input[data-visible="false"] {
+  -webkit-text-security: disc;
+}
+
+.secret-visibility-button {
+  background: var(--surface-elevated);
+  border-color: var(--border-default);
+}
+
+.settings-message {
+  min-height: 18px;
+  margin: 14px 0 0;
+  color: var(--status-success);
+  font-size: 11px;
+}
+
+.settings-message[data-state="error"] {
+  color: var(--status-error);
+}
+
+.settings-actions {
+  justify-content: flex-end;
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .text-button {

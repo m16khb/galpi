@@ -2,7 +2,9 @@ use crate::application::error::AppError;
 use crate::application::jobs::JobRegistry;
 use crate::application::model::{EnvironmentStatus, SetupResult, TranscriptionResult};
 use crate::application::model::{RecordingResult, RecordingStatus};
-use crate::application::ports::{ArtifactPort, EnginePort, RecordingPort, TranscriptionPort};
+use crate::application::ports::{
+    ArtifactPort, EnginePort, RecordingPort, SettingsPort, TranscriptionPort,
+};
 use crate::domain::artifact::ArtifactKind;
 use crate::domain::job::{SetupRequest, TranscriptionRequest, validate_speaker_hint};
 use std::path::Path;
@@ -14,6 +16,7 @@ pub struct Application {
     transcription: Arc<dyn TranscriptionPort>,
     artifacts: Arc<dyn ArtifactPort>,
     recording: Arc<dyn RecordingPort>,
+    settings: Arc<dyn SettingsPort>,
     jobs: JobRegistry,
     active_recording: tokio::sync::Mutex<Option<Uuid>>,
 }
@@ -24,12 +27,14 @@ impl Application {
         transcription: Arc<dyn TranscriptionPort>,
         artifacts: Arc<dyn ArtifactPort>,
         recording: Arc<dyn RecordingPort>,
+        settings: Arc<dyn SettingsPort>,
     ) -> Self {
         Self {
             engine,
             transcription,
             artifacts,
             recording,
+            settings,
             jobs: JobRegistry::default(),
             active_recording: tokio::sync::Mutex::new(None),
         }
@@ -40,10 +45,28 @@ impl Application {
     }
 
     pub async fn prepare(&self, request: SetupRequest) -> Result<SetupResult, AppError> {
+        let request = if request.hugging_face_token.is_some() {
+            request
+        } else {
+            SetupRequest {
+                hugging_face_token: self.settings.load_hugging_face_token().await?,
+            }
+        };
         let (job_id, mut cancel) = self.jobs.claim()?;
         let result = self.engine.prepare(job_id, &mut cancel, &request).await;
         self.jobs.finish(job_id)?;
         result.map(|status| SetupResult { job_id, status })
+    }
+
+    pub async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError> {
+        self.settings.load_hugging_face_token().await
+    }
+
+    pub async fn save_hugging_face_token(&self, token: String) -> Result<(), AppError> {
+        let token = token.trim();
+        self.settings
+            .save_hugging_face_token((!token.is_empty()).then(|| token.to_owned()))
+            .await
     }
 
     pub async fn transcribe(

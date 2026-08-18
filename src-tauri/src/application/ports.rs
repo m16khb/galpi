@@ -62,3 +62,9 @@ pub trait RecordingPort: Send + Sync {
 pub trait RecordingEvents: Send + Sync {
     fn emit_failure(&self, failure: RecordingFailure) -> Result<(), AppError>;
 }
+
+#[async_trait]
+pub trait SettingsPort: Send + Sync {
+    async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError>;
+    async fn save_hugging_face_token(&self, token: Option<String>) -> Result<(), AppError>;
+}

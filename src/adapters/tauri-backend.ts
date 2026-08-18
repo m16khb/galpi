@@ -30,6 +30,7 @@ const setupResultSchema = z.object({
   jobId: z.string(),
   status: environmentSchema,
 })
+const huggingFaceTokenSchema = z.string().nullable()
 
 const recordingStatusSchema = z.object({
   recordingId: z.string(),
@@ -96,7 +97,9 @@ export type RecordingFailure = z.infer<typeof recordingFailureSchema>
 
 export interface BackendPort {
   diagnose(): Promise<EnvironmentStatus>
-  prepare(huggingFaceToken: string | null): Promise<SetupResult>
+  prepare(): Promise<SetupResult>
+  loadHuggingFaceToken(): Promise<string | null>
+  saveHuggingFaceToken(token: string): Promise<void>
   transcribe(request: {
     readonly jobId: string
     readonly inputPath: string
@@ -121,12 +124,20 @@ export class TauriBackend implements BackendPort {
     return environmentSchema.parse(await invoke<unknown>("diagnose_environment"))
   }
 
-  async prepare(huggingFaceToken: string | null): Promise<SetupResult> {
+  async prepare(): Promise<SetupResult> {
     return setupResultSchema.parse(
       await invoke<unknown>("prepare_environment", {
-        request: { huggingFaceToken },
+        request: { huggingFaceToken: null },
       }),
     )
+  }
+
+  async loadHuggingFaceToken(): Promise<string | null> {
+    return huggingFaceTokenSchema.parse(await invoke<unknown>("load_hugging_face_token"))
+  }
+
+  async saveHuggingFaceToken(token: string): Promise<void> {
+    await invoke("save_hugging_face_token", { token })
   }
 
   async transcribe(request: {

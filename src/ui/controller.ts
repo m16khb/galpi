@@ -46,6 +46,9 @@ export class AppController {
       this.outputRoot = environment.defaultOutputDirectory
       this.view.setOutput(environment.defaultOutputDirectory)
       this.view.setEnvironment(environment)
+      this.view.tokenSettings.setConfigured(
+        (await this.backend.loadHuggingFaceToken()) !== null,
+      )
     } catch (error) {
       this.view.showError(errorMessage(error))
     }
@@ -61,6 +64,13 @@ export class AppController {
 
   private bind(): void {
     this.view.on("prepare", () => void this.prepare())
+    this.view.on("open-settings", () => void this.openSettings())
+    this.view.on("close-settings", () => this.view.tokenSettings.close())
+    this.view.on("toggle-token-visibility", () =>
+      this.view.tokenSettings.toggleVisibility(),
+    )
+    this.view.on("save-token", () => void this.saveToken())
+    this.view.on("clear-token", () => void this.clearToken())
     this.view.on("model-access", () => void this.backend.openModelAccessPage())
     this.view.on("choose-audio", () => void this.chooseAudio())
     this.view.on("choose-output", () => void this.chooseOutput())
@@ -79,7 +89,7 @@ export class AppController {
   private async prepare(): Promise<void> {
     this.begin("setup", "로컬 엔진과 모델을 준비합니다.")
     try {
-      const result = await this.backend.prepare(this.view.token())
+      const result = await this.backend.prepare()
       this.view.setEnvironment(result.status)
       this.job = {
         ...this.job,
@@ -93,8 +103,51 @@ export class AppController {
     } catch (error) {
       this.handleFailure(error)
     } finally {
-      this.view.clearToken()
       this.view.setBusy(null)
+    }
+  }
+
+  private async openSettings(): Promise<void> {
+    const settings = this.view.tokenSettings
+    settings.show()
+    settings.setBusy(true)
+    settings.showMessage("저장된 토큰을 불러오는 중입니다.")
+    try {
+      settings.setToken(await this.backend.loadHuggingFaceToken())
+      settings.showMessage("")
+    } catch (error) {
+      settings.showMessage(errorMessage(error), true)
+    } finally {
+      settings.setBusy(false)
+    }
+  }
+
+  private async saveToken(): Promise<void> {
+    const settings = this.view.tokenSettings
+    const token = settings.token().trim()
+    settings.setBusy(true)
+    try {
+      await this.backend.saveHuggingFaceToken(token)
+      settings.setToken(token.length > 0 ? token : null)
+      settings.showMessage(token.length > 0 ? "토큰을 저장했습니다." : "토큰을 지웠습니다.")
+    } catch (error) {
+      settings.showMessage(errorMessage(error), true)
+    } finally {
+      settings.setBusy(false)
+    }
+  }
+
+  private async clearToken(): Promise<void> {
+    const settings = this.view.tokenSettings
+    settings.setBusy(true)
+    try {
+      await this.backend.saveHuggingFaceToken("")
+      settings.clearToken()
+      settings.showMessage("저장된 토큰을 지웠습니다.")
+    } catch (error) {
+      settings.showMessage(errorMessage(error), true)
+    } finally {
+      settings.setBusy(false)
     }
   }
 

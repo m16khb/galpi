@@ -1,6 +1,6 @@
 use super::error::AppError;
 use super::model::{CompletedTranscription, EnvironmentStatus};
-use super::ports::{ArtifactPort, EnginePort, RecordingPort, TranscriptionPort};
+use super::ports::{ArtifactPort, EnginePort, RecordingPort, SettingsPort, TranscriptionPort};
 use super::use_cases::Application;
 use crate::domain::artifact::{ArtifactKind, Artifacts};
 use crate::domain::job::{SetupRequest, SpeakerHint, TranscriptionRequest};
@@ -20,6 +20,8 @@ enum TranscriptionBehavior {
 struct FakePort {
     prepare_calls: AtomicUsize,
     opened_paths: Mutex<Vec<PathBuf>>,
+    prepared_token: Mutex<Option<String>>,
+    settings_token: Mutex<Option<String>>,
     behavior: TranscriptionBehavior,
 }
 
@@ -28,6 +30,8 @@ impl FakePort {
         Self {
             prepare_calls: AtomicUsize::new(0),
             opened_paths: Mutex::new(Vec::new()),
+            prepared_token: Mutex::new(None),
+            settings_token: Mutex::new(None),
             behavior,
         }
     }
@@ -37,7 +41,8 @@ impl FakePort {
         let transcription: Arc<dyn TranscriptionPort> = self.clone();
         let artifacts: Arc<dyn ArtifactPort> = self.clone();
         let recording: Arc<dyn RecordingPort> = self.clone();
-        Application::new(engine, transcription, artifacts, recording)
+        let settings: Arc<dyn SettingsPort> = self.clone();
+        Application::new(engine, transcription, artifacts, recording, settings)
     }
 }
 
@@ -58,10 +63,33 @@ impl EnginePort for FakePort {
         &self,
         job_id: Uuid,
         _cancel: &mut oneshot::Receiver<()>,
-        _request: &SetupRequest,
+        request: &SetupRequest,
     ) -> Result<EnvironmentStatus, AppError> {
         let _ = job_id;
+        *self
+            .prepared_token
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "prepared token lock poisoned"))? =
+            request.hugging_face_token.clone();
         self.diagnose().await
+    }
+}
+
+#[async_trait]
+impl SettingsPort for FakePort {
+    async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError> {
+        self.settings_token
+            .lock()
+            .map(|token| token.clone())
+            .map_err(|_| AppError::new("TEST_ERROR", "settings token lock poisoned"))
+    }
+
+    async fn save_hugging_face_token(&self, token: Option<String>) -> Result<(), AppError> {
+        *self
+            .settings_token
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "settings token lock poisoned"))? = token;
+        Ok(())
     }
 }
 
@@ -121,6 +149,42 @@ impl ArtifactPort for FakePort {
             .push(path.to_owned());
         Ok(())
     }
+}
+
+#[tokio::test]
+async fn saved_hugging_face_token_is_trimmed_and_can_be_cleared() -> Result<(), AppError> {
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+
+    app.save_hugging_face_token("  hf_saved  ".to_owned())
+        .await?;
+    assert_eq!(
+        app.load_hugging_face_token().await?,
+        Some("hf_saved".to_owned())
+    );
+
+    app.save_hugging_face_token("   ".to_owned()).await?;
+    assert_eq!(app.load_hugging_face_token().await?, None);
+    Ok(())
+}
+
+#[tokio::test]
+async fn prepare_uses_saved_hugging_face_token() -> Result<(), AppError> {
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+    app.save_hugging_face_token("hf_saved".to_owned()).await?;
+
+    app.prepare(SetupRequest {
+        hugging_face_token: None,
+    })
+    .await?;
+
+    let token = port
+        .prepared_token
+        .lock()
+        .map_err(|_| AppError::new("TEST_ERROR", "prepared token lock poisoned"))?;
+    assert_eq!(token.as_deref(), Some("hf_saved"));
+    Ok(())
 }
 
 #[tokio::test]

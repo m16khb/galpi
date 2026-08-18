@@ -16,7 +16,10 @@ export const appTemplate = `
     <main class="workspace">
       <header class="topbar">
         <div><span class="eyebrow">LOCAL AUDIO WORKSPACE</span><h1>회의에서 중요한 갈피를 찾으세요.</h1></div>
-        <div class="engine-chip"><span id="setup-state" data-state="pending">확인 중</span><small id="engine-version">WhisperX</small></div>
+        <div class="topbar-actions">
+          <div class="engine-chip"><span id="setup-state" data-state="pending">확인 중</span><small id="engine-version">WhisperX</small></div>
+          <button class="settings-button" type="button" data-action="open-settings" aria-label="설정 열기"><i class="ph ph-gear"></i></button>
+        </div>
       </header>
 
       <div class="workspace-body">
@@ -31,26 +34,10 @@ export const appTemplate = `
               <div id="model-check" class="status-row" data-state="pending"><i class="ph ph-brain"></i><span data-status-label>전사 모델</span><strong data-status-value>확인 중</strong></div>
               <div id="ffmpeg-check" class="status-row" data-state="pending"><i class="ph ph-waveform"></i><span data-status-label>내장 ffmpeg</span><strong data-status-value>확인 중</strong></div>
             </div>
-            <div class="token-field">
-              <label for="hf-token">Hugging Face 토큰 <span>선택</span></label>
-              <input id="hf-token" type="password" autocomplete="off" placeholder="hf_..." aria-describedby="token-help" />
-              <p id="token-help">화자분리 모델을 처음 내려받는 경우에만 필요합니다. 토큰은 준비 프로세스에 한 번 전달되고 저장되지 않습니다.</p>
-              <div class="token-guide-anchor">
-                <button id="token-guide-trigger" class="token-guide-trigger" type="button" aria-expanded="false" aria-controls="token-guide-popover">필요 권한과 발급 방법 <i class="ph ph-info"></i></button>
-                <div id="token-guide-popover" class="token-guide-popover" role="dialog" aria-label="Hugging Face 토큰 발급 안내" hidden>
-                  <div class="token-guide-header"><strong>토큰 발급 안내</strong><button id="token-guide-close" type="button" aria-label="닫기"><i class="ph ph-x"></i></button></div>
-                  <p><strong>권장 권한:</strong> Fine-grained 토큰의 읽기(Read) 전용 권한만 사용하세요. 쓰기·추론 API 권한은 필요하지 않습니다.</p>
-                  <ol>
-                    <li>Hugging Face 계정에 로그인합니다.</li>
-                    <li>아래 모델 페이지에서 이용 조건에 동의하고 접근 승인을 받습니다.</li>
-                    <li>Settings → Access Tokens → Create new token에서 <strong>Fine-grained</strong>를 선택합니다.</li>
-                    <li><code>pyannote/speaker-diarization-community-1</code> 저장소 콘텐츠의 Read 권한만 허용합니다.</li>
-                    <li><code>hf_</code>로 시작하는 토큰을 복사해 위 입력란에 붙여넣습니다.</li>
-                  </ol>
-                  <p>접근 승인이 끝났거나 모델이 이미 이 Mac에 준비되어 있으면 토큰을 비워 두어도 됩니다.</p>
-                </div>
-              </div>
-              <button class="text-button" type="button" data-action="model-access">모델 이용 조건 페이지 열기 <i class="ph ph-arrow-up-right"></i></button>
+            <div class="token-field token-summary">
+              <div class="token-summary-header"><strong>Hugging Face 토큰</strong><span id="token-configured-state">확인 중</span></div>
+              <p>화자분리 모델 접근 토큰은 우측 상단 설정에서 저장하고 다시 확인할 수 있습니다.</p>
+              <button class="text-button" type="button" data-action="open-settings">토큰 설정 열기 <i class="ph ph-gear"></i></button>
             </div>
           </div>
           <div id="setup-progress-panel" class="setup-progress-card" hidden>
@@ -152,5 +139,47 @@ export const appTemplate = `
       </div>
       <footer class="app-footer"><span>Galpi 0.1</span><span>모든 추론은 로컬에서 실행됩니다.</span></footer>
     </main>
+
+    <div id="settings-dialog" class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+      <div class="settings-sheet">
+        <header class="settings-header">
+          <div><span class="eyebrow">APP SETTINGS</span><h2 id="settings-title">설정</h2></div>
+          <button class="settings-close-button" type="button" data-action="close-settings" aria-label="설정 닫기"><i class="ph ph-x"></i></button>
+        </header>
+        <section class="settings-section" aria-labelledby="token-settings-title">
+          <div class="settings-section-heading">
+            <div><strong id="token-settings-title">Hugging Face 토큰</strong><span>선택</span></div>
+            <p>화자분리 모델을 처음 내려받을 때 사용하는 Read 전용 토큰입니다.</p>
+          </div>
+          <label class="sr-only" for="settings-hf-token">Hugging Face 토큰</label>
+          <div class="secret-field">
+            <input id="settings-hf-token" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="hf_..." aria-describedby="settings-token-help" data-visible="false" readonly />
+            <button id="toggle-token-visibility" class="secret-visibility-button" type="button" data-action="toggle-token-visibility" aria-label="토큰 표시"><i class="ph ph-eye"></i></button>
+          </div>
+          <p id="settings-token-help">저장한 값은 이 Mac의 Galpi 앱 설정에 유지되며 모델 준비 때 자동으로 사용됩니다.</p>
+          <div class="token-guide-anchor">
+            <button id="token-guide-trigger" class="token-guide-trigger" type="button" aria-expanded="false" aria-controls="token-guide-popover">필요 권한과 발급 방법 <i class="ph ph-info"></i></button>
+            <div id="token-guide-popover" class="token-guide-popover" role="dialog" aria-label="Hugging Face 토큰 발급 안내" hidden>
+              <div class="token-guide-header"><strong>토큰 발급 안내</strong><button id="token-guide-close" type="button" aria-label="닫기"><i class="ph ph-x"></i></button></div>
+              <p><strong>권장 권한:</strong> Fine-grained 토큰의 읽기(Read) 전용 권한만 사용하세요. 쓰기·추론 API 권한은 필요하지 않습니다.</p>
+              <ol>
+                <li>Hugging Face 계정에 로그인합니다.</li>
+                <li>아래 모델 페이지에서 이용 조건에 동의하고 접근 승인을 받습니다.</li>
+                <li>Settings → Access Tokens → Create new token에서 <strong>Fine-grained</strong>를 선택합니다.</li>
+                <li><code>pyannote/speaker-diarization-community-1</code> 저장소 콘텐츠의 Read 권한만 허용합니다.</li>
+                <li><code>hf_</code>로 시작하는 토큰을 복사해 저장합니다.</li>
+              </ol>
+              <p>접근 승인이 끝났거나 모델이 이미 이 Mac에 준비되어 있으면 토큰을 비워 두어도 됩니다.</p>
+            </div>
+          </div>
+          <button class="text-button" type="button" data-action="model-access">모델 이용 조건 페이지 열기 <i class="ph ph-arrow-up-right"></i></button>
+        </section>
+        <p id="settings-message" class="settings-message" role="status" aria-live="polite"></p>
+        <div class="settings-actions">
+          <button class="secondary-button danger" type="button" data-action="clear-token">저장된 토큰 지우기</button>
+          <button class="primary-button" type="button" data-action="save-token">설정 저장</button>
+        </div>
+      </div>
+    </div>
   </div>
 `

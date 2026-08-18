@@ -28,6 +28,21 @@ pub async fn prepare_environment(
 }
 
 #[tauri::command]
+pub async fn load_hugging_face_token(
+    application: State<'_, Application>,
+) -> Result<Option<String>, AppError> {
+    application.load_hugging_face_token().await
+}
+
+#[tauri::command]
+pub async fn save_hugging_face_token(
+    application: State<'_, Application>,
+    token: String,
+) -> Result<(), AppError> {
+    application.save_hugging_face_token(token).await
+}
+
+#[tauri::command]
 pub async fn start_transcription(
     application: State<'_, Application>,
     request: TranscriptionRequest,

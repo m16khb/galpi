@@ -4,9 +4,11 @@ import type { SpeakerForm, SpeakerMode } from "../domain/speaker"
 import type { RecordingViewState } from "../application/recording-machine"
 import { appTemplate } from "./app-template"
 import { bindTokenGuide } from "./token-guide"
+import { TokenSettingsView } from "./token-settings"
 
 export class AppView {
   readonly root: HTMLElement
+  readonly tokenSettings: TokenSettingsView
   private engineReady = false
   private jobBusy = false
   private jobKind: "setup" | "transcription" | null = null
@@ -15,6 +17,7 @@ export class AppView {
   constructor(root: HTMLElement) {
     this.root = root
     this.root.innerHTML = appTemplate
+    this.tokenSettings = new TokenSettingsView(root)
     bindTokenGuide(this.root)
   }
 
@@ -34,15 +37,6 @@ export class AppView {
         if (input.checked) handler(input.value as SpeakerMode)
       })
     }
-  }
-
-  token(): string | null {
-    const value = this.element<HTMLInputElement>("#hf-token").value.trim()
-    return value.length > 0 ? value : null
-  }
-
-  clearToken(): void {
-    this.element<HTMLInputElement>("#hf-token").value = ""
   }
 
   speakerForm(): SpeakerForm {

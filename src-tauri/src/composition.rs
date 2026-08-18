@@ -1,8 +1,10 @@
 use crate::adapters::inbound::tauri::TauriEvents;
 use crate::adapters::outbound::desktop::DesktopAdapter;
 use crate::adapters::outbound::recording::NativeRecorder;
+use crate::adapters::outbound::settings::LocalSettingsStore;
 use crate::application::ports::{
-    ArtifactPort, EnginePort, JobEvents, RecordingEvents, RecordingPort, TranscriptionPort,
+    ArtifactPort, EnginePort, JobEvents, RecordingEvents, RecordingPort, SettingsPort,
+    TranscriptionPort,
 };
 use crate::application::use_cases::Application;
 use std::sync::Arc;
@@ -21,17 +23,21 @@ pub fn run() {
             let transcription: Arc<dyn TranscriptionPort> = desktop.clone();
             let artifacts: Arc<dyn ArtifactPort> = desktop;
             let recording: Arc<dyn RecordingPort> = Arc::new(NativeRecorder::new(recording_events));
+            let settings: Arc<dyn SettingsPort> = Arc::new(LocalSettingsStore::new(app.handle())?);
             app.manage(Application::new(
                 engine,
                 transcription,
                 artifacts,
                 recording,
+                settings,
             ));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             crate::adapters::inbound::tauri::diagnose_environment,
             crate::adapters::inbound::tauri::prepare_environment,
+            crate::adapters::inbound::tauri::load_hugging_face_token,
+            crate::adapters::inbound::tauri::save_hugging_face_token,
             crate::adapters::inbound::tauri::start_transcription,
             crate::adapters::inbound::tauri::cancel_job,
             crate::adapters::inbound::tauri::open_artifact,
