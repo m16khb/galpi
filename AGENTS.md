@@ -1,0 +1,133 @@
+# PROJECT KNOWLEDGE BASE
+
+**Generated:** 2026-08-18T07:03:44Z
+**Commit:** 0d831b7
+**Branch:** main
+
+## OVERVIEW
+
+Galpi is an Apple Silicon macOS desktop app for local Korean meeting recording and
+transcription. It spans a Bun/Vite TypeScript frontend, a Rust/Tauri host, and a
+bundled Python/WhisperX worker connected by a versioned JSONL protocol.
+
+## STRUCTURE
+
+```text
+galpi/
+├── src/                         # Framework-light DOM frontend and Tauri IPC adapter
+│   ├── application/             # Pure job and recording state machines
+│   ├── domain/                  # Frontend contracts and speaker validation
+│   └── ui/                      # Controllers, view, template, and interaction helpers
+├── src-tauri/                   # Rust crate, Tauri configuration, and bundle metadata
+│   └── src/
+│       ├── domain/              # Framework-free requests, artifacts, worker protocol
+│       ├── application/         # Ports, use cases, job/recording lifecycle
+│       └── adapters/            # Tauri ingress and OS/process/audio egress
+├── worker/                      # Python WhisperX sidecar, strict stubs, unittest contracts
+├── scripts/                     # Architecture check, sidecar staging, DMG packaging
+├── DESIGN.md                    # UI system and accessibility contract
+└── package.json                 # Canonical Bun workflows
+```
+
+Generated trees (`node_modules`, `dist`, `src-tauri/target`,
+`src-tauri/resources/worker`, `src-tauri/binaries`) are not source.
+
+## WHERE TO LOOK
+
+| Task | Location | Notes |
+|------|----------|-------|
+| Frontend startup | `src/main.ts` | Composes backend, view, controller |
+| Frontend orchestration | `src/ui/controller.ts` | Setup, transcription, artifacts, cancellation |
+| Recording UI lifecycle | `src/ui/recording-controller.ts` | Buffers early native failures |
+| DOM rendering | `src/ui/app-view.ts` | Required selectors fail fast |
+| UI markup/style contract | `src/ui/app-template.ts`, `src/styles.css`, `DESIGN.md` | Keep all three aligned |
+| Pure frontend transitions | `src/application/*-machine.ts` | Immutable reducers; colocated Bun tests |
+| Tauri IPC client | `src/adapters/tauri-backend.ts` | `invoke`/`listen` plus Zod boundary parsing |
+| Native composition | `src-tauri/src/composition.rs` | Only concrete port wiring and Tauri registration |
+| IPC command surface | `src-tauri/src/adapters/inbound/tauri.rs` | Nine frontend commands and event bridges |
+| Backend use cases | `src-tauri/src/application/use_cases.rs` | Central `Application` facade |
+| Port contracts | `src-tauri/src/application/ports.rs` | Add platform behavior behind a port |
+| Worker supervision | `src-tauri/src/adapters/outbound/process.rs` | Bounded JSONL, cancellation, process groups |
+| Native recording | `src-tauri/src/adapters/outbound/recording/` | CPAL callback, bounded queue, WAV writer |
+| Worker pipeline | `worker/galpi_worker/engine.py` | ASR, alignment, diarization, output publication |
+| Worker protocol | `worker/galpi_worker/protocol.py`, `src-tauri/src/domain/worker.rs` | Coupled cross-language contract |
+| Build staging | `scripts/stage-sidecars.ts` | Verified ARM64 `uv`; copies worker resources |
+| Architecture fences | `scripts/check-architecture.ts` | Authoritative dependency/locality check |
+
+## CODE MAP
+
+LSP was unavailable during generation; reference counts below are observed ast-grep
+call sites, not semantic workspace references.
+
+| Symbol | Type | Location | Refs | Role |
+|--------|------|----------|------|------|
+| `AppController` | class | `src/ui/controller.ts` | 1 construction | Frontend workflow coordinator |
+| `TauriBackend` | class | `src/adapters/tauri-backend.ts` | 1 construction | IPC and runtime-validation boundary |
+| `Application` | struct | `src-tauri/src/application/use_cases.rs` | 9 command paths | Backend use-case facade |
+| `run` | function | `src-tauri/src/composition.rs` | 1 entry call | Native composition root |
+| `run_process` | async function | `src-tauri/src/adapters/outbound/process.rs` | 3 production calls | Worker/process supervisor |
+| `NativeRecorder` | struct | `src-tauri/src/adapters/outbound/recording/mod.rs` | 1 production wiring | Recording port implementation |
+| `EventWriter.emit` | method | `worker/galpi_worker/protocol.py` | 17 call sites | Versioned JSONL event boundary |
+| `transcribe` | function | `worker/galpi_worker/engine.py` | CLI entry path | ML pipeline and artifact publication |
+
+## CONVENTIONS
+
+- Keep runtime boundaries explicit: TypeScript -> Tauri commands -> `Application` ports
+  -> outbound adapters -> Python worker.
+- TypeScript uses strict mode, exact optional properties, unchecked index checks,
+  type-only imports, named exports, double quotes, 2 spaces, and no semicolons.
+- Parse native responses/events with Zod before exposing them to frontend state.
+- Frontend state machines return immutable states; tests live beside implementations.
+- Rust domain and application layers stay framework-free; concrete adapters are wired only
+  in `composition.rs`.
+- Rust failures use `AppError` with stable machine-readable codes.
+- Python is strict-Pyright code with local WhisperX stubs and lazy heavy imports.
+- Behavioral tests use Given/When/Then comments where setup is nontrivial.
+- Subscribe to Tauri events before invoking the operation that emits them.
+
+## ANTI-PATTERNS (THIS PROJECT)
+
+- Do not add `application`, `adapters`, `composition`, or Tauri dependencies to Rust `domain`.
+- Do not add adapter, composition, or Tauri dependencies to Rust `application`.
+- Keep Tauri commands in `src-tauri/src/adapters/inbound/tauri.rs`.
+- Keep `.manage`, `.plugin`, and handler registration in `composition.rs`.
+- Keep `tokio::process` and `nix` process primitives inside the process adapter.
+- Never emit dependency diagnostics to worker stdout; stdout is machine-readable JSONL only.
+- Never block the CPAL callback; it feeds a bounded queue with nonblocking sends.
+- Preserve process-group cancellation, bounded output lines, and `.wav.part` cleanup.
+- Do not edit staged worker copies or generated build output.
+- Do not invent elapsed-time estimates for model downloads or long-running phases.
+
+## UNIQUE STYLES
+
+- User-facing copy is Korean; protocol/error identifiers remain stable ASCII.
+- `DESIGN.md` is normative for palette, layout, motion, accessibility, and component states.
+- Status always pairs color with text; labels are never placeholders.
+- Running setup/transcription exposes cancellation; progress reports phase completion, not ETA.
+- Output names (`.aligned.v2.json`, `.srt`, `_화자별.txt`) are external behavior.
+
+## COMMANDS
+
+```bash
+bun install
+bun run dev
+bun run check
+bun test
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --all-targets
+uvx ruff check worker
+uvx ruff format --check worker
+uvx basedpyright --pythonpath <WhisperX-Python>
+PYTHONPATH=. python -m unittest worker.tests.test_core -v
+bun run build
+```
+
+## NOTES
+
+- Supported distribution target: macOS 14+ on Apple Silicon; Rust 1.85+, Bun 1.3+.
+- `bun run check` covers architecture, Biome, and TypeScript only; it omits Rust/Python gates.
+- Dev/build staging may download the pinned ARM64 `uv` archive before compiling Tauri.
+- `bun run build` expects macOS `hdiutil`; signing and notarization remain separate.
+- Build scripts currently hardcode ARM64 and release artifact version `0.1.0`.
+- Worker protocol, Rust parser, frontend event schema, and job reducer form one change set.
