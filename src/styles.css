@@ -141,6 +141,11 @@ summary:focus-visible {
   border-left: 2px solid transparent;
 }
 
+/* `.step-list li` ties with the global `html [hidden]` rule, so it needs its own hide. */
+.step-list li[hidden] {
+  display: none;
+}
+
 .step-list li[data-state="current"] {
   color: var(--text-primary);
   background: rgb(255 254 250 / 70%);

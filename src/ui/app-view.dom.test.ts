@@ -4,11 +4,21 @@ import { Window } from "happy-dom"
 import type { EnvironmentStatus } from "../domain/job"
 import { AppView } from "./app-view"
 
-function createView(): { view: AppView; root: HTMLElement } {
+const styles = await Bun.file(new URL("../styles.css", import.meta.url)).text()
+
+function createWindow(): Window {
   const window = new Window()
+  const sheet = window.document.createElement("style")
+  sheet.textContent = styles
+  window.document.head.appendChild(sheet)
+  return window
+}
+
+function createView(): { view: AppView; root: HTMLElement; window: Window } {
+  const window = createWindow()
   const root = window.document.createElement("div") as unknown as HTMLElement
   window.document.body.appendChild(root as unknown as never)
-  return { view: new AppView(root), root }
+  return { view: new AppView(root), root, window }
 }
 
 function environment(ready: boolean): EnvironmentStatus {
@@ -29,9 +39,19 @@ function hidden(root: HTMLElement, selector: string): boolean {
 describe("AppView onboarding visibility (real DOM)", () => {
   let view: AppView
   let root: HTMLElement
+  let window: Window
 
   beforeEach(() => {
-    ;({ view, root } = createView())
+    ;({ view, root, window } = createView())
+  })
+
+  test("renders the hidden rail steps as removed, not merely flagged", () => {
+    // Given / When
+    view.setEnvironment(environment(true))
+
+    // Then
+    const step = root.querySelector("#step-engine") as HTMLElement
+    expect(window.getComputedStyle(step as unknown as never).display).toBe("none")
   })
 
   test("keeps the preparation step visible while the environment is not ready", () => {
