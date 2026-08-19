@@ -1,5 +1,6 @@
 use super::paths::AppPaths;
 use crate::application::error::AppError;
+use crate::application::model::AssistantSettings;
 use crate::application::ports::SettingsPort;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -22,9 +23,21 @@ impl LocalSettingsStore {
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(default, rename_all = "camelCase")]
 struct LocalSettings {
     hugging_face_token: Option<String>,
+    assistant_api_key: Option<String>,
+    assistant_model: Option<String>,
+    assistant_background: Option<String>,
+}
+
+impl LocalSettings {
+    fn is_empty(&self) -> bool {
+        self.hugging_face_token.is_none()
+            && self.assistant_api_key.is_none()
+            && self.assistant_model.is_none()
+            && self.assistant_background.is_none()
+    }
 }
 
 #[async_trait]
@@ -34,16 +47,26 @@ impl SettingsPort for LocalSettingsStore {
     }
 
     async fn save_hugging_face_token(&self, token: Option<String>) -> Result<(), AppError> {
-        if token.is_none() {
-            return remove_settings(&self.path).await;
-        }
-        write_settings(
-            &self.path,
-            &LocalSettings {
-                hugging_face_token: token,
-            },
-        )
-        .await
+        let mut settings = read_settings(&self.path).await?;
+        settings.hugging_face_token = token;
+        store_settings(&self.path, &settings).await
+    }
+
+    async fn load_assistant(&self) -> Result<AssistantSettings, AppError> {
+        let settings = read_settings(&self.path).await?;
+        Ok(AssistantSettings {
+            api_key: settings.assistant_api_key,
+            model: settings.assistant_model,
+            background: settings.assistant_background,
+        })
+    }
+
+    async fn save_assistant(&self, assistant: AssistantSettings) -> Result<(), AppError> {
+        let mut settings = read_settings(&self.path).await?;
+        settings.assistant_api_key = assistant.api_key;
+        settings.assistant_model = assistant.model;
+        settings.assistant_background = assistant.background;
+        store_settings(&self.path, &settings).await
     }
 }
 
@@ -58,6 +81,13 @@ async fn read_settings(path: &Path) -> Result<LocalSettings, AppError> {
         Err(error) if error.kind() == ErrorKind::NotFound => Ok(LocalSettings::default()),
         Err(error) => Err(AppError::io("앱 설정 파일을 읽지 못했습니다", &error)),
     }
+}
+
+async fn store_settings(path: &Path, settings: &LocalSettings) -> Result<(), AppError> {
+    if settings.is_empty() {
+        return remove_settings(path).await;
+    }
+    write_settings(path, settings).await
 }
 
 async fn write_settings(path: &Path, settings: &LocalSettings) -> Result<(), AppError> {
@@ -98,6 +128,7 @@ async fn remove_settings(path: &Path) -> Result<(), AppError> {
 #[cfg(test)]
 mod tests {
     use super::LocalSettingsStore;
+    use crate::application::model::AssistantSettings;
     use crate::application::ports::SettingsPort;
     use std::os::unix::fs::PermissionsExt;
     use uuid::Uuid;
@@ -124,6 +155,37 @@ mod tests {
 
         store.save_hugging_face_token(None).await?;
         assert_eq!(store.load_hugging_face_token().await?, None);
+        tokio::fs::remove_dir_all(directory).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn keeps_assistant_settings_when_the_hugging_face_token_is_cleared()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Given
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        let store = LocalSettingsStore {
+            path: directory.join("settings.json"),
+        };
+        store
+            .save_hugging_face_token(Some("hf_saved".to_owned()))
+            .await?;
+        store
+            .save_assistant(AssistantSettings {
+                api_key: Some("zai_key".to_owned()),
+                model: Some("glm-5.2".to_owned()),
+                background: Some("제품: 갈피".to_owned()),
+            })
+            .await?;
+
+        // When
+        store.save_hugging_face_token(None).await?;
+
+        // Then
+        let assistant = store.load_assistant().await?;
+        assert_eq!(assistant.api_key.as_deref(), Some("zai_key"));
+        assert_eq!(assistant.model.as_deref(), Some("glm-5.2"));
+        assert_eq!(assistant.background.as_deref(), Some("제품: 갈피"));
         tokio::fs::remove_dir_all(directory).await?;
         Ok(())
     }

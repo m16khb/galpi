@@ -1,7 +1,7 @@
 use crate::application::error::AppError;
 use crate::application::model::{
-    EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus, SetupResult,
-    TranscriptionResult,
+    AssistantSettings, EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus,
+    RefinementResult, SetupResult, TranscriptionResult,
 };
 use crate::application::ports::{JobEvents, RecordingEvents};
 use crate::application::use_cases::Application;
@@ -40,6 +40,29 @@ pub async fn save_hugging_face_token(
     token: String,
 ) -> Result<(), AppError> {
     application.save_hugging_face_token(token).await
+}
+
+#[tauri::command]
+pub async fn load_assistant_settings(
+    application: State<'_, Application>,
+) -> Result<AssistantSettings, AppError> {
+    application.load_assistant_settings().await
+}
+
+#[tauri::command]
+pub async fn save_assistant_settings(
+    application: State<'_, Application>,
+    settings: AssistantSettings,
+) -> Result<(), AppError> {
+    application.save_assistant_settings(settings).await
+}
+
+#[tauri::command]
+pub async fn refine_transcript(
+    application: State<'_, Application>,
+    job_id: Uuid,
+) -> Result<RefinementResult, AppError> {
+    application.refine_transcript(job_id).await
 }
 
 #[tauri::command]

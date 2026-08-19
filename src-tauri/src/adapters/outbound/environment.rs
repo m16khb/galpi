@@ -77,6 +77,17 @@ pub fn process_environment(
     env
 }
 
+/// Worker environment for assistant calls, carrying only the assistant credential.
+pub fn assistant_environment(
+    paths: &AppPaths,
+    worker_root: &Path,
+    api_key: &str,
+) -> HashMap<OsString, OsString> {
+    let mut env = process_environment(paths, worker_root, None);
+    env.insert("GALPI_ASSISTANT_API_KEY".into(), api_key.into());
+    env
+}
+
 fn model_manifest_ready(paths: &AppPaths) -> bool {
     let manifest = std::fs::read_to_string(&paths.models_manifest)
         .ok()

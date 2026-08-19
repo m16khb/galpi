@@ -1,6 +1,9 @@
 use super::error::AppError;
-use super::model::{CompletedTranscription, EnvironmentStatus};
-use super::ports::{ArtifactPort, EnginePort, RecordingPort, SettingsPort, TranscriptionPort};
+use super::model::{AssistantSettings, CompletedTranscription, EnvironmentStatus};
+use super::ports::{
+    ArtifactPort, EnginePort, RecordingPort, RefinementJob, RefinementPort, SettingsPort,
+    TranscriptionPort,
+};
 use super::use_cases::Application;
 use crate::domain::artifact::{ArtifactKind, Artifacts};
 use crate::domain::job::{SetupRequest, SpeakerHint, TranscriptionRequest};
@@ -17,11 +20,19 @@ enum TranscriptionBehavior {
     Blocking(Mutex<Option<mpsc::UnboundedSender<Uuid>>>),
 }
 
+struct SeenRefinement {
+    api_key: String,
+    model: Option<String>,
+    background: Option<String>,
+}
+
 struct FakePort {
     prepare_calls: AtomicUsize,
     opened_paths: Mutex<Vec<PathBuf>>,
     prepared_token: Mutex<Option<String>>,
     settings_token: Mutex<Option<String>>,
+    assistant: Mutex<AssistantSettings>,
+    refinements: Mutex<Vec<SeenRefinement>>,
     behavior: TranscriptionBehavior,
 }
 
@@ -32,6 +43,8 @@ impl FakePort {
             opened_paths: Mutex::new(Vec::new()),
             prepared_token: Mutex::new(None),
             settings_token: Mutex::new(None),
+            assistant: Mutex::new(AssistantSettings::default()),
+            refinements: Mutex::new(Vec::new()),
             behavior,
         }
     }
@@ -42,7 +55,35 @@ impl FakePort {
         let artifacts: Arc<dyn ArtifactPort> = self.clone();
         let recording: Arc<dyn RecordingPort> = self.clone();
         let settings: Arc<dyn SettingsPort> = self.clone();
-        Application::new(engine, transcription, artifacts, recording, settings)
+        let refinement: Arc<dyn RefinementPort> = self.clone();
+        Application::new(
+            engine,
+            transcription,
+            artifacts,
+            recording,
+            settings,
+            refinement,
+        )
+    }
+}
+
+#[async_trait]
+impl RefinementPort for FakePort {
+    async fn refine(
+        &self,
+        _job_id: Uuid,
+        _cancel: &mut oneshot::Receiver<()>,
+        job: RefinementJob<'_>,
+    ) -> Result<PathBuf, AppError> {
+        self.refinements
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "refinement lock poisoned"))?
+            .push(SeenRefinement {
+                api_key: job.api_key.to_owned(),
+                model: job.model.map(str::to_owned),
+                background: job.background.map(str::to_owned),
+            });
+        Ok(job.output.to_owned())
     }
 }
 
@@ -89,6 +130,22 @@ impl SettingsPort for FakePort {
             .settings_token
             .lock()
             .map_err(|_| AppError::new("TEST_ERROR", "settings token lock poisoned"))? = token;
+        Ok(())
+    }
+
+    async fn load_assistant(&self) -> Result<AssistantSettings, AppError> {
+        self.assistant
+            .lock()
+            .map(|settings| settings.clone())
+            .map_err(|_| AppError::new("TEST_ERROR", "assistant settings lock poisoned"))
+    }
+
+    async fn save_assistant(&self, settings: AssistantSettings) -> Result<(), AppError> {
+        *self
+            .assistant
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "assistant settings lock poisoned"))? =
+            settings;
         Ok(())
     }
 }
@@ -268,6 +325,68 @@ async fn cancellation_reaches_running_port_without_timing_waits()
     Ok(())
 }
 
+#[tokio::test]
+async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(), AppError> {
+    // Given
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+    app.save_assistant_settings(AssistantSettings {
+        api_key: Some("  zai_key  ".to_owned()),
+        model: Some("glm-5-turbo".to_owned()),
+        background: Some("제품: 갈피\n팀리더: 하빈".to_owned()),
+    })
+    .await?;
+    let transcription = app.transcribe(request(SpeakerHint::Auto)).await?;
+
+    // When
+    let refined = app.refine_transcript(transcription.job_id).await?;
+
+    // Then
+    assert_eq!(refined.minutes, "/tmp/output/job/meeting_회의록.md");
+    let seen = port
+        .refinements
+        .lock()
+        .map_err(|_| AppError::new("TEST_ERROR", "refinement lock poisoned"))?;
+    let job = seen
+        .first()
+        .ok_or_else(|| AppError::new("TEST_ERROR", "refinement was not requested"))?;
+    assert_eq!(job.api_key, "zai_key");
+    assert_eq!(job.model.as_deref(), Some("glm-5-turbo"));
+    assert_eq!(job.background.as_deref(), Some("제품: 갈피\n팀리더: 하빈"));
+
+    app.open_artifact(transcription.job_id, ArtifactKind::Minutes)?;
+    let opened = port
+        .opened_paths
+        .lock()
+        .map_err(|_| AppError::new("TEST_ERROR", "opener lock poisoned"))?;
+    assert_eq!(
+        opened.as_slice(),
+        [PathBuf::from("/tmp/output/job/meeting_회의록.md")]
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn refinement_is_rejected_before_a_token_is_saved() -> Result<(), AppError> {
+    // Given
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+    let transcription = app.transcribe(request(SpeakerHint::Auto)).await?;
+
+    // When
+    let result = app.refine_transcript(transcription.job_id).await;
+
+    // Then
+    let Err(error) = result else {
+        return Err(AppError::new(
+            "TEST_ERROR",
+            "refinement ran without a token",
+        ));
+    };
+    assert_eq!(error.code, "ASSISTANT_KEY_MISSING");
+    Ok(())
+}
+
 fn request(speaker_hint: SpeakerHint) -> TranscriptionRequest {
     TranscriptionRequest {
         job_id: Uuid::now_v7(),
@@ -283,6 +402,7 @@ fn completion(output: &Path) -> CompletedTranscription {
             srt: output.join("meeting.srt"),
             txt: output.join("meeting_화자별.txt"),
             checkpoint: output.join("meeting.aligned.v2.json"),
+            minutes: None,
             output_directory: output.to_owned(),
         },
         segments: 8,

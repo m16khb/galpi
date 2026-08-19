@@ -4,6 +4,7 @@ mod model_cache;
 mod paths;
 mod process;
 pub mod recording;
+mod refinement;
 pub mod settings;
 mod setup;
 mod transcription;

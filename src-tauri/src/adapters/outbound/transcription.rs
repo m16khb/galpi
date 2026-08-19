@@ -107,6 +107,7 @@ async fn validate_artifacts(
         srt,
         txt,
         checkpoint,
+        minutes: None,
         output_directory: root,
     })
 }

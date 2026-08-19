@@ -1,11 +1,14 @@
 use crate::application::error::AppError;
 use crate::application::jobs::JobRegistry;
-use crate::application::model::{EnvironmentStatus, SetupResult, TranscriptionResult};
+use crate::application::model::{
+    AssistantSettings, EnvironmentStatus, RefinementResult, SetupResult, TranscriptionResult,
+};
 use crate::application::model::{RecordingResult, RecordingStatus};
 use crate::application::ports::{
-    ArtifactPort, EnginePort, RecordingPort, SettingsPort, TranscriptionPort,
+    ArtifactPort, EnginePort, RecordingPort, RefinementJob, RefinementPort, SettingsPort,
+    TranscriptionPort,
 };
-use crate::domain::artifact::ArtifactKind;
+use crate::domain::artifact::{ArtifactKind, minutes_path};
 use crate::domain::job::{SetupRequest, TranscriptionRequest, validate_speaker_hint};
 use std::path::Path;
 use std::sync::Arc;
@@ -17,6 +20,7 @@ pub struct Application {
     artifacts: Arc<dyn ArtifactPort>,
     recording: Arc<dyn RecordingPort>,
     settings: Arc<dyn SettingsPort>,
+    refinement: Arc<dyn RefinementPort>,
     jobs: JobRegistry,
     active_recording: tokio::sync::Mutex<Option<Uuid>>,
 }
@@ -28,6 +32,7 @@ impl Application {
         artifacts: Arc<dyn ArtifactPort>,
         recording: Arc<dyn RecordingPort>,
         settings: Arc<dyn SettingsPort>,
+        refinement: Arc<dyn RefinementPort>,
     ) -> Self {
         Self {
             engine,
@@ -35,6 +40,7 @@ impl Application {
             artifacts,
             recording,
             settings,
+            refinement,
             jobs: JobRegistry::default(),
             active_recording: tokio::sync::Mutex::new(None),
         }
@@ -67,6 +73,52 @@ impl Application {
         self.settings
             .save_hugging_face_token((!token.is_empty()).then(|| token.to_owned()))
             .await
+    }
+
+    pub async fn load_assistant_settings(&self) -> Result<AssistantSettings, AppError> {
+        self.settings.load_assistant().await
+    }
+
+    pub async fn save_assistant_settings(
+        &self,
+        settings: AssistantSettings,
+    ) -> Result<(), AppError> {
+        self.settings.save_assistant(settings.trimmed()).await
+    }
+
+    /// Turn a completed transcript into meeting minutes with the configured assistant.
+    pub async fn refine_transcript(&self, target: Uuid) -> Result<RefinementResult, AppError> {
+        let artifacts = self.jobs.artifacts(target)?;
+        let assistant = self.settings.load_assistant().await?.trimmed();
+        let api_key = assistant.api_key.ok_or_else(|| {
+            AppError::new(
+                "ASSISTANT_KEY_MISSING",
+                "설정에서 z.ai 코딩 플랜 토큰을 먼저 저장해 주세요.",
+            )
+        })?;
+        let output = minutes_path(&artifacts.txt);
+        let (job_id, mut cancel) = self.jobs.claim()?;
+        let result = self
+            .refinement
+            .refine(
+                job_id,
+                &mut cancel,
+                RefinementJob {
+                    transcript: &artifacts.txt,
+                    output: &output,
+                    background: assistant.background.as_deref(),
+                    model: assistant.model.as_deref(),
+                    api_key: &api_key,
+                },
+            )
+            .await;
+        self.jobs.finish(job_id)?;
+        let minutes = result?;
+        self.jobs.register_minutes(target, minutes.clone())?;
+        Ok(RefinementResult {
+            job_id,
+            minutes: minutes.to_string_lossy().into_owned(),
+        })
     }
 
     pub async fn transcribe(
@@ -131,8 +183,10 @@ impl Application {
 
     pub fn open_artifact(&self, id: Uuid, kind: ArtifactKind) -> Result<(), AppError> {
         let artifacts = self.jobs.artifacts(id)?;
-        self.artifacts
-            .open_file(artifacts.path_for(kind), &artifacts.output_directory)
+        let path = artifacts.path_for(kind).ok_or_else(|| {
+            AppError::new("ARTIFACT_NOT_FOUND", "아직 만들어진 회의록이 없습니다.")
+        })?;
+        self.artifacts.open_file(path, &artifacts.output_directory)
     }
 
     pub fn reveal_output(&self, id: Uuid) -> Result<(), AppError> {

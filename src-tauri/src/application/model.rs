@@ -1,5 +1,5 @@
 use crate::domain::artifact::Artifacts;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize)]
@@ -24,6 +24,38 @@ pub struct CompletedTranscription {
     pub artifacts: Artifacts,
     pub segments: usize,
     pub filtered: usize,
+}
+
+/// Assistant credentials and the background context sent with every refinement.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssistantSettings {
+    pub api_key: Option<String>,
+    pub model: Option<String>,
+    pub background: Option<String>,
+}
+
+impl AssistantSettings {
+    pub fn trimmed(self) -> Self {
+        Self {
+            api_key: keep_filled(self.api_key),
+            model: keep_filled(self.model),
+            background: keep_filled(self.background),
+        }
+    }
+}
+
+fn keep_filled(value: Option<String>) -> Option<String> {
+    value
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty())
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RefinementResult {
+    pub job_id: Uuid,
+    pub minutes: String,
 }
 
 #[derive(Debug, Serialize)]

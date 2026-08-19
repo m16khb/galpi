@@ -1,6 +1,7 @@
 use crate::application::error::AppError;
 use crate::application::model::{
-    CompletedTranscription, EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus,
+    AssistantSettings, CompletedTranscription, EnvironmentStatus, RecordingFailure,
+    RecordingResult, RecordingStatus,
 };
 use crate::domain::job::{SetupRequest, SpeakerHint};
 use crate::domain::worker::WorkerEvent;
@@ -67,4 +68,25 @@ pub trait RecordingEvents: Send + Sync {
 pub trait SettingsPort: Send + Sync {
     async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError>;
     async fn save_hugging_face_token(&self, token: Option<String>) -> Result<(), AppError>;
+    async fn load_assistant(&self) -> Result<AssistantSettings, AppError>;
+    async fn save_assistant(&self, settings: AssistantSettings) -> Result<(), AppError>;
+}
+
+/// One transcript refinement request handed to the assistant worker.
+pub struct RefinementJob<'a> {
+    pub transcript: &'a Path,
+    pub output: &'a Path,
+    pub background: Option<&'a str>,
+    pub model: Option<&'a str>,
+    pub api_key: &'a str,
+}
+
+#[async_trait]
+pub trait RefinementPort: Send + Sync {
+    async fn refine(
+        &self,
+        job_id: Uuid,
+        cancel: &mut oneshot::Receiver<()>,
+        job: RefinementJob<'_>,
+    ) -> Result<PathBuf, AppError>;
 }

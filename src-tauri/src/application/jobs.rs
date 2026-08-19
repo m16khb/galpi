@@ -1,6 +1,7 @@
 use crate::application::error::AppError;
 use crate::domain::artifact::Artifacts;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tokio::sync::oneshot;
 use uuid::Uuid;
@@ -74,6 +75,16 @@ impl JobRegistry {
             .lock()
             .map_err(|_| AppError::new("STATE_ERROR", "결과 상태 잠금이 손상되었습니다."))?
             .insert(id, artifacts);
+        Ok(())
+    }
+
+    pub fn register_minutes(&self, id: Uuid, minutes: PathBuf) -> Result<(), AppError> {
+        self.artifacts
+            .lock()
+            .map_err(|_| AppError::new("STATE_ERROR", "결과 상태 잠금이 손상되었습니다."))?
+            .get_mut(&id)
+            .ok_or_else(|| AppError::new("ARTIFACT_NOT_FOUND", "완료된 결과를 찾지 못했습니다."))?
+            .minutes = Some(minutes);
         Ok(())
     }
 

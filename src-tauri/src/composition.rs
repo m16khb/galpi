@@ -3,8 +3,8 @@ use crate::adapters::outbound::desktop::DesktopAdapter;
 use crate::adapters::outbound::recording::NativeRecorder;
 use crate::adapters::outbound::settings::LocalSettingsStore;
 use crate::application::ports::{
-    ArtifactPort, EnginePort, JobEvents, RecordingEvents, RecordingPort, SettingsPort,
-    TranscriptionPort,
+    ArtifactPort, EnginePort, JobEvents, RecordingEvents, RecordingPort, RefinementPort,
+    SettingsPort, TranscriptionPort,
 };
 use crate::application::use_cases::Application;
 use std::sync::Arc;
@@ -21,6 +21,7 @@ pub fn run() {
             let desktop = Arc::new(DesktopAdapter::new(app.handle().clone(), job_events));
             let engine: Arc<dyn EnginePort> = desktop.clone();
             let transcription: Arc<dyn TranscriptionPort> = desktop.clone();
+            let refinement: Arc<dyn RefinementPort> = desktop.clone();
             let artifacts: Arc<dyn ArtifactPort> = desktop;
             let recording: Arc<dyn RecordingPort> = Arc::new(NativeRecorder::new(recording_events));
             let settings: Arc<dyn SettingsPort> = Arc::new(LocalSettingsStore::new(app.handle())?);
@@ -30,6 +31,7 @@ pub fn run() {
                 artifacts,
                 recording,
                 settings,
+                refinement,
             ));
             Ok(())
         })
@@ -38,6 +40,9 @@ pub fn run() {
             crate::adapters::inbound::tauri::prepare_environment,
             crate::adapters::inbound::tauri::load_hugging_face_token,
             crate::adapters::inbound::tauri::save_hugging_face_token,
+            crate::adapters::inbound::tauri::load_assistant_settings,
+            crate::adapters::inbound::tauri::save_assistant_settings,
+            crate::adapters::inbound::tauri::refine_transcript,
             crate::adapters::inbound::tauri::start_transcription,
             crate::adapters::inbound::tauri::cancel_job,
             crate::adapters::inbound::tauri::open_artifact,
