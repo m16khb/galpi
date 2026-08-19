@@ -96,6 +96,7 @@ All spacing derives from 4px.
 ### Step Rail
 
 - **Structure**: ordered setup/transcription steps with state label and short explanation.
+- **Onboarding scope**: the engine and model preparation steps, and the preparation panel, appear only while the local environment is not ready; a prepared user sees the transcription step numbered `01`. A preparation run started in the current session keeps them visible until the next job so its completion state stays readable.
 - **States**: pending, current, completed, blocked.
 - **Accessibility**: `aria-current="step"` on the current item; text accompanies every state color.
 - **Motion**: current marker fades and translates no more than 4px; no motion under reduced motion.

@@ -8,7 +8,7 @@ export const appTemplate = `
       <ol class="step-list">
         <li id="step-engine" data-state="current"><span>01</span><div><strong>엔진 준비</strong><small>Python · WhisperX</small></div></li>
         <li id="step-model" data-state="pending"><span>02</span><div><strong>모델 준비</strong><small>전사 · 정렬 · 화자분리</small></div></li>
-        <li id="step-transcribe" data-state="pending"><span>03</span><div><strong>회의 전사</strong><small>오디오에서 결과까지</small></div></li>
+        <li id="step-transcribe" data-state="pending"><span id="step-transcribe-index">03</span><div><strong>회의 전사</strong><small>오디오에서 결과까지</small></div></li>
       </ol>
       <div class="rail-note"><i class="ph ph-shield-check" aria-hidden="true"></i><p>녹음과 전사는 이 Mac 안에서만 처리됩니다. 회의록 가공을 실행할 때만 전사본이 z.ai로 전송됩니다.</p></div>
     </aside>
@@ -62,7 +62,7 @@ export const appTemplate = `
 
         <section id="transcription-panel" class="panel transcription-panel" aria-labelledby="transcription-title">
           <div class="section-heading">
-            <div><span class="section-index">02 / 전사</span><h2 id="transcription-title">새 회의 전사</h2></div>
+            <div><span id="transcription-index" class="section-index">02 / 전사</span><h2 id="transcription-title">새 회의 전사</h2></div>
             <p>참석 인원을 알려주면 겹치는 목소리와 짧은 발화를 더 안정적으로 분리합니다.</p>
           </div>
           <div class="transcription-grid">
@@ -128,7 +128,7 @@ export const appTemplate = `
         </section>
 
         <section id="results-panel" class="panel results-panel" hidden aria-labelledby="results-title">
-          <div class="section-heading"><div><span class="section-index">03 / 완료</span><h2 id="results-title">전사 결과</h2></div><p id="result-summary"></p></div>
+          <div class="section-heading"><div><span id="results-index" class="section-index">03 / 완료</span><h2 id="results-title">전사 결과</h2></div><p id="result-summary"></p></div>
           <div class="artifact-list">
             <div class="artifact-row"><i class="ph ph-subtitles"></i><div><strong>자막 파일</strong><code id="result-srt"></code></div><button type="button" data-action="open-srt">열기</button></div>
             <div class="artifact-row"><i class="ph ph-users-three"></i><div><strong>화자별 텍스트</strong><code id="result-txt"></code></div><button type="button" data-action="open-txt">열기</button></div>

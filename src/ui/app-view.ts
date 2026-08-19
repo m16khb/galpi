@@ -72,6 +72,7 @@ export class AppView {
     this.element("#step-model").dataset["state"] = status.modelsReady ? "complete" : "pending"
     this.element("#step-transcribe").dataset["state"] = ready ? "current" : "pending"
     this.element("#engine-version").textContent = `WhisperX ${status.engineVersion}`
+    this.applyOnboarding()
     this.refreshActions()
   }
 
@@ -103,6 +104,7 @@ export class AppView {
     this.element<HTMLButtonElement>("#setup-cancel-button").hidden =
       !busy || this.jobKind !== "setup"
     this.element("#busy-label").textContent = busyLabel(kind)
+    this.applyOnboarding()
     this.refreshActions()
   }
 
@@ -207,6 +209,18 @@ export class AppView {
     const progress = this.element<HTMLElement>(selector)
     progress.setAttribute("aria-valuenow", String(Math.round(percent)))
     progress.style.setProperty("--progress", `${Math.max(0, Math.min(100, percent))}%`)
+  }
+
+  private applyOnboarding(): void {
+    // 준비가 끝난 사용자에게는 엔진·모델 준비 단계를 감추고 남은 단계 번호를 앞당긴다.
+    // 이번 세션에서 준비를 직접 실행했다면 완료 메시지를 볼 수 있도록 그대로 둔다.
+    const onboarded = this.engineReady && this.jobKind !== "setup"
+    this.element("#setup-panel").hidden = onboarded
+    this.element("#step-engine").hidden = onboarded
+    this.element("#step-model").hidden = onboarded
+    this.element("#step-transcribe-index").textContent = onboarded ? "01" : "03"
+    this.element("#transcription-index").textContent = onboarded ? "01 / 전사" : "02 / 전사"
+    this.element("#results-index").textContent = onboarded ? "02 / 완료" : "03 / 완료"
   }
 
   private refreshActions(): void {
