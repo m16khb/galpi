@@ -17,7 +17,7 @@
     "dev": "cargo tauri dev",
     "build": "cargo tauri build --bundles app --ci && bun run dmg:build",
     "dmg:build": "bun run scripts/build-dmg.ts",
-    "vite:dev": "vite",
+    "vite:dev": "vite --port 1420 --strictPort",
     "vite:build": "tsc --noEmit && vite build",
     "check": "bun run architecture:check && biome lint . && tsc --noEmit",
     "architecture:check": "bun run scripts/check-architecture.ts",
