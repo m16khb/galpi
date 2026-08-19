@@ -21,6 +21,9 @@ pub enum WorkerEvent {
     Prepared {
         engine_version: String,
     },
+    Refined {
+        minutes: String,
+    },
     Error {
         code: String,
         message: String,

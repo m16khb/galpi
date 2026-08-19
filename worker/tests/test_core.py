@@ -12,6 +12,12 @@ from ..galpi_worker.core import (
     validate_speaker_hint,
 )
 from ..galpi_worker.protocol import EventWriter
+from ..galpi_worker.refine import (
+    NO_BACKGROUND,
+    build_messages,
+    extract_minutes,
+    strip_document_fence,
+)
 from ..galpi_worker.runtime import configure_warnings, select_torch_device
 
 
@@ -81,6 +87,67 @@ class HallucinationFilterTests(unittest.TestCase):
     def test_selects_mps_when_apple_gpu_is_available(self) -> None:
         self.assertEqual(select_torch_device(mps_available=True), "mps")
         self.assertEqual(select_torch_device(mps_available=False), "cpu")
+
+
+class RefinementTests(unittest.TestCase):
+    def test_carries_background_into_the_prompt(self) -> None:
+        # Given
+        transcript = "[SPEAKER_00] (0s) 배포 일정을 정합시다."
+        background = "제품: 갈피\n팀: 하빈(팀리더)"
+
+        # When
+        messages = build_messages(transcript, background)
+
+        # Then
+        self.assertEqual(messages[0]["role"], "system")
+        self.assertIn("갈피", messages[1]["content"])
+        self.assertIn("배포 일정을 정합시다", messages[1]["content"])
+
+    def test_marks_missing_background_instead_of_leaving_it_blank(self) -> None:
+        # Given / When
+        messages = build_messages("[SPEAKER_00] (0s) 안녕하세요.", "   ")
+
+        # Then
+        self.assertIn(NO_BACKGROUND, messages[1]["content"])
+
+    def test_rejects_empty_transcript_before_calling_the_assistant(self) -> None:
+        # Given / When / Then
+        with self.assertRaisesRegex(ValueError, "transcript is empty"):
+            _ = build_messages("   \n", "제품: 갈피")
+
+    def test_reads_the_assistant_message_from_a_chat_completion(self) -> None:
+        # Given
+        payload = {
+            "choices": [{"message": {"role": "assistant", "content": "# 회의록\n"}}]
+        }
+
+        # When
+        minutes = extract_minutes(payload)
+
+        # Then
+        self.assertEqual(minutes, "# 회의록")
+
+    def test_rejects_a_response_without_usable_content(self) -> None:
+        # Given
+        payload = {"choices": [{"message": {"role": "assistant", "content": ""}}]}
+
+        # When / Then
+        with self.assertRaisesRegex(RuntimeError, "empty message"):
+            _ = extract_minutes(payload)
+
+    def test_unwraps_a_document_wrapped_in_one_code_fence(self) -> None:
+        # Given
+        document = "```markdown\n# 회의록\n\n## TL;DR\n- 결론\n```"
+
+        # When / Then
+        self.assertEqual(strip_document_fence(document), "# 회의록\n\n## TL;DR\n- 결론")
+
+    def test_keeps_inner_code_fences_of_a_plain_document(self) -> None:
+        # Given
+        document = "# 회의록\n\n```text\n샘플\n```"
+
+        # When / Then
+        self.assertEqual(strip_document_fence(document), document)
 
 
 if __name__ == "__main__":

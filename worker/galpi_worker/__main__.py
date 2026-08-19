@@ -9,6 +9,7 @@ from .core import SpeakerHint
 from .engine import transcribe
 from .preparation import prepare_models
 from .protocol import EventWriter
+from .refine import DEFAULT_MODEL, refine
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -27,6 +28,12 @@ def build_parser() -> argparse.ArgumentParser:
     speaker_group.add_argument(
         "--speaker-range", type=int, nargs=2, metavar=("MIN", "MAX")
     )
+
+    minutes = commands.add_parser("refine")
+    minutes.add_argument("--transcript", type=Path, required=True)
+    minutes.add_argument("--output", type=Path, required=True)
+    minutes.add_argument("--background", type=Path)
+    minutes.add_argument("--model", default=DEFAULT_MODEL)
     return parser
 
 
@@ -37,6 +44,12 @@ def main() -> int:
         with redirect_stdout(sys.stderr):
             if args.command == "prepare":
                 prepare_models(args.manifest, args.engine_bin, events)
+                return 0
+
+            if args.command == "refine":
+                refine(
+                    args.transcript, args.output, args.background, args.model, events
+                )
                 return 0
 
             hint = SpeakerHint(mode="auto")
