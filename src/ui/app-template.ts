@@ -10,7 +10,7 @@ export const appTemplate = `
         <li id="step-model" data-state="pending"><span>02</span><div><strong>모델 준비</strong><small>전사 · 정렬 · 화자분리</small></div></li>
         <li id="step-transcribe" data-state="pending"><span>03</span><div><strong>회의 전사</strong><small>오디오에서 결과까지</small></div></li>
       </ol>
-      <div class="rail-note"><i class="ph ph-shield-check" aria-hidden="true"></i><p>음성과 결과는 이 Mac 안에서만 처리됩니다.</p></div>
+      <div class="rail-note"><i class="ph ph-shield-check" aria-hidden="true"></i><p>녹음과 전사는 이 Mac 안에서만 처리됩니다. 회의록 가공을 실행할 때만 전사본이 z.ai로 전송됩니다.</p></div>
     </aside>
 
     <main class="workspace">
@@ -113,7 +113,7 @@ export const appTemplate = `
         <section id="job-panel" class="panel job-panel" hidden aria-labelledby="job-title">
           <div class="job-header"><div><span id="busy-label" class="section-index"></span><h2 id="job-title">작업 진행</h2></div><strong id="job-percent">0%</strong></div>
           <div id="job-progress" class="wave-progress" role="progressbar" aria-label="현재 단계 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
-          <ol class="phase-list">
+          <ol id="job-phase-list" class="phase-list">
             <li data-phase="transcribing" data-state="pending">전사</li>
             <li data-phase="aligning" data-state="pending">정렬</li>
             <li data-phase="diarizing" data-state="pending">화자분리</li>
@@ -133,11 +133,15 @@ export const appTemplate = `
             <div class="artifact-row"><i class="ph ph-subtitles"></i><div><strong>자막 파일</strong><code id="result-srt"></code></div><button type="button" data-action="open-srt">열기</button></div>
             <div class="artifact-row"><i class="ph ph-users-three"></i><div><strong>화자별 텍스트</strong><code id="result-txt"></code></div><button type="button" data-action="open-txt">열기</button></div>
             <div class="artifact-row"><i class="ph ph-database"></i><div><strong>정렬 체크포인트</strong><code id="result-checkpoint"></code></div><button type="button" data-action="open-checkpoint">열기</button></div>
+            <div id="result-minutes-row" class="artifact-row" hidden><i class="ph ph-note-pencil"></i><div><strong>회의록</strong><code id="result-minutes"></code></div><button type="button" data-action="open-minutes">열기</button></div>
           </div>
-          <div class="panel-actions"><button class="secondary-button" type="button" data-action="reveal-output"><i class="ph ph-folder-open"></i>Finder에서 보기</button></div>
+          <div class="panel-actions">
+            <button id="refine-button" class="primary-button" type="button" data-action="refine" disabled><i class="ph ph-sparkle"></i><span>회의록 만들기</span></button>
+            <button class="secondary-button" type="button" data-action="reveal-output"><i class="ph ph-folder-open"></i>Finder에서 보기</button>
+          </div>
         </section>
       </div>
-      <footer class="app-footer"><span>Galpi 0.1</span><span>모든 추론은 로컬에서 실행됩니다.</span></footer>
+      <footer class="app-footer"><span>Galpi 0.1</span><span>전사는 로컬에서, 회의록 가공은 z.ai에서 실행됩니다.</span></footer>
     </main>
 
     <div id="settings-dialog" class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
@@ -173,6 +177,29 @@ export const appTemplate = `
             </div>
           </div>
           <button class="text-button" type="button" data-action="model-access">모델 이용 조건 페이지 열기 <i class="ph ph-arrow-up-right"></i></button>
+        </section>
+        <section class="settings-section" aria-labelledby="assistant-settings-title">
+          <div class="settings-section-heading">
+            <div><strong id="assistant-settings-title">회의록 가공</strong><span id="assistant-configured-state">토큰 없음</span></div>
+            <p>z.ai 코딩 플랜 토큰으로 전사본을 회의록으로 가공합니다. 이 단계에서만 전사본이 z.ai로 전송됩니다.</p>
+          </div>
+          <label class="sr-only" for="settings-assistant-key">z.ai 코딩 플랜 토큰</label>
+          <div class="secret-field">
+            <input id="settings-assistant-key" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="z.ai 코딩 플랜 API Key" aria-describedby="settings-assistant-help" data-visible="false" readonly />
+            <button id="toggle-assistant-visibility" class="secret-visibility-button" type="button" data-action="toggle-assistant-visibility" aria-label="토큰 표시"><i class="ph ph-eye"></i></button>
+          </div>
+          <p id="settings-assistant-help">z.ai 계정의 Coding Plan에서 발급한 API Key를 사용합니다.</p>
+          <label class="settings-field-label" for="settings-assistant-model">가공 모델</label>
+          <select id="settings-assistant-model" class="settings-select" aria-describedby="settings-model-help">
+            <option value="glm-5.3">GLM-5.3 · 기본값</option>
+            <option value="glm-5.2">GLM-5.2 · 이전 플래그십</option>
+            <option value="glm-5-turbo">GLM-5-Turbo · 빠른 응답</option>
+            <option value="glm-4.6">GLM-4.6 · 이전 세대</option>
+          </select>
+          <p id="settings-model-help">긴 회의는 상위 모델이, 짧은 회의는 Turbo가 유리합니다. 코딩 플랜 사용량은 모델별로 다르게 차감됩니다.</p>
+          <label class="settings-field-label" for="settings-assistant-background">사전 정보</label>
+          <textarea id="settings-assistant-background" class="settings-textarea" rows="8" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="settings-background-help" placeholder="제품/서비스: 갈피 (회의 녹음·전사 데스크톱 앱)&#10;팀: 하빈(팀리더), 지우(백엔드)&#10;별칭: 프로님 = 하빈&#10;도메인 용어: 화자분리, 정렬 체크포인트"></textarea>
+          <p id="settings-background-help">참석자·제품명·약어·도메인 용어를 적어 두면 잘못 들린 단어와 화자를 보정합니다. 이 Mac에만 저장되고 회의록을 만들 때 함께 전송됩니다.</p>
         </section>
         <p id="settings-message" class="settings-message" role="status" aria-live="polite"></p>
         <div class="settings-actions">

@@ -3,21 +3,27 @@ import type { EnvironmentStatus, TranscriptionResult } from "../domain/job"
 import type { SpeakerForm, SpeakerMode } from "../domain/speaker"
 import type { RecordingViewState } from "../application/recording-machine"
 import { appTemplate } from "./app-template"
+import { AssistantSettingsView } from "./assistant-settings"
 import { bindTokenGuide } from "./token-guide"
 import { TokenSettingsView } from "./token-settings"
+
+export type BusyKind = "setup" | "transcription" | "refinement" | null
 
 export class AppView {
   readonly root: HTMLElement
   readonly tokenSettings: TokenSettingsView
+  readonly assistantSettings: AssistantSettingsView
   private engineReady = false
   private jobBusy = false
-  private jobKind: "setup" | "transcription" | null = null
+  private jobKind: BusyKind = null
   private recordingActive = false
+  private hasResult = false
 
   constructor(root: HTMLElement) {
     this.root = root
     this.root.innerHTML = appTemplate
     this.tokenSettings = new TokenSettingsView(root)
+    this.assistantSettings = new AssistantSettingsView(root)
     bindTokenGuide(this.root)
   }
 
@@ -83,20 +89,20 @@ export class AppView {
     this.element("#range-fields").hidden = mode !== "range"
   }
 
-  setBusy(kind: "setup" | "transcription" | null): void {
+  setBusy(kind: BusyKind): void {
     const busy = kind !== null
     this.jobBusy = busy
     if (kind !== null) {
       this.jobKind = kind
       this.element("#setup-progress-panel").hidden = kind !== "setup"
-      this.element("#job-panel").hidden = kind !== "transcription"
+      this.element("#job-panel").hidden = kind === "setup"
+      this.element("#job-phase-list").hidden = kind === "refinement"
     }
     this.element<HTMLButtonElement>("#cancel-button").hidden =
-      !busy || this.jobKind !== "transcription"
+      !busy || this.jobKind === "setup"
     this.element<HTMLButtonElement>("#setup-cancel-button").hidden =
       !busy || this.jobKind !== "setup"
-    this.element("#busy-label").textContent =
-      kind === "setup" ? "로컬 환경 준비 중" : kind === "transcription" ? "회의 전사 중" : ""
+    this.element("#busy-label").textContent = busyLabel(kind)
     this.refreshActions()
   }
 
@@ -125,8 +131,7 @@ export class AppView {
   renderJob(state: JobViewState): void {
     this.element("#setup-progress-panel").hidden =
       state.status === "idle" || this.jobKind !== "setup"
-    this.element("#job-panel").hidden =
-      state.status === "idle" || this.jobKind !== "transcription"
+    this.element("#job-panel").hidden = state.status === "idle" || this.jobKind === "setup"
     this.element("#job-message").textContent = state.message
     this.element("#setup-job-message").textContent = state.message
     this.element("#job-percent").textContent = `${Math.round(state.percent)}%`
@@ -154,7 +159,16 @@ export class AppView {
     this.path("#result-srt", result.srt)
     this.path("#result-txt", result.txt)
     this.path("#result-checkpoint", result.checkpoint)
+    this.element("#result-minutes-row").hidden = true
     this.element("#step-transcribe").dataset["state"] = "complete"
+    this.hasResult = true
+    this.refreshActions()
+  }
+
+  renderMinutes(minutes: string): void {
+    this.element("#results-panel").hidden = false
+    this.element("#result-minutes-row").hidden = false
+    this.path("#result-minutes", minutes)
   }
 
   showError(message: string): void {
@@ -205,7 +219,15 @@ export class AppView {
       this.jobBusy || this.recordingActive
     this.element<HTMLButtonElement>("#output-button").disabled =
       this.jobBusy || this.recordingActive
+    this.element<HTMLButtonElement>("#refine-button").disabled =
+      !this.hasResult || this.jobBusy || this.recordingActive
   }
+}
+
+function busyLabel(kind: BusyKind): string {
+  if (kind === "setup") return "로컬 환경 준비 중"
+  if (kind === "transcription") return "회의 전사 중"
+  return kind === "refinement" ? "회의록 만드는 중" : ""
 }
 
 const phaseOrder = [
@@ -214,6 +236,7 @@ const phaseOrder = [
   "transcribing",
   "aligning",
   "diarizing",
+  "refining",
   "writing",
   "ready",
 ]

@@ -17,6 +17,17 @@ export interface TranscriptionResult {
   readonly filtered: number
 }
 
+export interface AssistantSettings {
+  readonly apiKey: string | null
+  readonly model: string | null
+  readonly background: string | null
+}
+
+export interface RefinementResult {
+  readonly jobId: string
+  readonly minutes: string
+}
+
 export type JobEvent =
   | {
       readonly jobId: string
@@ -44,6 +55,11 @@ export type JobEvent =
       readonly jobId: string
       readonly type: "prepared"
       readonly engineVersion: string
+    }
+  | {
+      readonly jobId: string
+      readonly type: "refined"
+      readonly minutes: string
     }
   | {
       readonly jobId: string

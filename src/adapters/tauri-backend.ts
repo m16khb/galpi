@@ -4,7 +4,13 @@ import { open } from "@tauri-apps/plugin-dialog"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { z } from "zod"
 
-import type { EnvironmentStatus, JobEvent, TranscriptionResult } from "../domain/job"
+import type {
+  AssistantSettings,
+  EnvironmentStatus,
+  JobEvent,
+  RefinementResult,
+  TranscriptionResult,
+} from "../domain/job"
 import type { SpeakerHint } from "../domain/speaker"
 
 const environmentSchema = z.object({
@@ -31,6 +37,17 @@ const setupResultSchema = z.object({
   status: environmentSchema,
 })
 const huggingFaceTokenSchema = z.string().nullable()
+
+const assistantSettingsSchema = z.object({
+  apiKey: z.string().nullable(),
+  model: z.string().nullable(),
+  background: z.string().nullable(),
+})
+
+const refinementResultSchema = z.object({
+  jobId: z.string(),
+  minutes: z.string(),
+})
 
 const recordingStatusSchema = z.object({
   recordingId: z.string(),
@@ -80,6 +97,11 @@ const rawJobEventSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     jobId: z.string(),
+    type: z.literal("refined"),
+    minutes: z.string(),
+  }),
+  z.object({
+    jobId: z.string(),
     type: z.literal("error"),
     code: z.string(),
     message: z.string(),
@@ -91,6 +113,8 @@ export interface SetupResult {
   readonly status: EnvironmentStatus
 }
 
+export type ArtifactKind = "srt" | "speaker_text" | "checkpoint" | "minutes"
+
 export type RecordingStatus = z.infer<typeof recordingStatusSchema>
 export type RecordingResult = z.infer<typeof recordingResultSchema>
 export type RecordingFailure = z.infer<typeof recordingFailureSchema>
@@ -100,6 +124,9 @@ export interface BackendPort {
   prepare(): Promise<SetupResult>
   loadHuggingFaceToken(): Promise<string | null>
   saveHuggingFaceToken(token: string): Promise<void>
+  loadAssistantSettings(): Promise<AssistantSettings>
+  saveAssistantSettings(settings: AssistantSettings): Promise<void>
+  refineTranscript(jobId: string): Promise<RefinementResult>
   transcribe(request: {
     readonly jobId: string
     readonly inputPath: string
@@ -107,7 +134,7 @@ export interface BackendPort {
     readonly speakerHint: SpeakerHint
   }): Promise<TranscriptionResult>
   cancel(jobId: string): Promise<void>
-  openArtifact(jobId: string, kind: "srt" | "speaker_text" | "checkpoint"): Promise<void>
+  openArtifact(jobId: string, kind: ArtifactKind): Promise<void>
   revealOutput(jobId: string): Promise<void>
   startRecording(outputRoot: string): Promise<RecordingStatus>
   stopRecording(recordingId: string): Promise<RecordingResult>
@@ -140,6 +167,18 @@ export class TauriBackend implements BackendPort {
     await invoke("save_hugging_face_token", { token })
   }
 
+  async loadAssistantSettings(): Promise<AssistantSettings> {
+    return assistantSettingsSchema.parse(await invoke<unknown>("load_assistant_settings"))
+  }
+
+  async saveAssistantSettings(settings: AssistantSettings): Promise<void> {
+    await invoke("save_assistant_settings", { settings })
+  }
+
+  async refineTranscript(jobId: string): Promise<RefinementResult> {
+    return refinementResultSchema.parse(await invoke<unknown>("refine_transcript", { jobId }))
+  }
+
   async transcribe(request: {
     readonly jobId: string
     readonly inputPath: string
@@ -155,10 +194,7 @@ export class TauriBackend implements BackendPort {
     await invoke("cancel_job", { jobId })
   }
 
-  async openArtifact(
-    jobId: string,
-    kind: "srt" | "speaker_text" | "checkpoint",
-  ): Promise<void> {
+  async openArtifact(jobId: string, kind: ArtifactKind): Promise<void> {
     await invoke("open_artifact", { jobId, kind })
   }
 

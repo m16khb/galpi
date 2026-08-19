@@ -7,7 +7,8 @@ import {
   reduceJobEvent,
   type JobViewState,
 } from "../application/job-machine"
-import { errorMessage, type BackendPort } from "../adapters/tauri-backend"
+import { errorMessage, type ArtifactKind, type BackendPort } from "../adapters/tauri-backend"
+import type { TranscriptionResult } from "../domain/job"
 import { buildSpeakerHint, type SpeakerHint } from "../domain/speaker"
 import type { AppView } from "./app-view"
 import { RecordingController } from "./recording-controller"
@@ -18,6 +19,7 @@ export class AppController {
   private audioPath: string | null = null
   private outputRoot: string | null = null
   private job: JobViewState = initialJobState
+  private lastResult: TranscriptionResult | null = null
   private readonly recording: RecordingController
   private unlisten: UnlistenFn | null = null
   private unlistenRecording: UnlistenFn | null = null
@@ -49,6 +51,9 @@ export class AppController {
       this.view.tokenSettings.setConfigured(
         (await this.backend.loadHuggingFaceToken()) !== null,
       )
+      this.view.assistantSettings.setConfigured(
+        (await this.backend.loadAssistantSettings()).apiKey !== null,
+      )
     } catch (error) {
       this.view.showError(errorMessage(error))
     }
@@ -69,8 +74,13 @@ export class AppController {
     this.view.on("toggle-token-visibility", () =>
       this.view.tokenSettings.toggleVisibility(),
     )
-    this.view.on("save-token", () => void this.saveToken())
+    this.view.on("toggle-assistant-visibility", () =>
+      this.view.assistantSettings.toggleVisibility(),
+    )
+    this.view.on("save-token", () => void this.saveSettings())
     this.view.on("clear-token", () => void this.clearToken())
+    this.view.on("refine", () => void this.refine())
+    this.view.on("open-minutes", () => void this.openArtifact("minutes"))
     this.view.on("model-access", () => void this.backend.openModelAccessPage())
     this.view.on("choose-audio", () => void this.chooseAudio())
     this.view.on("choose-output", () => void this.chooseOutput())
@@ -109,31 +119,41 @@ export class AppController {
 
   private async openSettings(): Promise<void> {
     const settings = this.view.tokenSettings
+    const assistant = this.view.assistantSettings
     settings.show()
     settings.setBusy(true)
-    settings.showMessage("저장된 토큰을 불러오는 중입니다.")
+    assistant.setBusy(true)
+    settings.showMessage("저장된 설정을 불러오는 중입니다.")
     try {
       settings.setToken(await this.backend.loadHuggingFaceToken())
+      assistant.setSettings(await this.backend.loadAssistantSettings())
       settings.showMessage("")
     } catch (error) {
       settings.showMessage(errorMessage(error), true)
     } finally {
       settings.setBusy(false)
+      assistant.setBusy(false)
     }
   }
 
-  private async saveToken(): Promise<void> {
+  private async saveSettings(): Promise<void> {
     const settings = this.view.tokenSettings
+    const assistant = this.view.assistantSettings
     const token = settings.token().trim()
     settings.setBusy(true)
+    assistant.setBusy(true)
     try {
       await this.backend.saveHuggingFaceToken(token)
       settings.setToken(token.length > 0 ? token : null)
-      settings.showMessage(token.length > 0 ? "토큰을 저장했습니다." : "토큰을 지웠습니다.")
+      const saved = assistant.settings()
+      await this.backend.saveAssistantSettings(saved)
+      assistant.setSettings(saved)
+      settings.showMessage("설정을 저장했습니다.")
     } catch (error) {
       settings.showMessage(errorMessage(error), true)
     } finally {
       settings.setBusy(false)
+      assistant.setBusy(false)
     }
   }
 
@@ -194,6 +214,7 @@ export class AppController {
         outputRoot: this.outputRoot,
         speakerHint,
       })
+      this.lastResult = result
       this.job = completeJob(this.job, result)
       this.view.renderJob(this.job)
       this.view.renderResult(result)
@@ -218,8 +239,34 @@ export class AppController {
     }
   }
 
-  private async openArtifact(kind: "srt" | "speaker_text" | "checkpoint"): Promise<void> {
-    const jobId = this.job.result?.jobId
+  private async refine(): Promise<void> {
+    const result = this.lastResult
+    if (result === null) {
+      this.view.showError("먼저 전사를 완료해 주세요.")
+      return
+    }
+    this.begin("refinement", "저장한 사전 정보로 회의록을 만듭니다.")
+    try {
+      const refined = await this.backend.refineTranscript(result.jobId)
+      this.job = {
+        ...this.job,
+        status: "completed",
+        jobId: refined.jobId,
+        phase: "writing",
+        percent: 100,
+        message: "회의록을 저장했습니다.",
+      }
+      this.view.renderJob(this.job)
+      this.view.renderMinutes(refined.minutes)
+    } catch (error) {
+      this.handleFailure(error)
+    } finally {
+      this.view.setBusy(null)
+    }
+  }
+
+  private async openArtifact(kind: ArtifactKind): Promise<void> {
+    const jobId = this.lastResult?.jobId
     if (jobId === undefined) return
     try {
       await this.backend.openArtifact(jobId, kind)
@@ -229,7 +276,7 @@ export class AppController {
   }
 
   private async revealOutput(): Promise<void> {
-    const jobId = this.job.result?.jobId
+    const jobId = this.lastResult?.jobId
     if (jobId === undefined) return
     try {
       await this.backend.revealOutput(jobId)
@@ -239,7 +286,7 @@ export class AppController {
   }
 
   private begin(
-    kind: "setup" | "transcription",
+    kind: "setup" | "transcription" | "refinement",
     message: string,
     jobId: string | null = null,
   ): void {

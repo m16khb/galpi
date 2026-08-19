@@ -3,6 +3,27 @@ import { describe, expect, test } from "bun:test"
 import { beginJob, initialJobState, reduceJobEvent } from "./job-machine"
 
 describe("reduceJobEvent", () => {
+  test("completes the job when refined meeting minutes are written", () => {
+    // Given
+    const running = beginJob("회의록을 만듭니다.")
+
+    // When
+    const state = reduceJobEvent(running, {
+      jobId: "job-2",
+      type: "refined",
+      minutes: "/tmp/out/meeting_회의록.md",
+    })
+
+    // Then
+    expect(state).toMatchObject({
+      status: "completed",
+      jobId: "job-2",
+      phase: "writing",
+      percent: 100,
+      message: "회의록을 저장했습니다.",
+    })
+  })
+
   test("advances the active phase", () => {
     const state = reduceJobEvent(initialJobState, {
       jobId: "job-1",
