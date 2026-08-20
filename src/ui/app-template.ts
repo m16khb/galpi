@@ -159,6 +159,7 @@ export const appTemplate = `
           <div><span class="eyebrow">APP SETTINGS</span><h2 id="settings-title">설정</h2></div>
           <button class="settings-close-button" type="button" data-action="close-settings" aria-label="설정 닫기"><i class="ph ph-x"></i></button>
         </header>
+        <div class="settings-body">
         <section class="settings-section" aria-labelledby="token-settings-title">
           <div class="settings-section-heading">
             <div><strong id="token-settings-title">Hugging Face 토큰</strong><span>선택</span></div>
@@ -223,6 +224,7 @@ export const appTemplate = `
         <div class="settings-actions">
           <button class="secondary-button danger" type="button" data-action="clear-token">저장된 토큰 지우기</button>
           <button class="primary-button" type="button" data-action="save-token">설정 저장</button>
+        </div>
         </div>
       </div>
     </div>
