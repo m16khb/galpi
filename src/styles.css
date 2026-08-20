@@ -587,6 +587,34 @@ summary:focus-visible {
   border-radius: 50%;
 }
 
+.augment-hint {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.augment-hint i {
+  flex: none;
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+.augment-hint p {
+  margin: 0;
+}
+
+.augment-panel .panel-actions {
+  margin-top: 14px;
+}
+
 .settings-section {
   margin-top: 24px;
   padding: 20px;

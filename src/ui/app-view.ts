@@ -24,6 +24,8 @@ export class AppView {
   private jobKind: BusyKind = null
   private recordingActive = false
   private hasResult = false
+  private minutesReady = false
+  private assistantKeyReady = false
 
   constructor(root: HTMLElement) {
     this.root = root
@@ -93,11 +95,16 @@ export class AppView {
     this.element<HTMLButtonElement>("#prepare-button").textContent = ready
       ? "준비 상태 다시 확인"
       : "로컬 엔진 준비"
-    this.element("#step-engine").dataset["state"] = ready ? "complete" : "current"
-    this.element("#step-model").dataset["state"] = status.modelsReady ? "complete" : "pending"
-    this.element("#step-transcribe").dataset["state"] = ready ? "current" : "pending"
     this.element("#engine-version").textContent = `WhisperX ${status.engineVersion}`
     this.applyOnboarding()
+    this.refreshActions()
+  }
+
+  /** Reflect whether an assistant key is saved; the augment stage depends on it. */
+  setAssistantKeyReady(ready: boolean): void {
+    this.assistantKeyReady = ready
+    this.element("#augment-key-hint").hidden = ready
+    this.refreshAugment()
     this.refreshActions()
   }
 
@@ -131,7 +138,6 @@ export class AppView {
     this.applyOnboarding()
     this.refreshActions()
   }
-
   setRecording(state: RecordingViewState): void {
     this.recordingActive =
       state.status === "starting" || state.status === "recording" || state.status === "stopping"
@@ -158,6 +164,7 @@ export class AppView {
     this.element("#setup-progress-panel").hidden =
       state.status === "idle" || this.jobKind !== "setup"
     this.element("#job-panel").hidden = state.status === "idle" || this.jobKind === "setup"
+    this.refreshStages()
     this.element("#job-message").textContent = state.message
     this.element("#setup-job-message").textContent = state.message
     this.element("#job-percent").textContent = `${Math.round(state.percent)}%`
@@ -186,15 +193,19 @@ export class AppView {
     this.path("#result-txt", result.txt)
     this.path("#result-checkpoint", result.checkpoint)
     this.element("#result-minutes-row").hidden = true
-    this.element("#step-transcribe").dataset["state"] = "complete"
+    this.element("#augment-panel").hidden = false
+    this.element("#augment-waiting").hidden = true
     this.hasResult = true
+    this.refreshStages()
     this.refreshActions()
   }
 
   renderMinutes(minutes: string): void {
-    this.element("#results-panel").hidden = false
+    this.element("#augment-panel").hidden = false
     this.element("#result-minutes-row").hidden = false
     this.path("#result-minutes", minutes)
+    this.minutesReady = true
+    this.refreshStages()
   }
 
   showError(message: string): void {
@@ -236,15 +247,32 @@ export class AppView {
   }
 
   private applyOnboarding(): void {
-    // 준비가 끝난 사용자에게는 엔진·모델 준비 단계를 감추고 남은 단계 번호를 앞당긴다.
-    // 이번 세션에서 준비를 직접 실행했다면 완료 메시지를 볼 수 있도록 그대로 둔다.
+    // 준비가 끝난 사용자에게는 엔진·모델 준비 패널을 감춘다. 이번 세션에서
+    // 준비를 직접 실행했다면 완료 메시지를 볼 수 있도록 그대로 둔다.
     const onboarded = this.engineReady && this.jobKind !== "setup"
     this.element("#setup-panel").hidden = onboarded
-    this.element("#step-engine").hidden = onboarded
-    this.element("#step-model").hidden = onboarded
-    this.element("#step-transcribe-index").textContent = onboarded ? "01" : "03"
-    this.element("#transcription-index").textContent = onboarded ? "01 / 전사" : "02 / 전사"
-    this.element("#results-index").textContent = onboarded ? "02 / 완료" : "03 / 완료"
+    this.refreshStages()
+    this.refreshAugment()
+  }
+
+  /** The rail mirrors the three user stages; engine setup is a pre-gate, not a stage. */
+  private refreshStages(): void {
+    const busyTranscribing = this.jobBusy && this.jobKind === "transcription"
+    const transcribing = busyTranscribing || this.recordingActive
+    this.element("#step-transcribe").dataset["state"] = this.hasResult
+      ? "complete"
+      : transcribing || this.engineReady
+        ? "current"
+        : "pending"
+    this.element("#step-results").dataset["state"] = this.hasResult
+      ? "current"
+      : "pending"
+    this.element("#step-augment").dataset["state"] = this.minutesReady ? "complete" : "pending"
+  }
+
+  private refreshAugment(): void {
+    this.element("#augment-waiting").hidden = this.hasResult
+    this.refreshStages()
   }
 
   private refreshActions(): void {
@@ -259,7 +287,7 @@ export class AppView {
     this.element<HTMLButtonElement>("#output-button").disabled =
       this.jobBusy || this.recordingActive
     this.element<HTMLButtonElement>("#refine-button").disabled =
-      !this.hasResult || this.jobBusy || this.recordingActive
+      !this.hasResult || !this.assistantKeyReady || this.jobBusy || this.recordingActive
   }
 }
 

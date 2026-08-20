@@ -51,6 +51,7 @@ export class AppController {
       this.view.tokenSettings.setConfigured((await this.backend.loadHuggingFaceToken()) !== null)
       const assistant = await this.backend.loadAssistantSettings()
       this.view.assistantSettings.setConfigured(assistant.apiKey !== null)
+      this.view.setAssistantKeyReady(assistant.apiKey !== null)
       this.view.participantSettings.setRoster(assistant.participants)
       this.view.glossarySettings.setEntries(assistant.glossary)
       this.view.attendees.setRoster(assistant.participants)
@@ -129,6 +130,7 @@ export class AppController {
       settings.setToken(await this.backend.loadHuggingFaceToken())
       const loaded = await this.backend.loadAssistantSettings()
       assistant.setSettings(loaded)
+      this.view.setAssistantKeyReady(loaded.apiKey !== null)
       this.view.participantSettings.setRoster(loaded.participants)
       this.view.glossarySettings.setEntries(loaded.glossary)
       settings.showMessage("")
@@ -156,6 +158,7 @@ export class AppController {
       }
       await this.backend.saveAssistantSettings(saved)
       assistant.setSettings(saved)
+      this.view.setAssistantKeyReady(saved.apiKey !== null)
       this.view.participantSettings.setRoster(saved.participants)
       this.view.glossarySettings.setEntries(saved.glossary)
       this.view.attendees.setRoster(saved.participants)

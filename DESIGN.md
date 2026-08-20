@@ -95,8 +95,8 @@ All spacing derives from 4px.
 
 ### Step Rail
 
-- **Structure**: ordered setup/transcription steps with state label and short explanation.
-- **Onboarding scope**: the engine and model preparation steps, and the preparation panel, appear only while the local environment is not ready; a prepared user sees the transcription step numbered `01`. A preparation run started in the current session keeps them visible until the next job so its completion state stays readable.
+- **Structure**: three user stages — `01 회의 전사`, `02 전사 결과`, `03 전사 결과 AI 증강` — each with a state label and short explanation. Engine and model preparation are a pre-gate panel (`00 / 준비`), not rail stages; they disappear once the local environment is ready.
+- **Stage mapping**: `01` completes when transcription artifacts render; `02` becomes current with the results panel; `03` completes when augmented minutes render. The augment stage hint links to Settings when no z.ai key is saved and otherwise waits for a transcription.
 - **States**: pending, current, completed, blocked.
 - **Accessibility**: `aria-current="step"` on the current item; text accompanies every state color.
 - **Motion**: current marker fades and translates no more than 4px; no motion under reduced motion.

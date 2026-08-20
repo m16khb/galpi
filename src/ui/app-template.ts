@@ -6,11 +6,11 @@ export const appTemplate = `
         <div><strong>갈피</strong><span>LOCAL TRANSCRIPTION</span></div>
       </div>
       <ol class="step-list">
-        <li id="step-engine" data-state="current"><span>01</span><div><strong>엔진 준비</strong><small>Python · WhisperX</small></div></li>
-        <li id="step-model" data-state="pending"><span>02</span><div><strong>모델 준비</strong><small>전사 · 정렬 · 화자분리</small></div></li>
-        <li id="step-transcribe" data-state="pending"><span id="step-transcribe-index">03</span><div><strong>회의 전사</strong><small>오디오에서 결과까지</small></div></li>
+        <li id="step-transcribe" data-state="current"><span>01</span><div><strong>회의 전사</strong><small>오디오에서 결과까지</small></div></li>
+        <li id="step-results" data-state="pending"><span>02</span><div><strong>전사 결과</strong><small>자막 · 화자별 텍스트</small></div></li>
+        <li id="step-augment" data-state="pending"><span>03</span><div><strong>전사 결과 AI 증강</strong><small>z.ai 회의록 가공</small></div></li>
       </ol>
-      <div class="rail-note"><i class="ph ph-shield-check" aria-hidden="true"></i><p>녹음과 전사는 이 Mac 안에서만 처리됩니다. 회의록 가공을 실행할 때만 전사본이 z.ai로 전송됩니다.</p></div>
+      <div class="rail-note"><i class="ph ph-shield-check" aria-hidden="true"></i><p>녹음과 전사는 이 Mac 안에서만 처리됩니다. AI 증강을 실행할 때만 전사본이 z.ai로 전송됩니다.</p></div>
     </aside>
 
     <main class="workspace">
@@ -25,7 +25,7 @@ export const appTemplate = `
       <div class="workspace-body">
         <section id="setup-panel" class="panel setup-panel" aria-labelledby="setup-title">
           <div class="section-heading">
-            <div><span class="section-index">01 / 준비</span><h2 id="setup-title">로컬 AI 환경</h2></div>
+            <div><span class="section-index">00 / 준비</span><h2 id="setup-title">로컬 AI 환경</h2></div>
             <p>Galpi가 앱 전용 Python과 WhisperX를 설치하고 필요한 모델을 한 번에 준비합니다.</p>
           </div>
           <div class="setup-grid">
@@ -62,7 +62,7 @@ export const appTemplate = `
 
         <section id="transcription-panel" class="panel transcription-panel" aria-labelledby="transcription-title">
           <div class="section-heading">
-            <div><span id="transcription-index" class="section-index">02 / 전사</span><h2 id="transcription-title">새 회의 전사</h2></div>
+            <div><span id="transcription-index" class="section-index">01 / 전사</span><h2 id="transcription-title">새 회의 전사</h2></div>
             <p>참석 인원을 알려주면 겹치는 목소리와 짧은 발화를 더 안정적으로 분리합니다.</p>
           </div>
           <div class="transcription-grid">
@@ -137,20 +137,37 @@ export const appTemplate = `
         </section>
 
         <section id="results-panel" class="panel results-panel" hidden aria-labelledby="results-title">
-          <div class="section-heading"><div><span id="results-index" class="section-index">03 / 완료</span><h2 id="results-title">전사 결과</h2></div><p id="result-summary"></p></div>
+          <div class="section-heading"><div><span id="results-index" class="section-index">02 / 전사 결과</span><h2 id="results-title">전사 결과</h2></div><p id="result-summary"></p></div>
           <div class="artifact-list">
             <div class="artifact-row"><i class="ph ph-subtitles"></i><div><strong>자막 파일</strong><code id="result-srt"></code></div><button type="button" data-action="open-srt">열기</button></div>
             <div class="artifact-row"><i class="ph ph-users-three"></i><div><strong>화자별 텍스트</strong><code id="result-txt"></code></div><button type="button" data-action="open-txt">열기</button></div>
             <div class="artifact-row"><i class="ph ph-database"></i><div><strong>정렬 체크포인트</strong><code id="result-checkpoint"></code></div><button type="button" data-action="open-checkpoint">열기</button></div>
-            <div id="result-minutes-row" class="artifact-row" hidden><i class="ph ph-note-pencil"></i><div><strong>회의록</strong><code id="result-minutes"></code></div><button type="button" data-action="open-minutes">열기</button></div>
           </div>
           <div class="panel-actions">
-            <button id="refine-button" class="primary-button" type="button" data-action="refine" disabled><i class="ph ph-sparkle"></i><span>회의록 만들기</span></button>
             <button class="secondary-button" type="button" data-action="reveal-output"><i class="ph ph-folder-open"></i>Finder에서 보기</button>
           </div>
         </section>
+
+        <section id="augment-panel" class="panel augment-panel" aria-labelledby="augment-title">
+          <div class="section-heading">
+            <div><span class="section-index">03 / AI 증강</span><h2 id="augment-title">전사 결과 AI 증강</h2></div>
+            <p>등록한 z.ai 코딩 플랜 토큰으로 전사 결과를 결정·실행·추적 가능한 회의록으로 증강합니다.</p>
+          </div>
+          <div id="augment-key-hint" class="augment-hint" hidden>
+            <i class="ph ph-key" aria-hidden="true"></i>
+            <p>AI 증강에는 z.ai 코딩 플랜 API 키가 필요합니다. <button class="text-button" type="button" data-action="open-settings">설정에서 등록</button></p>
+          </div>
+          <p id="augment-waiting" class="augment-hint"><i class="ph ph-hourglass" aria-hidden="true"></i>전사가 끝나면 이 단계에서 회의록을 증강할 수 있습니다.</p>
+          <div class="artifact-list">
+            <div id="result-minutes-row" class="artifact-row" hidden><i class="ph ph-note-pencil"></i><div><strong>증강 회의록</strong><code id="result-minutes"></code></div><button type="button" data-action="open-minutes">열기</button></div>
+          </div>
+          <div class="panel-actions">
+            <button id="refine-button" class="primary-button" type="button" data-action="refine" disabled><i class="ph ph-sparkle"></i><span>AI 증강 실행</span></button>
+            <span class="action-note">사전 정보 · 참석자 명부 · 단어집이 함께 적용됩니다.</span>
+          </div>
+        </section>
       </div>
-      <footer class="app-footer"><span>Galpi 0.1</span><span>전사는 로컬에서, 회의록 가공은 z.ai에서 실행됩니다.</span></footer>
+      <footer class="app-footer"><span>Galpi 0.1</span><span>전사는 로컬에서, AI 증강은 z.ai에서 실행됩니다.</span></footer>
     </main>
 
     <div id="settings-dialog" class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
