@@ -17,7 +17,12 @@ worker/
 │   ├── runtime.py         # Device selection and warning suppression
 │   ├── preparation.py     # Model warmup, ffmpeg link, manifest
 │   ├── engine.py          # Transcription pipeline and MPS fallback
-│   └── artifacts.py       # Typed segments, filtering, atomic writers
+│   ├── artifacts.py       # Typed segments, filtering, atomic writers
+│   ├── minutes_template.py # Normative minutes format and compact exemplar
+│   ├── minutes_prompt.py  # Typed context parsing and single-pass prompt
+│   ├── minutes_pipeline.py # Long-meeting routing, chunking, map/reduce prompts
+│   ├── assistant_stream.py # OpenAI-compatible SSE transport and progress
+│   └── refine.py          # Short/long refinement orchestration and publication
 ├── stubs/whisperx/        # Local types for the untyped dependency
 └── tests/test_core.py     # Pure contract tests; no ML stack required
 ```
@@ -31,6 +36,10 @@ worker/
 | Change model pins/options | `engine.py` and `preparation.py` together |
 | Change output names/formats | `artifacts.py` |
 | Change hallucination filtering | `core.py`, `artifacts.py::filter_segments` |
+| Change minutes format/exemplar | `minutes_template.py` |
+| Change context/date rendering | `minutes_prompt.py` |
+| Change long-meeting threshold/chunking | `minutes_pipeline.py`, `refine.py` |
+| Change assistant streaming/progress | `assistant_stream.py` |
 | Resolve WhisperX typing | Root `pyrightconfig.json`, `stubs/whisperx/*.pyi` |
 | Change CLI flags | `__main__.py`; Rust callers in `setup.rs`, `transcription.rs` |
 
@@ -51,7 +60,10 @@ worker/
 - Exit 0 on success, 2 for `INVALID_INPUT`, and 1 for `ENGINE_ERROR`.
 - Reusing `.aligned.v2.json` skips ASR/alignment only; diarization and output
   publication still run.
-- Tests use stdlib `unittest` over `core`, `artifacts`, `protocol`, and `runtime`.
+- Refinement stays single-pass through 48,000 characters. Longer transcripts split
+  only at whole speaker-turn boundaries, map facts per chunk, then reduce once into
+  the normative minutes format; all progress remains monotonic on `phase`.
+- Tests use stdlib `unittest`; `worker.tests.test_core` re-exports the split contract cases.
 
 ## ANTI-PATTERNS
 
