@@ -77,7 +77,7 @@ export function reduceJobEvent(state: JobViewState, event: JobEvent): JobViewSta
         status: "failed",
         jobId: event.jobId,
         error: event.message,
-        message: event.message,
+        message: "작업이 실패했습니다.",
       }
   }
 }
@@ -105,10 +105,11 @@ export function completeJob(state: JobViewState, result: TranscriptionResult): J
 }
 
 export function failJob(state: JobViewState, message: string): JobViewState {
-  return {
-    ...state,
-    status: message.includes("취소") ? "cancelled" : "failed",
-    message,
-    error: message,
+  // Cancellation is a user decision, not a failure: announce it once, politely.
+  if (message.includes("취소")) {
+    return { ...state, status: "cancelled", message, error: null }
   }
+  // The polite slot stays on a stable status line; the specific cause is
+  // announced exactly once through the alert slot (no duplicate readings).
+  return { ...state, status: "failed", message: "작업이 실패했습니다.", error: message }
 }

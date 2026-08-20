@@ -280,7 +280,28 @@ export class TauriBackend implements BackendPort {
   }
 }
 
+const UNEXPECTED_ERROR_MESSAGE = "예기치 못한 오류가 발생했습니다."
+
+function isAppError(error: object): error is { code: string; message: string } {
+  return (
+    "code" in error &&
+    typeof error.code === "string" &&
+    "message" in error &&
+    typeof error.message === "string"
+  )
+}
+
+/** Native commands fail with AppError {code, message}; its message is user-facing
+ * Korean copy. Anything else is a runtime fault the user cannot act on, so it gets
+ * stable Korean copy while errorDetail keeps the raw diagnostic for the log. */
 export function errorMessage(error: unknown): string {
+  if (typeof error === "object" && error !== null && isAppError(error)) {
+    return error.message
+  }
+  return UNEXPECTED_ERROR_MESSAGE
+}
+
+export function errorDetail(error: unknown): string {
   if (typeof error === "object" && error !== null && "message" in error) {
     const message = error.message
     if (typeof message === "string") {

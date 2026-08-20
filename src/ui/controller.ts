@@ -1,5 +1,5 @@
 import type { UnlistenFn } from "@tauri-apps/api/event"
-import { type ArtifactKind, type BackendPort, errorMessage } from "../adapters/tauri-backend"
+import { type ArtifactKind, type BackendPort, errorDetail, errorMessage } from "../adapters/tauri-backend"
 import {
   beginJob,
   completeJob,
@@ -338,7 +338,11 @@ export class AppController {
   }
 
   private handleFailure(error: unknown): void {
-    this.job = failJob(this.job, errorMessage(error))
+    const message = errorMessage(error)
+    const detail = errorDetail(error)
+    // Raw non-AppError diagnostics stay inspectable in the log disclosure.
+    const logs = detail === message ? this.job.logs : [...this.job.logs, `[frontend] ${detail}`]
+    this.job = failJob({ ...this.job, logs }, message)
     this.view.renderJob(this.job)
   }
 }
