@@ -113,26 +113,25 @@ export const appTemplate = `
               <div id="range-fields" class="number-fields range" hidden><label for="min-speakers">최소</label><input id="min-speakers" type="number" min="1" max="30" value="3" /><span>–</span><label for="max-speakers">최대</label><input id="max-speakers" type="number" min="1" max="30" value="7" /></div>
             </fieldset>
           </div>
+          <div id="job-panel" class="setup-progress-card" hidden>
+            <div class="job-header"><div><span id="busy-label" class="section-index"></span><h3 id="job-title">회의를 전사하고 있습니다</h3></div><strong id="job-percent">0%</strong></div>
+            <div id="job-progress" class="wave-progress" role="progressbar" aria-label="현재 단계 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
+            <ol id="job-phase-list" class="phase-list">
+              <li data-phase="transcribing" data-state="pending">전사</li>
+              <li data-phase="aligning" data-state="pending">정렬</li>
+              <li data-phase="diarizing" data-state="pending">화자분리</li>
+              <li data-phase="writing" data-state="pending">결과 저장</li>
+            </ol>
+            <p id="job-message" class="job-message" aria-live="polite"></p>
+            <p id="error-message" class="error-message" role="alert" hidden></p>
+            <div class="job-actions">
+              <button id="cancel-button" class="secondary-button danger" type="button" data-action="cancel" hidden>작업 취소</button>
+              <details><summary>상세 로그</summary><pre id="log-output"></pre></details>
+            </div>
+          </div>
           <div class="panel-actions">
             <button id="start-button" class="primary-button" type="button" data-action="transcribe" disabled><i class="ph ph-play"></i><span>전사 시작</span></button>
             <span class="action-note">체크포인트가 있으면 전사·정렬을 재사용합니다.</span>
-          </div>
-        </section>
-
-        <section id="job-panel" class="panel job-panel" hidden aria-labelledby="job-title">
-          <div class="job-header"><div><span id="busy-label" class="section-index"></span><h2 id="job-title">작업 진행</h2></div><strong id="job-percent">0%</strong></div>
-          <div id="job-progress" class="wave-progress" role="progressbar" aria-label="현재 단계 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
-          <ol id="job-phase-list" class="phase-list">
-            <li data-phase="transcribing" data-state="pending">전사</li>
-            <li data-phase="aligning" data-state="pending">정렬</li>
-            <li data-phase="diarizing" data-state="pending">화자분리</li>
-            <li data-phase="writing" data-state="pending">결과 저장</li>
-          </ol>
-          <p id="job-message" class="job-message" aria-live="polite"></p>
-          <p id="error-message" class="error-message" role="alert" hidden></p>
-          <div class="job-actions">
-            <button id="cancel-button" class="secondary-button danger" type="button" data-action="cancel" hidden>작업 취소</button>
-            <details><summary>상세 로그</summary><pre id="log-output"></pre></details>
           </div>
         </section>
 

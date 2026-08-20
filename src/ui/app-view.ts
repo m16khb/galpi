@@ -144,8 +144,8 @@ export class AppView {
     if (kind !== null) {
       this.jobKind = kind
       this.element("#setup-progress-panel").hidden = kind !== "setup"
-      // Refinement progress lives inside the augment panel next to the
-      // button that started it; the top job panel is transcription-only.
+      // Each stage renders its own progress card in place: refinement inside
+      // the augment panel, transcription inside the transcription panel.
       this.element("#job-panel").hidden = kind !== "transcription"
       this.element("#job-phase-list").hidden = kind !== "transcription"
       this.element("#augment-progress").hidden = kind !== "refinement"
