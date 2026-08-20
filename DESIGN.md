@@ -27,7 +27,7 @@ Galpi is a calm local audio workbench: technically precise, quiet during long wo
 | Text/inverse | `--text-inverse` | `#f7f6f2` | Log panel text |
 | Border/default | `--border-default` | `#d8d4ca` | Inputs and dividers |
 | Border/subtle | `--border-subtle` | `#e8e4da` | Surface separation |
-| Accent/primary | `--accent-primary` | `#b85c38` | Primary action and current phase |
+| Accent/primary | `--accent-primary` | `#b75b37` | Primary action and current phase |
 | Accent/hover | `--accent-hover` | `#98482c` | Primary action hover |
 | Accent/text | `--accent-text` | `#98482c` | Small accent labels and text links (eyebrow, section index, phase label, text buttons) |
 | Status/success | `--status-success` | `#3f7356` | Ready and completed |
