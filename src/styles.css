@@ -1410,6 +1410,16 @@ button:disabled {
   font-size: 12px;
 }
 
+.app-error {
+  margin: 16px 40px 0;
+  padding: 10px 12px;
+  color: var(--status-error);
+  background: color-mix(in srgb, var(--status-error) 8%, transparent);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .job-actions {
   display: flex;
   justify-content: space-between;

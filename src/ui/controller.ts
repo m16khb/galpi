@@ -36,15 +36,24 @@ export class AppController {
   }
 
   async start(): Promise<void> {
-    this.unlisten = await this.backend.listenToJobs((event) => {
-      this.job = reduceJobEvent(this.job, event)
-      this.view.renderJob(this.job)
-    })
-    this.unlistenRecording = await this.backend.listenToRecordingFailures((event) => {
-      void this.recording.handleFailure(event)
-    })
+    // Bind controls before any await: a failed native subscription must not
+    // leave the shell inert and silent.
     this.bind()
     this.recording.render()
+    try {
+      this.unlisten = await this.backend.listenToJobs((event) => {
+        this.job = reduceJobEvent(this.job, event)
+        this.view.renderJob(this.job)
+      })
+      this.unlistenRecording = await this.backend.listenToRecordingFailures((event) => {
+        void this.recording.handleFailure(event)
+      })
+    } catch {
+      // Without the event channel no other IPC call can succeed either; stop
+      // here with a visible message instead of piling up raw IPC errors.
+      this.view.showError("네이티브 런타임에 연결할 수 없습니다. 앱을 다시 실행해 주세요.")
+      return
+    }
     try {
       const environment = await this.backend.diagnose()
       this.outputRoot = environment.defaultOutputDirectory

@@ -22,6 +22,8 @@ export const appTemplate = `
         </div>
       </header>
 
+      <p id="app-error" class="app-error" role="alert" hidden></p>
+
       <div class="workspace-body">
         <section id="setup-panel" class="panel setup-panel" aria-labelledby="setup-title">
           <div class="section-heading">
