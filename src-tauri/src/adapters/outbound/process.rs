@@ -155,7 +155,10 @@ fn handle_stdout(
     if worker_protocol {
         let envelope = parse_worker_event(line)
             .map_err(|error| AppError::new("WORKER_PROTOCOL_ERROR", error.to_string()))?;
-        if matches!(envelope.event, WorkerEvent::Completed { .. }) {
+        if matches!(
+            envelope.event,
+            WorkerEvent::Completed { .. } | WorkerEvent::Refined { .. }
+        ) {
             if result.completed.is_some() {
                 return Err(AppError::new(
                     "WORKER_PROTOCOL_ERROR",
