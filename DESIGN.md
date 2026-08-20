@@ -62,6 +62,12 @@ Galpi is a calm local audio workbench: technically precise, quiet during long wo
 - Primary: `"Avenir Next", "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif`
 - Mono: `"SFMono-Regular", "JetBrains Mono", Menlo, monospace`
 
+### Korean line breaking
+
+- Korean prose keeps words intact with `word-break: keep-all` and `line-break: strict`.
+- `overflow-wrap: break-word` is the last-resort overflow safety; ordinary body copy must not split forms such as `처/리`, `전/사본`, or `있습/니다`.
+- Paths, tokens, and code keep their component-specific `nowrap` or `overflow-wrap: anywhere` behavior.
+
 ## 4. Spacing & Layout
 
 ### Base Unit

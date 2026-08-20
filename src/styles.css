@@ -54,6 +54,12 @@ body {
   overflow: hidden;
 }
 
+p {
+  overflow-wrap: break-word;
+  word-break: keep-all;
+  line-break: strict;
+}
+
 button,
 input {
   font: inherit;
