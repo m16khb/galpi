@@ -1,6 +1,7 @@
 mod capture;
 mod cleanup;
 mod failure;
+mod power;
 mod writer;
 
 use crate::application::error::AppError;
@@ -19,6 +20,7 @@ use failure::{SharedFailure, take_failure};
 struct ActiveRecording {
     id: Uuid,
     stream: Stream,
+    _sleep_blocker: Option<power::SleepBlocker>,
     writer: writer::WriterHandle,
     failure: SharedFailure,
     partial_path: PathBuf,
@@ -131,9 +133,15 @@ fn start_sync(
         ));
     }
 
+    let sleep_blocker = power::SleepBlocker::acquire("Galpi meeting recording in progress");
+    if sleep_blocker.is_none() {
+        eprintln!("recording sleep assertion unavailable; recording continues without it");
+    }
+
     *active = Some(ActiveRecording {
         id: recording_id,
         stream,
+        _sleep_blocker: sleep_blocker,
         writer,
         failure,
         partial_path: partial_path.clone(),

@@ -17,3 +17,32 @@ fn treats_core_audio_xrun_as_recoverable() {
     assert!(is_recoverable_stream_error(ErrorKind::Xrun));
     assert!(!is_recoverable_stream_error(ErrorKind::DeviceNotAvailable));
 }
+
+#[test]
+fn sleep_blocker_holds_and_releases_a_system_sleep_assertion() -> Result<(), String> {
+    // Given: a distinctive assertion name to find in the system assertion table
+    let name = "galpi-test-recording-sleep-blocker";
+
+    // When: the blocker is held
+    let blocker = super::power::SleepBlocker::acquire(name)
+        .ok_or("power assertion should be created on macOS")?;
+    let held = pmset_assertions()?;
+
+    // Then: the system reports the named assertion while held and drops it on release
+    assert!(held.contains(name), "assertion missing while held:\n{held}");
+    drop(blocker);
+    let released = pmset_assertions()?;
+    assert!(
+        !released.contains(name),
+        "assertion leaked after drop:\n{released}"
+    );
+    Ok(())
+}
+
+fn pmset_assertions() -> Result<String, String> {
+    let output = std::process::Command::new("pmset")
+        .args(["-g", "assertions"])
+        .output()
+        .map_err(|error| format!("pmset should run on macOS: {error}"))?;
+    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+}
