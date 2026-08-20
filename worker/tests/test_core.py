@@ -1,5 +1,6 @@
 """Contract tests for pure Galpi worker behavior."""
 
+import json
 import logging
 import unittest
 from contextlib import redirect_stdout
@@ -22,8 +23,10 @@ from ..galpi_worker.refine import (
     GlossaryEntry,
     Participant,
     build_messages,
+    consume_assistant_stream,
     parse_glossary,
     parse_participants,
+    parse_sse_chunk,
     parse_sse_content,
     render_glossary,
     render_participants,
@@ -379,6 +382,92 @@ class RefinementTests(unittest.TestCase):
 
     def test_maps_a_zero_expectation_straight_to_the_ceiling(self) -> None:
         self.assertEqual(streaming_percent(10, 0), 88.0)
+
+    def test_parses_reasoning_and_finish_reason_from_a_chunk(self) -> None:
+        # Given / When
+        chunk = parse_sse_chunk(
+            "data: "
+            + json.dumps(
+                {"choices": [{"delta": {"reasoning_content": "먼저"}}]},
+                ensure_ascii=False,
+            )
+        )
+        done = parse_sse_chunk(
+            "data: "
+            + json.dumps({"choices": [{"delta": {}, "finish_reason": "length"}]})
+        )
+
+        # Then
+        self.assertEqual(
+            (chunk.content, chunk.reasoning, chunk.finish_reason), (None, "먼저", None)
+        )
+        self.assertEqual(
+            (done.content, done.reasoning, done.finish_reason), (None, None, "length")
+        )
+
+    def sse(self, payload: object) -> str:
+        return "data: " + json.dumps(payload, ensure_ascii=False)
+
+    def test_stream_reports_reasoning_progress_before_content_arrives(self) -> None:
+        # Given: a reasoning-only burst long enough to trip the char throttle
+        buffer = StringIO()
+        events = EventWriter(stream=buffer)
+        lines = [
+            self.sse({"choices": [{"delta": {"reasoning_content": "생" * 5000}}]}),
+            "data: [DONE]",
+        ]
+
+        # When: the stream ends without any content
+        with self.assertRaises(RuntimeError):
+            _ = consume_assistant_stream(iter(lines), events, 4000, "glm-5.3")
+
+        # Then: the reasoning length reached the progress channel
+        self.assertIn("추론 5,000자", buffer.getvalue())
+
+    def test_stream_returns_the_document_after_reasoning(self) -> None:
+        # Given
+        buffer = StringIO()
+        events = EventWriter(stream=buffer)
+        lines = [
+            self.sse({"choices": [{"delta": {"reasoning_content": "계획"}}]}),
+            self.sse({"choices": [{"delta": {"content": "# 회의록"}}]}),
+            self.sse({"choices": [{"delta": {"content": " 본문"}}]}),
+            self.sse({"choices": [{"delta": {}, "finish_reason": "stop"}]}),
+            "data: [DONE]",
+        ]
+
+        # When
+        document = consume_assistant_stream(iter(lines), events, 4000, "glm-5.3")
+
+        # Then
+        self.assertEqual(document, "# 회의록 본문")
+
+    def test_stream_exhausted_by_reasoning_reports_an_actionable_error(self) -> None:
+        # Given: reasoning consumed the budget; no content chunk ever arrived
+        lines = [
+            self.sse({"choices": [{"delta": {"reasoning_content": "생각"}}]}),
+            self.sse({"choices": [{"delta": {}, "finish_reason": "length"}]}),
+            "data: [DONE]",
+        ]
+
+        # When / Then
+        with self.assertRaisesRegex(RuntimeError, "max_tokens"):
+            _ = consume_assistant_stream(
+                iter(lines), EventWriter(stream=StringIO()), 4000, "glm-5.3"
+            )
+
+    def test_stream_blocked_by_a_filter_names_the_filter(self) -> None:
+        # Given
+        lines = [
+            self.sse({"choices": [{"delta": {}, "finish_reason": "content_filter"}]}),
+            "data: [DONE]",
+        ]
+
+        # When / Then
+        with self.assertRaisesRegex(RuntimeError, "차단"):
+            _ = consume_assistant_stream(
+                iter(lines), EventWriter(stream=StringIO()), 4000, "glm-5.3"
+            )
 
     def test_unwraps_a_document_wrapped_in_one_code_fence(self) -> None:
         # Given

@@ -5,6 +5,7 @@ import os
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
@@ -15,7 +16,7 @@ API_KEY_VARIABLE = "GALPI_ASSISTANT_API_KEY"
 BASE_URL_VARIABLE = "GALPI_ASSISTANT_BASE_URL"
 DEFAULT_BASE_URL = "https://api.z.ai/api/coding/paas/v4"
 DEFAULT_MODEL = "glm-5.3"
-MAX_OUTPUT_TOKENS = 16384
+MAX_OUTPUT_TOKENS = 32768
 REQUEST_TIMEOUT_SECONDS = 600
 
 # Streaming progress maps accumulated characters onto this band; completion
@@ -261,18 +262,34 @@ def strip_document_fence(document: str) -> str:
     return "\n".join(lines[1:-1]).strip()
 
 
+@dataclass(frozen=True)
+class StreamChunk:
+    """One parsed SSE event: visible text, reasoning text, and completion state."""
+
+    content: str | None
+    reasoning: str | None
+    finish_reason: str | None
+
+
 def parse_sse_content(line: str) -> str | None:
-    """Extract delta content from one SSE line; None for non-content lines.
+    """Extract delta content from one SSE line; None for non-content lines."""
+
+    return parse_sse_chunk(line).content
+
+
+def parse_sse_chunk(line: str) -> StreamChunk:
+    """Parse one SSE line into content, reasoning, and finish_reason.
 
     Raises RuntimeError when the stream carries an error payload instead of
     a completion chunk.
     """
 
+    empty = StreamChunk(content=None, reasoning=None, finish_reason=None)
     if not line.startswith("data:"):
-        return None
+        return empty
     data = line[len("data:") :].strip()
     if not data or data == SSE_DONE_MARKER:
-        return None
+        return empty
     payload = json.loads(data)
     if not isinstance(payload, dict):
         raise TypeError("sse payload was not a JSON object")
@@ -283,15 +300,24 @@ def parse_sse_content(line: str) -> str | None:
         raise RuntimeError(f"assistant stream failed: {detail}")
     choices = fields.get("choices")
     if not isinstance(choices, list) or not choices:
-        return None
+        return empty
     first = cast(list[object], choices)[0]
     if not isinstance(first, dict):
-        return None
-    delta = cast(dict[str, object], first).get("delta")
+        return empty
+    entry = cast(dict[str, object], first)
+    finish = entry.get("finish_reason")
+    delta = entry.get("delta")
+    finish_reason = finish if isinstance(finish, str) else None
     if not isinstance(delta, dict):
-        return None
-    content = cast(dict[str, object], delta).get("content")
-    return content if isinstance(content, str) else None
+        return StreamChunk(content=None, reasoning=None, finish_reason=finish_reason)
+    fields_delta = cast(dict[str, object], delta)
+    content = fields_delta.get("content")
+    reasoning = fields_delta.get("reasoning_content")
+    return StreamChunk(
+        content=content if isinstance(content, str) else None,
+        reasoning=reasoning if isinstance(reasoning, str) else None,
+        finish_reason=finish_reason,
+    )
 
 
 def streaming_percent(chars: int, expected: int) -> float:
@@ -302,6 +328,75 @@ def streaming_percent(chars: int, expected: int) -> float:
     fraction = min(1.0, chars / expected)
     span = REFINE_STREAM_CEILING_PERCENT - REFINE_STREAM_START_PERCENT
     return round(REFINE_STREAM_START_PERCENT + span * fraction, 1)
+
+
+def consume_assistant_stream(
+    lines: Iterable[str],
+    events: EventWriter,
+    expected_chars: int,
+    model: str,
+) -> str:
+    """Consume SSE lines into a document, reporting reasoning and writing progress.
+
+    Reasoning models emit `reasoning_content` before any visible text; while
+    only reasoning has arrived the percent stays at the band start but the
+    message carries the live reasoning length. An empty document is reported
+    against the stream's finish reason so length exhaustion is actionable.
+    """
+
+    parts: list[str] = []
+    finish_reason: str | None = None
+    reasoning_chars = 0
+    emitted_chars = 0
+    emitted_reasoning = 0
+    emitted_at = time.monotonic()
+    for raw_line in lines:
+        line = raw_line.strip()
+        chunk = parse_sse_chunk(line)
+        if chunk.finish_reason is not None:
+            finish_reason = chunk.finish_reason
+        if chunk.reasoning is None and chunk.content is None:
+            continue
+        if chunk.reasoning is not None:
+            reasoning_chars += len(chunk.reasoning)
+        if chunk.content is not None:
+            parts.append(chunk.content)
+        written = sum(len(part) for part in parts)
+        now = time.monotonic()
+        due_by_chars = (
+            written - emitted_chars >= PROGRESS_EMIT_INTERVAL_CHARS
+            or reasoning_chars - emitted_reasoning >= PROGRESS_EMIT_INTERVAL_CHARS
+        )
+        if due_by_chars or now - emitted_at >= PROGRESS_EMIT_INTERVAL_SECONDS:
+            if written > 0:
+                events.emit(
+                    "phase",
+                    phase="refining",
+                    percent=streaming_percent(written, expected_chars),
+                    message=f"{model} 모델로 회의록을 작성하는 중입니다. {written:,}자",
+                )
+            else:
+                events.emit(
+                    "phase",
+                    phase="refining",
+                    percent=REFINE_STREAM_START_PERCENT,
+                    message=f"{model} 모델이 회의록 구조를 계획하는 중입니다. 추론 {reasoning_chars:,}자",
+                )
+            emitted_chars = written
+            emitted_reasoning = reasoning_chars
+            emitted_at = now
+    document = "".join(parts).strip()
+    if document:
+        return strip_document_fence(document)
+    if finish_reason == "length":
+        raise RuntimeError(
+            "응답이 출력 길이 한도(max_tokens)에 도달해 회의록 본문이 만들어지지 못했습니다."
+            " 모델을 바꾸거나 다시 시도해 주세요."
+        )
+    if finish_reason == "content_filter":
+        raise RuntimeError("증강 제공자가 콘텐츠 정책으로 응답을 차단했습니다.")
+    detail = f" (finish_reason: {finish_reason})" if finish_reason else ""
+    raise RuntimeError(f"assistant returned an empty message{detail}")
 
 
 def request_minutes(
@@ -334,32 +429,16 @@ def request_minutes(
             "Accept": "text/event-stream",
         },
     )
-    parts: list[str] = []
     try:
         with urllib.request.urlopen(
             request, timeout=REQUEST_TIMEOUT_SECONDS
         ) as response:
-            emitted_chars = 0
-            emitted_at = time.monotonic()
-            for raw_line in response:
-                line = raw_line.decode("utf-8", errors="replace").strip()
-                content = parse_sse_content(line)
-                if content is None:
-                    continue
-                parts.append(content)
-                written = sum(len(part) for part in parts)
-                now = time.monotonic()
-                due_by_chars = written - emitted_chars >= PROGRESS_EMIT_INTERVAL_CHARS
-                due_by_time = now - emitted_at >= PROGRESS_EMIT_INTERVAL_SECONDS
-                if due_by_chars or due_by_time:
-                    events.emit(
-                        "phase",
-                        phase="refining",
-                        percent=streaming_percent(written, expected_chars),
-                        message=f"{model} 모델로 회의록을 작성하는 중입니다. {written:,}자",
-                    )
-                    emitted_chars = written
-                    emitted_at = now
+            return consume_assistant_stream(
+                (raw.decode("utf-8", errors="replace") for raw in response),
+                events,
+                expected_chars,
+                model,
+            )
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[:500]
         raise RuntimeError(
@@ -367,10 +446,6 @@ def request_minutes(
         ) from error
     except urllib.error.URLError as error:
         raise RuntimeError(f"assistant request failed: {error.reason}") from error
-    document = "".join(parts).strip()
-    if not document:
-        raise RuntimeError("assistant returned an empty message")
-    return strip_document_fence(document)
 
 
 def write_text_atomic(path: Path, document: str) -> None:
