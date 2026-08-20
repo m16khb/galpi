@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -16,6 +17,15 @@ DEFAULT_BASE_URL = "https://api.z.ai/api/coding/paas/v4"
 DEFAULT_MODEL = "glm-5.3"
 MAX_OUTPUT_TOKENS = 16384
 REQUEST_TIMEOUT_SECONDS = 600
+
+# Streaming progress maps accumulated characters onto this band; completion
+# phases (writing 90, done 100) stay above the ceiling so the bar never stalls
+# at full before the document is actually finished.
+REFINE_STREAM_START_PERCENT = 35.0
+REFINE_STREAM_CEILING_PERCENT = 88.0
+PROGRESS_EMIT_INTERVAL_SECONDS = 1.5
+PROGRESS_EMIT_INTERVAL_CHARS = 4096
+SSE_DONE_MARKER = "[DONE]"
 
 SYSTEM_PROMPT = """당신은 한국어 회의 기록을 팀의 실행 기억으로 증강하는 전문가입니다. 회의가 끝난 뒤에도 남아 있어야 하는 것 — 결정, 담당, 기한, 리스크, 후속 확인 — 만 남기고, 나머지는 훈증시킵니다.
 
@@ -240,31 +250,6 @@ def build_messages(
     ]
 
 
-def extract_minutes(payload: object) -> str:
-    """Read the assistant message out of a chat-completion response."""
-
-    if not isinstance(payload, dict):
-        raise TypeError("assistant response was not a JSON object")
-    body = cast(dict[str, object], payload)
-    choices = body.get("choices")
-    if not isinstance(choices, list) or not choices:
-        error = body.get("error")
-        detail = (
-            json.dumps(error, ensure_ascii=False) if error is not None else "no choices"
-        )
-        raise RuntimeError(f"assistant response had no choices: {detail}")
-    first = cast(list[object], choices)[0]
-    if not isinstance(first, dict):
-        raise TypeError("assistant choice was not a JSON object")
-    message = cast(dict[str, object], first).get("message")
-    if not isinstance(message, dict):
-        raise TypeError("assistant choice had no message")
-    content = cast(dict[str, object], message).get("content")
-    if not isinstance(content, str) or not content.strip():
-        raise RuntimeError("assistant returned an empty message")
-    return strip_document_fence(content.strip())
-
-
 def strip_document_fence(document: str) -> str:
     """Remove a code fence that wraps the whole document."""
 
@@ -276,15 +261,64 @@ def strip_document_fence(document: str) -> str:
     return "\n".join(lines[1:-1]).strip()
 
 
-def request_minutes(messages: list[dict[str, str]], model: str, api_key: str) -> str:
-    """Call the chat-completions endpoint and return the refined document."""
+def parse_sse_content(line: str) -> str | None:
+    """Extract delta content from one SSE line; None for non-content lines.
+
+    Raises RuntimeError when the stream carries an error payload instead of
+    a completion chunk.
+    """
+
+    if not line.startswith("data:"):
+        return None
+    data = line[len("data:") :].strip()
+    if not data or data == SSE_DONE_MARKER:
+        return None
+    payload = json.loads(data)
+    if not isinstance(payload, dict):
+        raise TypeError("sse payload was not a JSON object")
+    fields = cast(dict[str, object], payload)
+    error = fields.get("error")
+    if error is not None:
+        detail = json.dumps(error, ensure_ascii=False)
+        raise RuntimeError(f"assistant stream failed: {detail}")
+    choices = fields.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return None
+    first = cast(list[object], choices)[0]
+    if not isinstance(first, dict):
+        return None
+    delta = cast(dict[str, object], first).get("delta")
+    if not isinstance(delta, dict):
+        return None
+    content = cast(dict[str, object], delta).get("content")
+    return content if isinstance(content, str) else None
+
+
+def streaming_percent(chars: int, expected: int) -> float:
+    """Map accumulated characters onto the streaming progress band."""
+
+    if expected <= 0:
+        return REFINE_STREAM_CEILING_PERCENT
+    fraction = min(1.0, chars / expected)
+    span = REFINE_STREAM_CEILING_PERCENT - REFINE_STREAM_START_PERCENT
+    return round(REFINE_STREAM_START_PERCENT + span * fraction, 1)
+
+
+def request_minutes(
+    messages: list[dict[str, str]],
+    model: str,
+    api_key: str,
+    events: EventWriter,
+    expected_chars: int,
+) -> str:
+    """Stream the chat completion and report writing progress as it arrives."""
 
     base_url = os.environ.get(BASE_URL_VARIABLE, DEFAULT_BASE_URL).rstrip("/")
     body = json.dumps(
         {
             "model": model,
             "messages": messages,
-            "stream": False,
+            "stream": True,
             "temperature": 0.2,
             "max_tokens": MAX_OUTPUT_TOKENS,
         },
@@ -297,14 +331,35 @@ def request_minutes(messages: list[dict[str, str]], model: str, api_key: str) ->
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "Accept": "application/json",
+            "Accept": "text/event-stream",
         },
     )
+    parts: list[str] = []
     try:
         with urllib.request.urlopen(
             request, timeout=REQUEST_TIMEOUT_SECONDS
         ) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+            emitted_chars = 0
+            emitted_at = time.monotonic()
+            for raw_line in response:
+                line = raw_line.decode("utf-8", errors="replace").strip()
+                content = parse_sse_content(line)
+                if content is None:
+                    continue
+                parts.append(content)
+                written = sum(len(part) for part in parts)
+                now = time.monotonic()
+                due_by_chars = written - emitted_chars >= PROGRESS_EMIT_INTERVAL_CHARS
+                due_by_time = now - emitted_at >= PROGRESS_EMIT_INTERVAL_SECONDS
+                if due_by_chars or due_by_time:
+                    events.emit(
+                        "phase",
+                        phase="refining",
+                        percent=streaming_percent(written, expected_chars),
+                        message=f"{model} 모델로 회의록을 작성하는 중입니다. {written:,}자",
+                    )
+                    emitted_chars = written
+                    emitted_at = now
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[:500]
         raise RuntimeError(
@@ -312,7 +367,10 @@ def request_minutes(messages: list[dict[str, str]], model: str, api_key: str) ->
         ) from error
     except urllib.error.URLError as error:
         raise RuntimeError(f"assistant request failed: {error.reason}") from error
-    return extract_minutes(payload)
+    document = "".join(parts).strip()
+    if not document:
+        raise RuntimeError("assistant returned an empty message")
+    return strip_document_fence(document)
 
 
 def write_text_atomic(path: Path, document: str) -> None:
@@ -360,8 +418,15 @@ def refine(
         percent=35.0,
         message=f"{model} 모델로 회의록을 작성하는 중입니다.",
     )
+    # Minutes typically land well under the transcript length; the floor keeps
+    # short meetings from racing to the ceiling in the first chunks.
+    expected_chars = max(2000, int(len(transcript) * 0.6))
     document = request_minutes(
-        build_messages(transcript, background, participants, glossary), model, api_key
+        build_messages(transcript, background, participants, glossary),
+        model,
+        api_key,
+        events,
+        expected_chars,
     )
     events.emit(
         "phase", phase="writing", percent=90.0, message="회의록을 저장하는 중입니다."

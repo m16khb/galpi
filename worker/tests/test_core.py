@@ -22,11 +22,12 @@ from ..galpi_worker.refine import (
     GlossaryEntry,
     Participant,
     build_messages,
-    extract_minutes,
     parse_glossary,
     parse_participants,
+    parse_sse_content,
     render_glossary,
     render_participants,
+    streaming_percent,
     strip_document_fence,
 )
 from ..galpi_worker.runtime import configure_warnings, select_torch_device
@@ -342,25 +343,42 @@ class RefinementTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "transcript is empty"):
             _ = build_messages("   \n", "제품: 갈피", [], [])
 
-    def test_reads_the_assistant_message_from_a_chat_completion(self) -> None:
-        # Given
-        payload = {
-            "choices": [{"message": {"role": "assistant", "content": "# 회의록\n"}}]
-        }
-
-        # When
-        minutes = extract_minutes(payload)
-
-        # Then
-        self.assertEqual(minutes, "# 회의록")
-
-    def test_rejects_a_response_without_usable_content(self) -> None:
-        # Given
-        payload = {"choices": [{"message": {"role": "assistant", "content": ""}}]}
+    def test_reads_delta_content_from_an_sse_line(self) -> None:
+        # Given: one OpenAI-compatible streaming chunk
+        line = 'data: {"choices": [{"delta": {"content": "## 결정사항"}}]}'
 
         # When / Then
-        with self.assertRaisesRegex(RuntimeError, "empty message"):
-            _ = extract_minutes(payload)
+        self.assertEqual(parse_sse_content(line), "## 결정사항")
+
+    def test_ignores_sse_lines_without_delta_content(self) -> None:
+        # Given: comments, keep-alives, role-only deltas, and the done marker
+        lines = [
+            ": keep-alive",
+            'data: {"choices": [{"delta": {"role": "assistant"}}]}',
+            "data: [DONE]",
+            "",
+        ]
+
+        # When / Then
+        self.assertEqual([parse_sse_content(line) for line in lines], [None] * 4)
+
+    def test_raises_when_the_stream_carries_an_error(self) -> None:
+        # Given
+        line = 'data: {"error": {"message": "invalid api key"}}'
+
+        # When / Then
+        with self.assertRaisesRegex(RuntimeError, "invalid api key"):
+            _ = parse_sse_content(line)
+
+    def test_maps_accumulated_chars_onto_the_progress_band(self) -> None:
+        # Given / When / Then: monotonically approaches the ceiling, never past
+        self.assertEqual(streaming_percent(0, 4000), 35.0)
+        self.assertLess(streaming_percent(2000, 4000), streaming_percent(4000, 4000))
+        self.assertEqual(streaming_percent(4000, 4000), 88.0)
+        self.assertEqual(streaming_percent(999999, 4000), 88.0)
+
+    def test_maps_a_zero_expectation_straight_to_the_ceiling(self) -> None:
+        self.assertEqual(streaming_percent(10, 0), 88.0)
 
     def test_unwraps_a_document_wrapped_in_one_code_fence(self) -> None:
         # Given
