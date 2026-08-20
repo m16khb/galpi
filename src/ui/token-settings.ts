@@ -12,6 +12,7 @@ export class TokenSettingsView {
   private readonly root: HTMLElement
   private persistedToken: string | null = null
   private visible = false
+  private previouslyFocused: HTMLElement | null = null
 
   constructor(root: HTMLElement) {
     this.root = root
@@ -21,12 +22,18 @@ export class TokenSettingsView {
   }
 
   show(): void {
+    // APG dialog pattern: remember the invoker so close() can return the
+    // keyboard user to where they were instead of dropping to <body>.
+    this.previouslyFocused = this.root.ownerDocument.activeElement as HTMLElement | null
     this.element("#settings-dialog").hidden = false
     this.showMessage("")
   }
 
   close(): void {
     this.element("#settings-dialog").hidden = true
+    const restore = this.previouslyFocused
+    this.previouslyFocused = null
+    if (restore?.isConnected) restore.focus()
   }
 
   token(): string {

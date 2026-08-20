@@ -71,4 +71,19 @@ describe("TokenSettingsView (real DOM)", () => {
     const state = input.closest("body")?.querySelector("#token-configured-state") as HTMLElement
     expect(state.textContent).toBe("저장된 토큰 없음")
   })
+
+  test("returns focus to the invoking trigger when the dialog closes", () => {
+    // Given: the user opened settings from the topbar gear button
+    const body = input.closest("body") as HTMLElement
+    const trigger = body.querySelector(".settings-button") as HTMLElement
+    trigger.focus()
+    view.show()
+    input.focus()
+
+    // When: the dialog closes (button, Escape, and programmatic paths share close())
+    view.close()
+
+    // Then: the keyboard user lands back on the invoker, not <body>
+    expect(body.ownerDocument.activeElement).toBe(trigger)
+  })
 })

@@ -4,6 +4,11 @@ export function bindTokenGuide(root: HTMLElement): void {
   const closeButton = required<HTMLButtonElement>(root, "#token-guide-close")
 
   const close = (): void => {
+    // If focus sits inside the popover (e.g. the close button that is about
+    // to disappear), hand it back to the trigger instead of dropping to
+    // <body>.
+    const active = root.ownerDocument.activeElement
+    if (active !== null && popover.contains(active)) trigger.focus()
     popover.hidden = true
     trigger.setAttribute("aria-expanded", "false")
   }
