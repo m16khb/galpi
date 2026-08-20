@@ -26,7 +26,12 @@ export function bindTokenGuide(root: HTMLElement): void {
   closeButton.addEventListener("click", close)
   root.addEventListener("click", (event) => {
     const target = event.target
-    if (target instanceof Node && !popover.hidden && !popover.contains(target) && !trigger.contains(target)) {
+    if (
+      target instanceof Node &&
+      !popover.hidden &&
+      !popover.contains(target) &&
+      !trigger.contains(target)
+    ) {
       close()
     }
   })

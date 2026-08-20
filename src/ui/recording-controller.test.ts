@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test"
-
-import type { RecordingViewState } from "../application/recording-machine"
 import type { BackendPort, RecordingStatus } from "../adapters/tauri-backend"
+import type { RecordingViewState } from "../application/recording-machine"
 import type { AppView } from "./app-view"
 import { RecordingController } from "./recording-controller"
 

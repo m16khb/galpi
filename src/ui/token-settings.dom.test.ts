@@ -68,9 +68,7 @@ describe("TokenSettingsView (real DOM)", () => {
 
     // Then
     expect(view.token()).toBe("")
-    const state = input
-      .closest("body")
-      ?.querySelector("#token-configured-state") as HTMLElement
+    const state = input.closest("body")?.querySelector("#token-configured-state") as HTMLElement
     expect(state.textContent).toBe("저장된 토큰 없음")
   })
 })

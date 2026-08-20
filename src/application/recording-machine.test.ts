@@ -31,9 +31,7 @@ describe("recording state", () => {
   })
 
   test("locks controls while cancellation is pending", () => {
-    const state = cancelRecordingState(
-      startRecordingState("recording-1", "/tmp/meeting.wav.part"),
-    )
+    const state = cancelRecordingState(startRecordingState("recording-1", "/tmp/meeting.wav.part"))
 
     expect(state.status).toBe("stopping")
   })

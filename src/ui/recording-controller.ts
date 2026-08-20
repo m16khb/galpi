@@ -1,20 +1,16 @@
+import { type BackendPort, errorMessage, type RecordingFailure } from "../adapters/tauri-backend"
 import {
   beginRecordingState,
-  canStartRecording,
   cancelRecordingState,
+  canStartRecording,
   completeRecordingState,
   failRecordingState,
   initialRecordingState,
+  type RecordingViewState,
   startRecordingState,
   stopRecordingState,
   tickRecording,
-  type RecordingViewState,
 } from "../application/recording-machine"
-import {
-  errorMessage,
-  type BackendPort,
-  type RecordingFailure,
-} from "../adapters/tauri-backend"
 import type { AppView } from "./app-view"
 
 export class RecordingController {

@@ -1,6 +1,6 @@
+import type { Dirent } from "node:fs"
 import { readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
-import type { Dirent } from "node:fs"
 
 const RUST_ROOT = join(import.meta.dir, "..", "src-tauri", "src")
 

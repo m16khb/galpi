@@ -1,8 +1,8 @@
 import "./styles.css"
 
 import { TauriBackend } from "./adapters/tauri-backend"
-import { AppController } from "./ui/controller"
 import { AppView } from "./ui/app-view"
+import { AppController } from "./ui/controller"
 
 const root = document.querySelector<HTMLElement>("#app")
 if (root === null) {

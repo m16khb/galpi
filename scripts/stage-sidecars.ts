@@ -10,13 +10,7 @@ const BINARY_SHA256 = "ad3564874e19defa0debefcf48e8381ac1d087c584190c1323c247bd3
 const BINARY_DIR = join(import.meta.dir, "..", "src-tauri", "binaries")
 const BINARY_PATH = join(BINARY_DIR, `uv-${TARGET}`)
 const WORKER_SOURCE = join(import.meta.dir, "..", "worker")
-const WORKER_DESTINATION = join(
-  import.meta.dir,
-  "..",
-  "src-tauri",
-  "resources",
-  "worker",
-)
+const WORKER_DESTINATION = join(import.meta.dir, "..", "src-tauri", "resources", "worker")
 
 class SidecarStageError extends Error {
   readonly name = "SidecarStageError"
@@ -45,8 +39,7 @@ async function stageUv(): Promise<void> {
   await mkdir(BINARY_DIR, { recursive: true })
   const workDir = await mkdtemp(join(tmpdir(), "galpi-uv-"))
   const archivePath = join(workDir, `uv-${TARGET}.tar.gz`)
-  const releaseUrl =
-    `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${TARGET}.tar.gz`
+  const releaseUrl = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${TARGET}.tar.gz`
 
   await run(["curl", "-fsSL", releaseUrl, "-o", archivePath])
   const archive = new Uint8Array(await Bun.file(archivePath).arrayBuffer())
@@ -68,10 +61,7 @@ async function stageWorker(): Promise<void> {
     force: true,
     filter: (source) => !source.includes("__pycache__") && !source.endsWith(".pyc"),
   })
-  await cp(
-    join(WORKER_SOURCE, "requirements.txt"),
-    join(WORKER_DESTINATION, "requirements.txt"),
-  )
+  await cp(join(WORKER_SOURCE, "requirements.txt"), join(WORKER_DESTINATION, "requirements.txt"))
 }
 
 await stageUv()

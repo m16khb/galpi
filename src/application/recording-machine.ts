@@ -26,10 +26,7 @@ export function canStartRecording(state: RecordingViewState): boolean {
   return state.status === "idle" || state.status === "completed" || state.status === "failed"
 }
 
-export function startRecordingState(
-  recordingId: string,
-  path: string,
-): RecordingViewState {
+export function startRecordingState(recordingId: string, path: string): RecordingViewState {
   return {
     status: "recording",
     recordingId,

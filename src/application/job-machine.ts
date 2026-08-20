@@ -91,10 +91,7 @@ export function beginJob(message: string, jobId: string | null = null): JobViewS
   }
 }
 
-export function completeJob(
-  state: JobViewState,
-  result: TranscriptionResult,
-): JobViewState {
+export function completeJob(state: JobViewState, result: TranscriptionResult): JobViewState {
   return {
     ...state,
     status: "completed",
