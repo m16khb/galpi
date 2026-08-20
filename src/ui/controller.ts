@@ -94,7 +94,7 @@ export class AppController {
     this.view.on("clear-token", () => void this.clearToken())
     this.view.on("refine", () => void this.refine())
     this.view.on("open-minutes", () => void this.openArtifact("minutes"))
-    this.view.on("model-access", () => void this.backend.openModelAccessPage())
+    this.view.on("model-access", () => void this.openModelAccess())
     this.view.on("choose-audio", () => void this.chooseAudio())
     this.view.on("choose-output", () => void this.chooseOutput())
     this.view.on("transcribe", () => void this.transcribe())
@@ -210,19 +210,35 @@ export class AppController {
     }
   }
 
+  private async openModelAccess(): Promise<void> {
+    try {
+      await this.backend.openModelAccessPage()
+    } catch (error) {
+      this.view.showError(errorMessage(error))
+    }
+  }
+
   private async chooseAudio(): Promise<void> {
-    const selected = await this.backend.chooseAudio()
-    if (selected !== null) {
-      this.audioPath = selected
-      this.view.setAudio(selected)
+    try {
+      const selected = await this.backend.chooseAudio()
+      if (selected !== null) {
+        this.audioPath = selected
+        this.view.setAudio(selected)
+      }
+    } catch (error) {
+      this.view.showError(errorMessage(error))
     }
   }
 
   private async chooseOutput(): Promise<void> {
-    const selected = await this.backend.chooseOutputDirectory()
-    if (selected !== null) {
-      this.outputRoot = selected
-      this.view.setOutput(selected)
+    try {
+      const selected = await this.backend.chooseOutputDirectory()
+      if (selected !== null) {
+        this.outputRoot = selected
+        this.view.setOutput(selected)
+      }
+    } catch (error) {
+      this.view.showError(errorMessage(error))
     }
   }
 

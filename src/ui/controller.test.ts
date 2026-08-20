@@ -72,4 +72,25 @@ describe("AppController startup without a native runtime", () => {
     expect(message.dataset["state"]).toBe("error")
     controller.stop()
   })
+
+  test("surfaces direct IPC actions that fail instead of dying silently", async () => {
+    // Given: the native runtime never attached, so every direct IPC call rejects
+    const { controller, root } = createHarness()
+    await controller.start()
+    const banner = root.querySelector("#app-error") as HTMLElement
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+    // When: the user triggers the three unguarded direct actions
+    for (const action of ["choose-audio", "choose-output", "model-access"]) {
+      banner.textContent = ""
+      ;(root.querySelector(`[data-action="${action}"]`) as HTMLElement).click()
+      await flush()
+      await flush()
+
+      // Then: each failure lands in the visible banner with user-facing copy
+      expect(banner.hidden).toBe(false)
+      expect(banner.textContent).toBe("예기치 못한 오류가 발생했습니다.")
+    }
+    controller.stop()
+  })
 })
