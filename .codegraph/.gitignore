@@ -1,0 +1,5 @@
+# Keep the portable CodeGraph index in Git for shared symbol navigation.
+# Ignore every transient runtime artifact produced beside it.
+*
+!.gitignore
+!codegraph.db
