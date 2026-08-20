@@ -1,481 +1,36 @@
-"""Transcript refinement through the Z.ai coding-plan chat endpoint."""
+"""Transcript refinement orchestration for short and long meetings."""
 
 import json
 import os
-import time
-import urllib.error
-import urllib.request
-from collections.abc import Iterable
-from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
 
+from .assistant_stream import (
+    REFINE_STREAM_START_PERCENT,
+    request_minutes,
+)
+from .minutes_pipeline import (
+    REDUCE_PROGRESS_CEILING,
+    REDUCE_PROGRESS_START,
+    MinutesContext,
+    build_map_messages,
+    build_reduce_messages,
+    map_progress_band,
+    refinement_strategy,
+    split_transcript,
+)
+from .minutes_prompt import (
+    NO_BACKGROUND,
+    SYSTEM_PROMPT,
+    build_messages,
+    parse_glossary,
+    parse_participants,
+    render_glossary,
+    render_participants,
+    transcript_date,
+)
 from .protocol import EventWriter
 
 API_KEY_VARIABLE = "GALPI_ASSISTANT_API_KEY"
-BASE_URL_VARIABLE = "GALPI_ASSISTANT_BASE_URL"
-EFFORT_VARIABLE = "GALPI_ASSISTANT_REASONING_EFFORT"
-DEFAULT_BASE_URL = "https://api.z.ai/api/coding/paas/v4"
-DEFAULT_MODEL = "glm-5.3"
-MAX_OUTPUT_TOKENS = 32768
-GLM_MAX_OUTPUT_TOKENS = 131072
-REASONING_EFFORTS = frozenset({"low", "medium", "high", "max"})
-REQUEST_TIMEOUT_SECONDS = 600
-
-# Streaming progress maps accumulated characters onto this band; completion
-# phases (writing 90, done 100) stay above the ceiling so the bar never stalls
-# at full before the document is actually finished.
-REFINE_STREAM_START_PERCENT = 35.0
-REFINE_STREAM_CEILING_PERCENT = 88.0
-PROGRESS_EMIT_INTERVAL_SECONDS = 1.5
-PROGRESS_EMIT_INTERVAL_CHARS = 4096
-SSE_DONE_MARKER = "[DONE]"
-
-SYSTEM_PROMPT = """당신은 한국어 회의 기록을 팀의 실행 기억으로 증강하는 전문가입니다. 회의가 끝난 뒤에도 남아 있어야 하는 것 — 결정, 담당, 기한, 리스크, 후속 확인 — 만 남기고, 나머지는 훈증시킵니다.
-
-원칙:
-- 시간순 받아쓰기 요약을 만들지 않습니다. 읽는 사람이 전사본을 열지 않고도 회의를 이해할 수 있게 실행 정보 우선으로 구성합니다.
-- 스캔 우선 설계: TL;DR → 결정사항 → 액션 보드 → 주제별 논의 → 후속 확인 → 리스크/열린 질문 → 보정 부록 순서를 그대로 지킵니다. 읽는 사람은 위에서부터 훑기만 해도 흐름이 보여야 합니다.
-- 결정사항에는 확실하고 귀속 가능한 내용만 씁니다. 불확실한 내용은 `리스크/열린 질문`과 보정 부록으로 격리합니다. 결정 하나를 한 문장에 우겨넣지 않고 내용/근거/영향/결정자/상태 필드로 나눠 씁니다.
-- 액션은 산출물 중심으로 씁니다. `검토한다` 대신 `GitLab 이슈 본문에 검증 체크리스트를 추가한다`처럼 구체적으로. 기한이 전사본에 없으면 `미정`이라고 씁니다. 담당은 가능한 한 한 사람으로 특정하고, 팀 소유로만 확인되면 `미정`으로 두고 열린 질문에 추가합니다.
-- 근거 없이 `SPEAKER_00` 같은 화자 라벨을 실명으로 바꾸지 않습니다. 근거가 부족하면 `{이름} 추정`으로 쓰고 보정 부록에 신뢰도를 남깁니다. 담당/결정 필드에는 확인된 최선의 역할을 쓰되, 화자 매핑 불확실성은 부록에 그대로 둡니다.
-- 참석자 명단이 주어지면 화자 라벨의 실명 후보는 그 명단 안에서만 찾습니다. 명단에 없는 사람을 추정해 넣지 않고, 명단의 별칭은 대표 이름으로 통일합니다. 참석자 설명에 담긴 담당 업무는 액션 보드의 담당 매칭에 활용합니다.
-- 사전 정보의 제품명, 서비스명, 팀 구성원, 별칭, 도메인 용어를 우선 적용해 오인식 표현을 보정합니다. 단어집 등록 용어는 표기를 그대로 따르고, 단어집 기준으로 보정한 표현은 모두 용어 보정에 기록합니다.
-- 리스크/열린 질문도 제목 있는 불릿으로 내용/확인 담당/확인 방법/상태 필드를 나눠 씁니다. 한 줄에 우겨넣지 않습니다.
-- 민감정보(토큰·비밀번호·API 키)가 전사본에 있으면 `[민감정보 생략]`으로 가립니다.
-- 원문 전사본은 별도 파일로 이미 보관되므로 회의록 본문에 붙여넣지 않습니다.
-- 출력은 Markdown 문서 하나이며, 코드펜스로 전체를 감싸지 않습니다.
-
-문서 구조는 다음 순서를 그대로 따릅니다. 각 섹션 제목은 본문을 읽지 않아도 흐름이 보이게 만듭니다.
-
-# {날짜 또는 미정} [{주제}] {제목}
-
-> 회의일 {날짜 또는 미정} · 참석 {요약} · Source 화자분리 전사본 · Status {Draft/완료/확인 필요}
-
-## TL;DR
-- {회의 결론 또는 방향성 1줄}
-- {우선순위 또는 실행 흐름}
-- {주요 follow-up 또는 리스크}
-(여러 독립 결론이 있으면 2~4개 불릿으로 씁니다)
-
-## 결정사항
-- **{짧은 결정 제목}**
-  - 내용: {확정된 결정}
-  - 근거: {전사본 근거, 가능하면 시각/화자}
-  - 영향: {영향 범위}
-  - 결정자/동의자: {이름 또는 미정}
-  - 상태: 확정
-
-## 액션 보드
-- [ ] {담당}: {산출물 중심 작업}. 기한: {날짜 또는 미정}. Tracking: {추적 위치 또는 미정}.
-
-## 주제별 논의
-### {주제}
-- 배경: {왜 논의했는가}
-- 논점: {핵심 내용}
-- 정리: {현재 상태}
-
-## 후속 확인
-- {확인할 것}. 담당: {이름 또는 미정}. 확인 위치: {위치 또는 미정}. 기한: {날짜 또는 미정}.
-
-## 리스크/열린 질문
-- **{리스크 또는 질문 제목}**
-  - 내용: {불명확한 점}
-  - 확인 담당: {이름 또는 미정}
-  - 확인 방법: {확인 경로}
-  - 상태: 확인 필요
-
----
-
-## 보정 부록
-### 용어 보정
-- `{원문 표현}` -> `{보정 표현}`. 근거: {문맥/단어집/사전 정보}. 신뢰도: {높음/중간/낮음}.
-
-### 화자 보정
-- `{화자 라벨}` -> `{이름 또는 확인 필요}`. 근거: {근거}. 신뢰도: {높음/중간/낮음}.
-"""
-
-NO_BACKGROUND = "(등록된 사전 정보가 없습니다. 전사본에 있는 근거만 사용하세요.)"
-NO_PARTICIPANTS = "(선택된 참석자가 없습니다. 전사본에 있는 근거만 사용하세요.)"
-NO_GLOSSARY = "(등록된 용어가 없습니다. 전사본에 있는 근거만 사용하세요.)"
-
-
-@dataclass(frozen=True)
-class Participant:
-    """One meeting attendee selected from the saved roster."""
-
-    name: str
-    team: str | None
-    role: str | None
-    description: str | None
-    aliases: tuple[str, ...]
-
-
-@dataclass(frozen=True)
-class GlossaryEntry:
-    """One saved glossary term applied to every refinement."""
-
-    term: str
-    description: str | None
-
-
-def optional_text(value: object) -> str | None:
-    """Trim a roster field to text, treating blank as absent."""
-
-    if isinstance(value, str) and value.strip():
-        return value.strip()
-    return None
-
-
-def parse_participants(payload: object) -> list[Participant]:
-    """Convert the roster JSON handed over by the host into typed participants."""
-
-    if not isinstance(payload, list):
-        raise TypeError("participants payload was not a JSON array")
-    participants: list[Participant] = []
-    for entry in cast(list[object], payload):
-        if not isinstance(entry, dict):
-            raise TypeError("participant entry was not a JSON object")
-        fields = cast(dict[str, object], entry)
-        name = fields.get("name")
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError("participant entry had no name")
-        team = optional_text(fields.get("team"))
-        role = optional_text(fields.get("role"))
-        description = optional_text(fields.get("description"))
-        raw_aliases = fields.get("aliases")
-        aliases = (
-            tuple(
-                alias.strip()
-                for alias in cast(list[object], raw_aliases)
-                if isinstance(alias, str) and alias.strip()
-            )
-            if isinstance(raw_aliases, list)
-            else ()
-        )
-        participants.append(
-            Participant(
-                name=name.strip(),
-                team=team,
-                role=role,
-                description=description,
-                aliases=aliases,
-            )
-        )
-    return participants
-
-
-def parse_glossary(payload: object) -> list[GlossaryEntry]:
-    """Convert the glossary JSON handed over by the host into typed entries."""
-
-    if not isinstance(payload, list):
-        raise TypeError("glossary payload was not a JSON array")
-    entries: list[GlossaryEntry] = []
-    for entry in cast(list[object], payload):
-        if not isinstance(entry, dict):
-            raise TypeError("glossary entry was not a JSON object")
-        fields = cast(dict[str, object], entry)
-        term = fields.get("term")
-        if not isinstance(term, str) or not term.strip():
-            raise ValueError("glossary entry had no term")
-        entries.append(
-            GlossaryEntry(
-                term=term.strip(), description=optional_text(fields.get("description"))
-            )
-        )
-    return entries
-
-
-def render_participants(participants: list[Participant]) -> str:
-    """Render the attendee roster as one prompt block."""
-
-    if not participants:
-        return NO_PARTICIPANTS
-    lines: list[str] = []
-    for participant in participants:
-        detail = " · ".join(
-            part for part in (participant.team, participant.role) if part is not None
-        )
-        line = f"- {participant.name}" + (f" ({detail})" if detail else "")
-        if participant.aliases:
-            line += f" / 별칭: {', '.join(participant.aliases)}"
-        if participant.description is not None:
-            line += f" / 설명: {participant.description}"
-        lines.append(line)
-    return "\n".join(lines)
-
-
-def render_glossary(entries: list[GlossaryEntry]) -> str:
-    """Render the glossary as one prompt block."""
-
-    if not entries:
-        return NO_GLOSSARY
-    return "\n".join(
-        f"- {entry.term}: {entry.description}"
-        if entry.description is not None
-        else f"- {entry.term}"
-        for entry in entries
-    )
-
-
-def build_messages(
-    transcript: str,
-    background: str,
-    participants: list[Participant],
-    glossary: list[GlossaryEntry],
-) -> list[dict[str, str]]:
-    """Build the chat messages for one refinement request."""
-
-    if not transcript.strip():
-        raise ValueError("transcript is empty")
-    context = background.strip() or NO_BACKGROUND
-    user = (
-        "다음은 회의 참석자, 제품/서비스, 용어에 대한 사전 정보입니다.\n"
-        "<사전정보>\n"
-        f"{context}\n"
-        "</사전정보>\n\n"
-        "다음은 이 회의에 참석한 사람들입니다. 화자 실명 후보는 이 명단 안에서만 찾으세요.\n"
-        "<참석자>\n"
-        f"{render_participants(participants)}\n"
-        "</참석자>\n\n"
-        "다음은 이 팀이 자주 쓰는 용어의 단어집입니다. 등록된 표기를 그대로 따르세요.\n"
-        "<단어집>\n"
-        f"{render_glossary(glossary)}\n"
-        "</단어집>\n\n"
-        "다음은 화자분리된 회의 전사본입니다.\n"
-        "<전사본>\n"
-        f"{transcript.strip()}\n"
-        "</전사본>\n\n"
-        "위 규칙에 따라 회의록 Markdown 문서를 작성하세요."
-    )
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user},
-    ]
-
-
-def strip_document_fence(document: str) -> str:
-    """Remove a code fence that wraps the whole document."""
-
-    if not document.startswith("```"):
-        return document
-    lines = document.splitlines()
-    if len(lines) < 2 or lines[-1].strip() != "```":
-        return document
-    return "\n".join(lines[1:-1]).strip()
-
-
-@dataclass(frozen=True)
-class StreamChunk:
-    """One parsed SSE event: visible text, reasoning text, and completion state."""
-
-    content: str | None
-    reasoning: str | None
-    finish_reason: str | None
-
-
-def parse_sse_content(line: str) -> str | None:
-    """Extract delta content from one SSE line; None for non-content lines."""
-
-    return parse_sse_chunk(line).content
-
-
-def parse_sse_chunk(line: str) -> StreamChunk:
-    """Parse one SSE line into content, reasoning, and finish_reason.
-
-    Raises RuntimeError when the stream carries an error payload instead of
-    a completion chunk.
-    """
-
-    empty = StreamChunk(content=None, reasoning=None, finish_reason=None)
-    if not line.startswith("data:"):
-        return empty
-    data = line[len("data:") :].strip()
-    if not data or data == SSE_DONE_MARKER:
-        return empty
-    payload = json.loads(data)
-    if not isinstance(payload, dict):
-        raise TypeError("sse payload was not a JSON object")
-    fields = cast(dict[str, object], payload)
-    error = fields.get("error")
-    if error is not None:
-        detail = json.dumps(error, ensure_ascii=False)
-        raise RuntimeError(f"assistant stream failed: {detail}")
-    choices = fields.get("choices")
-    if not isinstance(choices, list) or not choices:
-        return empty
-    first = cast(list[object], choices)[0]
-    if not isinstance(first, dict):
-        return empty
-    entry = cast(dict[str, object], first)
-    finish = entry.get("finish_reason")
-    delta = entry.get("delta")
-    finish_reason = finish if isinstance(finish, str) else None
-    if not isinstance(delta, dict):
-        return StreamChunk(content=None, reasoning=None, finish_reason=finish_reason)
-    fields_delta = cast(dict[str, object], delta)
-    content = fields_delta.get("content")
-    reasoning = fields_delta.get("reasoning_content")
-    return StreamChunk(
-        content=content if isinstance(content, str) else None,
-        reasoning=reasoning if isinstance(reasoning, str) else None,
-        finish_reason=finish_reason,
-    )
-
-
-def streaming_percent(chars: int, expected: int) -> float:
-    """Map accumulated characters onto the streaming progress band."""
-
-    if expected <= 0:
-        return REFINE_STREAM_CEILING_PERCENT
-    fraction = min(1.0, chars / expected)
-    span = REFINE_STREAM_CEILING_PERCENT - REFINE_STREAM_START_PERCENT
-    return round(REFINE_STREAM_START_PERCENT + span * fraction, 1)
-
-
-def consume_assistant_stream(
-    lines: Iterable[str],
-    events: EventWriter,
-    expected_chars: int,
-    model: str,
-) -> str:
-    """Consume SSE lines into a document, reporting reasoning and writing progress.
-
-    Reasoning models emit `reasoning_content` before any visible text; while
-    only reasoning has arrived the percent stays at the band start but the
-    message carries the live reasoning length. An empty document is reported
-    against the stream's finish reason so length exhaustion is actionable.
-    """
-
-    parts: list[str] = []
-    finish_reason: str | None = None
-    reasoning_chars = 0
-    emitted_chars = 0
-    emitted_reasoning = 0
-    emitted_at = time.monotonic()
-    for raw_line in lines:
-        line = raw_line.strip()
-        chunk = parse_sse_chunk(line)
-        if chunk.finish_reason is not None:
-            finish_reason = chunk.finish_reason
-        if chunk.reasoning is None and chunk.content is None:
-            continue
-        if chunk.reasoning is not None:
-            reasoning_chars += len(chunk.reasoning)
-        if chunk.content is not None:
-            parts.append(chunk.content)
-        written = sum(len(part) for part in parts)
-        now = time.monotonic()
-        due_by_chars = (
-            written - emitted_chars >= PROGRESS_EMIT_INTERVAL_CHARS
-            or reasoning_chars - emitted_reasoning >= PROGRESS_EMIT_INTERVAL_CHARS
-        )
-        if due_by_chars or now - emitted_at >= PROGRESS_EMIT_INTERVAL_SECONDS:
-            if written > 0:
-                events.emit(
-                    "phase",
-                    phase="refining",
-                    percent=streaming_percent(written, expected_chars),
-                    message=f"{model} 모델로 회의록을 작성하는 중입니다. {written:,}자",
-                )
-            else:
-                events.emit(
-                    "phase",
-                    phase="refining",
-                    percent=REFINE_STREAM_START_PERCENT,
-                    message=f"{model} 모델이 회의록 구조를 계획하는 중입니다. 추론 {reasoning_chars:,}자",
-                )
-            emitted_chars = written
-            emitted_reasoning = reasoning_chars
-            emitted_at = now
-    document = "".join(parts).strip()
-    if document:
-        return strip_document_fence(document)
-    if finish_reason == "length":
-        raise RuntimeError(
-            "응답이 출력 길이 한도(max_tokens)에 도달해 회의록 본문이 만들어지지 못했습니다."
-            " 모델을 바꾸거나 다시 시도해 주세요."
-        )
-    if finish_reason == "content_filter":
-        raise RuntimeError("증강 제공자가 콘텐츠 정책으로 응답을 차단했습니다.")
-    detail = f" (finish_reason: {finish_reason})" if finish_reason else ""
-    raise RuntimeError(f"assistant returned an empty message{detail}")
-
-
-def is_default_glm(model: str, base_url: str) -> bool:
-    """Whether this request targets a GLM model on the default z.ai endpoint."""
-
-    return base_url == DEFAULT_BASE_URL and model.lower().startswith("glm")
-
-
-def build_request_body(
-    model: str,
-    messages: list[dict[str, str]],
-    base_url: str,
-    effort: str | None,
-) -> bytes:
-    """Assemble the chat-completion request body for one refinement.
-
-    Reasoning stays on for GLM: the z.ai budget (131072) is large enough for
-    reasoning plus the document. `reasoning_effort` is included only when the
-    user chose one, so other providers see a clean OpenAI-compatible body.
-    """
-
-    payload: dict[str, object] = {
-        "model": model,
-        "messages": messages,
-        "stream": True,
-        "temperature": 0.2,
-        "max_tokens": GLM_MAX_OUTPUT_TOKENS
-        if is_default_glm(model, base_url)
-        else MAX_OUTPUT_TOKENS,
-    }
-    if effort is not None:
-        payload["reasoning_effort"] = effort
-    return json.dumps(payload, ensure_ascii=False).encode("utf-8")
-
-
-def request_minutes(
-    messages: list[dict[str, str]],
-    model: str,
-    api_key: str,
-    events: EventWriter,
-    expected_chars: int,
-) -> str:
-    """Stream the chat completion and report writing progress as it arrives."""
-
-    base_url = os.environ.get(BASE_URL_VARIABLE, DEFAULT_BASE_URL).rstrip("/")
-    effort = os.environ.get(EFFORT_VARIABLE, "").strip().lower()
-    if effort not in REASONING_EFFORTS:
-        effort = None
-    body = build_request_body(model, messages, base_url, effort)
-    request = urllib.request.Request(
-        f"{base_url}/chat/completions",
-        data=body,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "Accept": "text/event-stream",
-        },
-    )
-    try:
-        with urllib.request.urlopen(
-            request, timeout=REQUEST_TIMEOUT_SECONDS
-        ) as response:
-            return consume_assistant_stream(
-                (raw.decode("utf-8", errors="replace") for raw in response),
-                events,
-                expected_chars,
-                model,
-            )
-    except urllib.error.HTTPError as error:
-        detail = error.read().decode("utf-8", errors="replace")[:500]
-        raise RuntimeError(
-            f"assistant request failed ({error.code}): {detail}"
-        ) from error
-    except urllib.error.URLError as error:
-        raise RuntimeError(f"assistant request failed: {error.reason}") from error
 
 
 def write_text_atomic(path: Path, document: str) -> None:
@@ -517,22 +72,74 @@ def refine(
         if glossary_path is not None and glossary_path.is_file()
         else []
     )
-    events.emit(
-        "phase",
-        phase="refining",
-        percent=35.0,
-        message=f"{model} 모델로 회의록을 작성하는 중입니다.",
+    meeting_date = transcript_date(transcript_path)
+    context = MinutesContext(
+        background=background.strip() or NO_BACKGROUND,
+        participants=render_participants(participants),
+        glossary=render_glossary(glossary),
+        meeting_date=meeting_date,
     )
-    # Minutes typically land well under the transcript length; the floor keeps
-    # short meetings from racing to the ceiling in the first chunks.
-    expected_chars = max(2000, int(len(transcript) * 0.6))
-    document = request_minutes(
-        build_messages(transcript, background, participants, glossary),
-        model,
-        api_key,
-        events,
-        expected_chars,
-    )
+    if refinement_strategy(transcript) == "single":
+        events.emit(
+            "phase",
+            phase="refining",
+            percent=REFINE_STREAM_START_PERCENT,
+            message=f"{model} 모델로 회의록을 작성하는 중입니다.",
+        )
+        expected_chars = max(2000, int(len(transcript) * 0.6))
+        document = request_minutes(
+            build_messages(
+                transcript,
+                background,
+                participants,
+                glossary,
+                meeting_date,
+            ),
+            model,
+            api_key,
+            events,
+            expected_chars,
+        )
+    else:
+        chunks = split_transcript(transcript)
+        notes: list[str] = []
+        for chunk in chunks:
+            progress_start, progress_ceiling = map_progress_band(chunk)
+            activity = f"긴 회의 핵심 사실 추출 ({chunk.number}/{chunk.total})"
+            events.emit(
+                "phase",
+                phase="refining",
+                percent=round(progress_start, 1),
+                message=f"{model} 모델로 {activity} 중입니다.",
+            )
+            notes.append(
+                request_minutes(
+                    build_map_messages(chunk, context),
+                    model,
+                    api_key,
+                    events,
+                    max(1000, int(len(chunk.text) * 0.25)),
+                    progress_start=progress_start,
+                    progress_ceiling=progress_ceiling,
+                    activity=activity,
+                )
+            )
+        events.emit(
+            "phase",
+            phase="refining",
+            percent=REDUCE_PROGRESS_START,
+            message=f"{model} 모델로 최종 회의록을 종합하는 중입니다.",
+        )
+        document = request_minutes(
+            build_reduce_messages(notes, context, SYSTEM_PROMPT),
+            model,
+            api_key,
+            events,
+            max(2000, int(sum(len(note) for note in notes) * 0.8)),
+            progress_start=REDUCE_PROGRESS_START,
+            progress_ceiling=REDUCE_PROGRESS_CEILING,
+            activity="최종 회의록 종합",
+        )
     events.emit(
         "phase", phase="writing", percent=90.0, message="회의록을 저장하는 중입니다."
     )

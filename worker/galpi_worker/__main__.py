@@ -5,11 +5,12 @@ import sys
 from contextlib import redirect_stdout
 from pathlib import Path
 
+from .assistant_stream import DEFAULT_MODEL
 from .core import SpeakerHint
 from .engine import transcribe
 from .preparation import prepare_models
 from .protocol import EventWriter
-from .refine import DEFAULT_MODEL, refine
+from .refine import refine
 
 
 def build_parser() -> argparse.ArgumentParser:
