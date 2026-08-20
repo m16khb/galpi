@@ -19,8 +19,9 @@
   --border-subtle: #e8e4da;
   --accent-primary: #b85c38;
   --accent-hover: #98482c;
+  --accent-text: #98482c;
   --status-success: #3f7356;
-  --status-warning: #9b6b21;
+  --status-warning: #8a5e1c;
   --status-error: #a63f3f;
   --focus-ring: #246b9b;
   --space-1: 4px;
@@ -65,7 +66,7 @@ button {
 button:focus-visible,
 input:focus-visible,
 summary:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--focus-ring) 65%, transparent);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -219,7 +220,7 @@ summary:focus-visible {
 
 .eyebrow,
 .section-index {
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -794,7 +795,7 @@ summary:focus-visible {
 .text-button {
   margin-top: 10px;
   padding: 0;
-  color: var(--accent-primary);
+  color: var(--accent-text);
   background: none;
   border: 0;
   font-size: 11px;
@@ -1050,8 +1051,10 @@ button:disabled {
 
 .field-label button,
 .artifact-row button {
-  padding: 4px 8px;
-  color: var(--accent-primary);
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px 12px;
+  color: var(--accent-text);
   background: none;
   border: 0;
   font-size: 11px;
@@ -1100,7 +1103,7 @@ button:disabled {
 .segmented-control span {
   display: grid;
   place-items: center;
-  min-height: 32px;
+  min-height: 40px;
   border-radius: 7px;
   font-size: 11px;
   font-weight: 700;
@@ -1389,7 +1392,7 @@ button:disabled {
 }
 
 .phase-list li[data-state="current"] {
-  color: var(--accent-primary);
+  color: var(--accent-text);
 }
 
 .phase-list li[data-state="complete"] {

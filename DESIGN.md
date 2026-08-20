@@ -29,8 +29,9 @@ Galpi is a calm local audio workbench: technically precise, quiet during long wo
 | Border/subtle | `--border-subtle` | `#e8e4da` | Surface separation |
 | Accent/primary | `--accent-primary` | `#b85c38` | Primary action and current phase |
 | Accent/hover | `--accent-hover` | `#98482c` | Primary action hover |
+| Accent/text | `--accent-text` | `#98482c` | Small accent labels and text links (eyebrow, section index, phase label, text buttons) |
 | Status/success | `--status-success` | `#3f7356` | Ready and completed |
-| Status/warning | `--status-warning` | `#9b6b21` | Setup attention |
+| Status/warning | `--status-warning` | `#8a5e1c` | Setup attention |
 | Status/error | `--status-error` | `#a63f3f` | Failures |
 | Focus | `--focus-ring` | `#246b9b` | Keyboard focus only |
 
