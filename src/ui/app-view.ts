@@ -128,12 +128,18 @@ export class AppView {
     if (kind !== null) {
       this.jobKind = kind
       this.element("#setup-progress-panel").hidden = kind !== "setup"
-      this.element("#job-panel").hidden = kind === "setup"
-      this.element("#job-phase-list").hidden = kind === "refinement"
+      // Refinement progress lives inside the augment panel next to the
+      // button that started it; the top job panel is transcription-only.
+      this.element("#job-panel").hidden = kind !== "transcription"
+      this.element("#job-phase-list").hidden = kind !== "transcription"
+      this.element("#augment-progress").hidden = kind !== "refinement"
     }
-    this.element<HTMLButtonElement>("#cancel-button").hidden = !busy || this.jobKind === "setup"
+    this.element<HTMLButtonElement>("#cancel-button").hidden =
+      !busy || this.jobKind !== "transcription"
     this.element<HTMLButtonElement>("#setup-cancel-button").hidden =
       !busy || this.jobKind !== "setup"
+    this.element<HTMLButtonElement>("#augment-cancel-button").hidden =
+      !busy || this.jobKind !== "refinement"
     this.element("#busy-label").textContent = busyLabel(kind)
     this.applyOnboarding()
     this.refreshActions()
@@ -163,14 +169,20 @@ export class AppView {
   renderJob(state: JobViewState): void {
     this.element("#setup-progress-panel").hidden =
       state.status === "idle" || this.jobKind !== "setup"
-    this.element("#job-panel").hidden = state.status === "idle" || this.jobKind === "setup"
+    this.element("#job-panel").hidden =
+      state.status === "idle" || this.jobKind !== "transcription"
+    this.element("#augment-progress").hidden =
+      state.status === "idle" || this.jobKind !== "refinement"
     this.refreshStages()
     this.element("#job-message").textContent = state.message
     this.element("#setup-job-message").textContent = state.message
+    this.element("#augment-job-message").textContent = state.message
     this.element("#job-percent").textContent = `${Math.round(state.percent)}%`
     this.element("#setup-job-percent").textContent = `${Math.round(state.percent)}%`
+    this.element("#augment-job-percent").textContent = `${Math.round(state.percent)}%`
     this.renderProgress("#job-progress", state.percent)
     this.renderProgress("#setup-job-progress", state.percent)
+    this.renderProgress("#augment-job-progress", state.percent)
     for (const item of this.root.querySelectorAll<HTMLElement>("[data-phase]")) {
       item.dataset["state"] = phaseState(item.dataset["phase"] ?? "", state.phase)
     }
@@ -183,6 +195,8 @@ export class AppView {
     this.element("#error-message").hidden = state.error === null
     this.element("#setup-error-message").textContent = state.error ?? ""
     this.element("#setup-error-message").hidden = state.error === null
+    this.element("#augment-error-message").textContent = state.error ?? ""
+    this.element("#augment-error-message").hidden = state.error === null
   }
 
   renderResult(result: TranscriptionResult): void {
@@ -201,6 +215,9 @@ export class AppView {
   }
 
   renderMinutes(minutes: string): void {
+    // The finished minutes row is the completion state; the progress block
+    // hands over to it instead of lingering at 100%.
+    this.element("#augment-progress").hidden = true
     this.element("#augment-panel").hidden = false
     this.element("#result-minutes-row").hidden = false
     this.path("#result-minutes", minutes)

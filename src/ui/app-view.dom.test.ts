@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test"
 import { Window } from "happy-dom"
 
 import type { EnvironmentStatus, TranscriptionResult } from "../domain/job"
+import { initialJobState } from "../application/job-machine"
 import { AppView } from "./app-view"
 
 const styles = await Bun.file(new URL("../styles.css", import.meta.url)).text()
@@ -121,6 +122,75 @@ describe("AppView stage flow (real DOM)", () => {
     expect(hidden(root, "#augment-panel")).toBe(false)
     expect(hidden(root, "#augment-waiting")).toBe(true)
     expect(hidden(root, "#result-minutes-row")).toBe(true)
+  })
+
+  test("refinement progress renders inside the augment panel, not the top job panel", () => {
+    // Given: a rendered result with a saved key
+    view.setEnvironment(environment(true))
+    view.setAssistantKeyReady(true)
+    view.renderResult(result)
+
+    // When: augmentation starts
+    view.setBusy("refinement")
+    view.renderJob({
+      ...initialJobState,
+      status: "running",
+      phase: "refining",
+      percent: 55,
+      message: "glm-5.3 모델로 회의록을 작성하는 중입니다. 12,345자",
+    })
+
+    // Then: the augment panel carries its own progress block
+    expect(hidden(root, "#augment-progress")).toBe(false)
+    expect(root.querySelector("#augment-job-percent")?.textContent).toBe("55%")
+    expect(root.querySelector("#augment-job-message")?.textContent).toContain("12,345자")
+    expect(root.querySelector("#augment-job-progress")?.getAttribute("aria-valuenow")).toBe(
+      "55",
+    )
+    expect(hidden(root, "#augment-cancel-button")).toBe(false)
+    // The top job panel stays transcription-only and hidden during refinement
+    expect(hidden(root, "#job-panel")).toBe(true)
+    expect(hidden(root, "#cancel-button")).toBe(true)
+  })
+
+  test("refinement errors surface in the augment panel and survive the busy reset", () => {
+    // Given
+    view.setEnvironment(environment(true))
+    view.setAssistantKeyReady(true)
+    view.renderResult(result)
+    view.setBusy("refinement")
+
+    // When: the refinement fails
+    view.renderJob({
+      ...initialJobState,
+      status: "failed",
+      phase: "refining",
+      error: "assistant request failed (401)",
+    })
+    view.setBusy(null)
+
+    // Then
+    expect(hidden(root, "#augment-progress")).toBe(false)
+    expect(root.querySelector("#augment-error-message")?.textContent).toContain("401")
+    expect(hidden(root, "#augment-error-message")).toBe(false)
+    expect(hidden(root, "#augment-cancel-button")).toBe(true)
+  })
+
+  test("completion hands the augment block over to the minutes row", () => {
+    // Given: refinement running in-panel
+    view.setEnvironment(environment(true))
+    view.setAssistantKeyReady(true)
+    view.renderResult(result)
+    view.setBusy("refinement")
+
+    // When
+    view.renderMinutes("/tmp/out/meeting_회의록.md")
+    view.setBusy(null)
+
+    // Then
+    expect(hidden(root, "#augment-progress")).toBe(true)
+    expect(hidden(root, "#result-minutes-row")).toBe(false)
+    expect(railState(root, "#step-augment")).toBe("complete")
   })
 
   test("marks stage 03 complete when minutes render", () => {

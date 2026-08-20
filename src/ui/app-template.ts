@@ -158,6 +158,15 @@ export const appTemplate = `
             <p>AI 증강에는 OpenAI 호환 API 키가 필요합니다. <button class="text-button" type="button" data-action="open-settings">설정에서 등록</button></p>
           </div>
           <p id="augment-waiting" class="augment-hint"><i class="ph ph-hourglass" aria-hidden="true"></i>전사가 끝나면 이 단계에서 회의록을 증강할 수 있습니다.</p>
+          <div id="augment-progress" class="setup-progress-card" hidden>
+            <div class="job-header"><div><span class="section-index">AI 증강 진행 중</span><h3>회의록을 작성하고 있습니다</h3></div><strong id="augment-job-percent">0%</strong></div>
+            <div id="augment-job-progress" class="wave-progress" role="progressbar" aria-label="AI 증강 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
+            <p id="augment-job-message" class="job-message" aria-live="polite"></p>
+            <p id="augment-error-message" class="error-message" role="alert" hidden></p>
+            <div class="job-actions">
+              <button id="augment-cancel-button" class="secondary-button danger" type="button" data-action="cancel" hidden>증강 취소</button>
+            </div>
+          </div>
           <div class="artifact-list">
             <div id="result-minutes-row" class="artifact-row" hidden><i class="ph ph-note-pencil"></i><div><strong>증강 회의록</strong><code id="result-minutes"></code></div><button type="button" data-action="open-minutes">열기</button></div>
           </div>
