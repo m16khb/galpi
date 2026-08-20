@@ -203,7 +203,10 @@ summary:focus-visible {
 
 .workspace {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* Four grid children (topbar, app-error banner, body, footer): the banner
+   * needs its own auto row or it collapses into the 1fr body row and the
+   * workspace-body panel paints over its text. */
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   min-width: 0;
   max-height: 100dvh;
 }
