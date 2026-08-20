@@ -51,6 +51,10 @@ function railState(root: HTMLElement, selector: string): string {
   return (root.querySelector(selector) as HTMLElement).dataset["state"] ?? ""
 }
 
+function ariaCurrent(root: HTMLElement, selector: string): string | null {
+  return root.querySelector(selector)?.getAttribute("aria-current") ?? null
+}
+
 describe("AppView stage flow (real DOM)", () => {
   let view: AppView
   let root: HTMLElement
@@ -70,6 +74,9 @@ describe("AppView stage flow (real DOM)", () => {
     expect(railState(root, "#step-transcribe")).toBe("pending")
     expect(railState(root, "#step-results")).toBe("pending")
     expect(railState(root, "#step-augment")).toBe("pending")
+    expect(ariaCurrent(root, "#step-transcribe")).toBeNull()
+    expect(ariaCurrent(root, "#step-results")).toBeNull()
+    expect(ariaCurrent(root, "#step-augment")).toBeNull()
   })
 
   test("hides the preparation panel once the environment is ready", () => {
@@ -79,6 +86,8 @@ describe("AppView stage flow (real DOM)", () => {
     // Then
     expect(hidden(root, "#setup-panel")).toBe(true)
     expect(railState(root, "#step-transcribe")).toBe("current")
+    expect(ariaCurrent(root, "#step-transcribe")).toBe("step")
+    expect(ariaCurrent(root, "#step-results")).toBeNull()
   })
 
   test("keeps the preparation panel visible right after preparing in this session", () => {
@@ -118,6 +127,8 @@ describe("AppView stage flow (real DOM)", () => {
     expect(railState(root, "#step-transcribe")).toBe("complete")
     expect(railState(root, "#step-results")).toBe("current")
     expect(railState(root, "#step-augment")).toBe("pending")
+    expect(ariaCurrent(root, "#step-transcribe")).toBeNull()
+    expect(ariaCurrent(root, "#step-results")).toBe("step")
     expect(hidden(root, "#results-panel")).toBe(false)
     expect(hidden(root, "#augment-panel")).toBe(false)
     expect(hidden(root, "#augment-waiting")).toBe(true)
@@ -204,6 +215,8 @@ describe("AppView stage flow (real DOM)", () => {
     // Then
     expect(railState(root, "#step-augment")).toBe("complete")
     expect(hidden(root, "#result-minutes-row")).toBe(false)
+    expect(ariaCurrent(root, "#step-results")).toBe("step")
+    expect(ariaCurrent(root, "#step-augment")).toBeNull()
   })
 
   test("shows the waiting hint before a transcription exists", () => {

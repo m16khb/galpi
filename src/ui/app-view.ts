@@ -242,8 +242,11 @@ export class AppView {
   }
 
   showError(message: string): void {
-    this.element("#error-message").textContent = message
-    this.element("#error-message").hidden = false
+    // Transient action errors land in the persistent app banner: the in-panel
+    // error slots live inside progress cards that are hidden while idle.
+    const banner = this.element("#app-error")
+    banner.textContent = message
+    banner.hidden = false
   }
 
   element<T extends HTMLElement = HTMLElement>(selector: string): T {
@@ -292,15 +295,23 @@ export class AppView {
   private refreshStages(): void {
     const busyTranscribing = this.jobBusy && this.jobKind === "transcription"
     const transcribing = busyTranscribing || this.recordingActive
-    this.element("#step-transcribe").dataset["state"] = this.hasResult
-      ? "complete"
-      : transcribing || this.engineReady
-        ? "current"
-        : "pending"
-    this.element("#step-results").dataset["state"] = this.hasResult
-      ? "current"
-      : "pending"
-    this.element("#step-augment").dataset["state"] = this.minutesReady ? "complete" : "pending"
+    this.setStage(
+      "#step-transcribe",
+      this.hasResult ? "complete" : transcribing || this.engineReady ? "current" : "pending",
+    )
+    this.setStage("#step-results", this.hasResult ? "current" : "pending")
+    this.setStage("#step-augment", this.minutesReady ? "complete" : "pending")
+  }
+
+  /** data-state drives styling; aria-current carries the same fact to assistive tech. */
+  private setStage(selector: string, state: string): void {
+    const step = this.element(selector)
+    step.dataset["state"] = state
+    if (state === "current") {
+      step.setAttribute("aria-current", "step")
+    } else {
+      step.removeAttribute("aria-current")
+    }
   }
 
   private refreshAugment(): void {

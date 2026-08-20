@@ -6,7 +6,7 @@ export const appTemplate = `
         <div><strong>갈피</strong><span>LOCAL TRANSCRIPTION</span></div>
       </div>
       <ol class="step-list">
-        <li id="step-transcribe" data-state="current"><span>01</span><div><strong>회의 전사</strong><small>오디오에서 결과까지</small></div></li>
+        <li id="step-transcribe" data-state="current" aria-current="step"><span>01</span><div><strong>회의 전사</strong><small>오디오에서 결과까지</small></div></li>
         <li id="step-results" data-state="pending"><span>02</span><div><strong>전사 결과</strong><small>자막 · 화자별 텍스트</small></div></li>
         <li id="step-augment" data-state="pending"><span>03</span><div><strong>전사 결과 AI 증강</strong><small>회의록 자동 작성</small></div></li>
       </ol>
