@@ -125,6 +125,7 @@ impl Application {
                     participants: &participants,
                     glossary: &glossary,
                     model: assistant.model.as_deref(),
+                    base_url: assistant.base_url.as_deref(),
                     api_key: &api_key,
                 },
             )

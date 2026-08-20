@@ -110,7 +110,7 @@ async fn run_worker(
             program: runtime.paths.python.clone(),
             current_dir: root.to_path_buf(),
             args,
-            env: assistant_environment(runtime.paths, root, job.api_key),
+            env: assistant_environment(runtime.paths, root, job.api_key, job.base_url),
             worker_protocol: true,
         },
         cancel,

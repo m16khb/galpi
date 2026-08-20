@@ -77,14 +77,19 @@ pub fn process_environment(
     env
 }
 
-/// Worker environment for assistant calls, carrying only the assistant credential.
+/// Worker environment for assistant calls, carrying the assistant credential
+/// and, when configured, an OpenAI-compatible endpoint override.
 pub fn assistant_environment(
     paths: &AppPaths,
     worker_root: &Path,
     api_key: &str,
+    base_url: Option<&str>,
 ) -> HashMap<OsString, OsString> {
     let mut env = process_environment(paths, worker_root, None);
     env.insert("GALPI_ASSISTANT_API_KEY".into(), api_key.into());
+    if let Some(base_url) = base_url {
+        env.insert("GALPI_ASSISTANT_BASE_URL".into(), base_url.into());
+    }
     env
 }
 

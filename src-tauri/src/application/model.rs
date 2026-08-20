@@ -88,6 +88,8 @@ impl GlossaryEntry {
 pub struct AssistantSettings {
     pub api_key: Option<String>,
     pub model: Option<String>,
+    #[serde(default)]
+    pub base_url: Option<String>,
     pub background: Option<String>,
     #[serde(default)]
     pub participants: Vec<Participant>,
@@ -100,6 +102,7 @@ impl AssistantSettings {
         Self {
             api_key: keep_filled(self.api_key),
             model: keep_filled(self.model),
+            base_url: keep_filled(self.base_url),
             background: keep_filled(self.background),
             participants: self
                 .participants

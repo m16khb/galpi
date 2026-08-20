@@ -23,6 +23,7 @@ export interface TranscriptionResult {
 export interface AssistantSettings {
   readonly apiKey: string | null
   readonly model: string | null
+  readonly baseUrl: string | null
   readonly background: string | null
   readonly participants: readonly Participant[]
   readonly glossary: readonly GlossaryEntry[]

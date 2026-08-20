@@ -8,9 +8,9 @@ export const appTemplate = `
       <ol class="step-list">
         <li id="step-transcribe" data-state="current"><span>01</span><div><strong>회의 전사</strong><small>오디오에서 결과까지</small></div></li>
         <li id="step-results" data-state="pending"><span>02</span><div><strong>전사 결과</strong><small>자막 · 화자별 텍스트</small></div></li>
-        <li id="step-augment" data-state="pending"><span>03</span><div><strong>전사 결과 AI 증강</strong><small>z.ai 회의록 가공</small></div></li>
+        <li id="step-augment" data-state="pending"><span>03</span><div><strong>전사 결과 AI 증강</strong><small>회의록 자동 작성</small></div></li>
       </ol>
-      <div class="rail-note"><i class="ph ph-shield-check" aria-hidden="true"></i><p>녹음과 전사는 이 Mac 안에서만 처리됩니다. AI 증강을 실행할 때만 전사본이 z.ai로 전송됩니다.</p></div>
+      <div class="rail-note"><i class="ph ph-shield-check" aria-hidden="true"></i><p>녹음과 전사는 이 Mac 안에서만 처리됩니다. AI 증강을 실행할 때만 전사본이 증강 제공자로 전송됩니다.</p></div>
     </aside>
 
     <main class="workspace">
@@ -151,11 +151,11 @@ export const appTemplate = `
         <section id="augment-panel" class="panel augment-panel" aria-labelledby="augment-title">
           <div class="section-heading">
             <div><span class="section-index">03 / AI 증강</span><h2 id="augment-title">전사 결과 AI 증강</h2></div>
-            <p>등록한 z.ai 코딩 플랜 토큰으로 전사 결과를 결정·실행·추적 가능한 회의록으로 증강합니다.</p>
+            <p>등록한 OpenAI 호환 API 토큰으로 전사 결과를 결정·실행·추적 가능한 회의록으로 증강합니다.</p>
           </div>
           <div id="augment-key-hint" class="augment-hint" hidden>
             <i class="ph ph-key" aria-hidden="true"></i>
-            <p>AI 증강에는 z.ai 코딩 플랜 API 키가 필요합니다. <button class="text-button" type="button" data-action="open-settings">설정에서 등록</button></p>
+            <p>AI 증강에는 OpenAI 호환 API 키가 필요합니다. <button class="text-button" type="button" data-action="open-settings">설정에서 등록</button></p>
           </div>
           <p id="augment-waiting" class="augment-hint"><i class="ph ph-hourglass" aria-hidden="true"></i>전사가 끝나면 이 단계에서 회의록을 증강할 수 있습니다.</p>
           <div class="artifact-list">
@@ -167,7 +167,7 @@ export const appTemplate = `
           </div>
         </section>
       </div>
-      <footer class="app-footer"><span>Galpi 0.1</span><span>전사는 로컬에서, AI 증강은 z.ai에서 실행됩니다.</span></footer>
+      <footer class="app-footer"><span>Galpi 0.1</span><span>전사는 로컬에서, AI 증강은 선택한 API 제공자에서 실행됩니다.</span></footer>
     </main>
 
     <div id="settings-dialog" class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
@@ -226,22 +226,26 @@ export const appTemplate = `
         <section class="settings-section" aria-labelledby="assistant-settings-title">
           <div class="settings-section-heading">
             <div><strong id="assistant-settings-title">회의록 가공</strong><span id="assistant-configured-state">토큰 없음</span></div>
-            <p>z.ai 코딩 플랜 토큰으로 전사본을 회의록으로 가공합니다. 이 단계에서만 전사본이 z.ai로 전송됩니다.</p>
+            <p>OpenAI 호환 API 토큰으로 전사본을 회의록으로 가공합니다. 이 단계에서만 전사본이 증강 제공자로 전송됩니다.</p>
           </div>
-          <label class="sr-only" for="settings-assistant-key">z.ai 코딩 플랜 토큰</label>
+          <label class="sr-only" for="settings-assistant-key">증강 API 토큰</label>
           <div class="secret-field">
-            <input id="settings-assistant-key" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="z.ai 코딩 플랜 API Key" aria-describedby="settings-assistant-help" data-visible="false" readonly />
+            <input id="settings-assistant-key" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="API Key" aria-describedby="settings-assistant-help" data-visible="false" readonly />
             <button id="toggle-assistant-visibility" class="secret-visibility-button" type="button" data-action="toggle-assistant-visibility" aria-label="토큰 표시"><i class="ph ph-eye"></i></button>
           </div>
-          <p id="settings-assistant-help">z.ai 계정의 Coding Plan에서 발급한 API Key를 사용합니다.</p>
+          <p id="settings-assistant-help">사용 중인 OpenAI 호환 서비스(z.ai 코딩 플랜, OpenRouter 등)에서 발급한 API Key를 사용합니다.</p>
           <label class="settings-field-label" for="settings-assistant-model">가공 모델</label>
-          <select id="settings-assistant-model" class="settings-select" aria-describedby="settings-model-help">
-            <option value="glm-5.3">GLM-5.3 · 기본값</option>
-            <option value="glm-5.2">GLM-5.2 · 이전 플래그십</option>
-            <option value="glm-5-turbo">GLM-5-Turbo · 빠른 응답</option>
-            <option value="glm-4.6">GLM-4.6 · 이전 세대</option>
-          </select>
-          <p id="settings-model-help">긴 회의는 상위 모델이, 짧은 회의는 Turbo가 유리합니다. 코딩 플랜 사용량은 모델별로 다르게 차감됩니다.</p>
+          <input id="settings-assistant-model" class="settings-input" type="text" list="assistant-model-suggestions" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="glm-5.3" aria-describedby="settings-model-help" />
+          <datalist id="assistant-model-suggestions">
+            <option value="glm-5.3">z.ai · 기본값</option>
+            <option value="glm-5.2">z.ai · 이전 플래그십</option>
+            <option value="glm-5-turbo">z.ai · 빠른 응답</option>
+            <option value="glm-4.6">z.ai · 이전 세대</option>
+          </datalist>
+          <p id="settings-model-help">z.ai 코딩 플랜의 GLM 모델이 기본값입니다. 다른 제공자를 쓸 때는 그 제공자의 모델 이름을 그대로 입력하세요. 긴 회의는 상위 모델이, 짧은 회의는 Turbo가 유리합니다.</p>
+          <label class="settings-field-label" for="settings-assistant-base-url">API 주소 (선택)</label>
+          <input id="settings-assistant-base-url" class="settings-input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://api.z.ai/api/coding/paas/v4 (기본값)" aria-describedby="settings-base-url-help" />
+          <p id="settings-base-url-help">OpenAI 호환 엔드포인트라면 모두 사용할 수 있습니다. OpenRouter는 https://openrouter.ai/api/v1 를 입력하세요. 비워 두면 z.ai 코딩 플랜 주소를 사용합니다.</p>
           <label class="settings-field-label" for="settings-assistant-background">사전 정보</label>
           <textarea id="settings-assistant-background" class="settings-textarea" rows="8" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="settings-background-help" placeholder="제품/서비스: 갈피 (회의 녹음·전사 데스크톱 앱)&#10;팀: 하빈(팀리더), 지우(백엔드)&#10;별칭: 프로님 = 하빈&#10;도메인 용어: 화자분리, 정렬 체크포인트"></textarea>
           <p id="settings-background-help">참석자·제품명·약어·도메인 용어를 적어 두면 잘못 들린 단어와 화자를 보정합니다. 이 Mac에만 저장되고 회의록을 만들 때 함께 전송됩니다.</p>

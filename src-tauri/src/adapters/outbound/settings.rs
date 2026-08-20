@@ -28,6 +28,7 @@ struct LocalSettings {
     hugging_face_token: Option<String>,
     assistant_api_key: Option<String>,
     assistant_model: Option<String>,
+    assistant_base_url: Option<String>,
     assistant_background: Option<String>,
     participants: Vec<Participant>,
     glossary: Vec<GlossaryEntry>,
@@ -38,6 +39,7 @@ impl LocalSettings {
         self.hugging_face_token.is_none()
             && self.assistant_api_key.is_none()
             && self.assistant_model.is_none()
+            && self.assistant_base_url.is_none()
             && self.assistant_background.is_none()
             && self.participants.is_empty()
             && self.glossary.is_empty()
@@ -61,6 +63,7 @@ impl SettingsPort for LocalSettingsStore {
         Ok(AssistantSettings {
             api_key: settings.assistant_api_key,
             model: settings.assistant_model,
+            base_url: settings.assistant_base_url,
             background: settings.assistant_background,
             participants: settings.participants,
             glossary: settings.glossary,
@@ -71,6 +74,7 @@ impl SettingsPort for LocalSettingsStore {
         let mut settings = read_settings(&self.path).await?;
         settings.assistant_api_key = assistant.api_key;
         settings.assistant_model = assistant.model;
+        settings.assistant_base_url = assistant.base_url;
         settings.assistant_background = assistant.background;
         settings.participants = assistant.participants;
         settings.glossary = assistant.glossary;
@@ -183,6 +187,7 @@ mod tests {
             .save_assistant(AssistantSettings {
                 api_key: Some("zai_key".to_owned()),
                 model: Some("glm-5.2".to_owned()),
+                base_url: Some("https://openrouter.ai/api/v1".to_owned()),
                 background: Some("제품: 갈피".to_owned()),
                 participants: vec![Participant {
                     id: "hb".to_owned(),
@@ -207,6 +212,10 @@ mod tests {
         let assistant = store.load_assistant().await?;
         assert_eq!(assistant.api_key.as_deref(), Some("zai_key"));
         assert_eq!(assistant.model.as_deref(), Some("glm-5.2"));
+        assert_eq!(
+            assistant.base_url.as_deref(),
+            Some("https://openrouter.ai/api/v1")
+        );
         assert_eq!(assistant.background.as_deref(), Some("제품: 갈피"));
         let saved = assistant
             .participants

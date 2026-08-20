@@ -81,6 +81,7 @@ pub struct RefinementJob<'a> {
     pub participants: &'a [Participant],
     pub glossary: &'a [GlossaryEntry],
     pub model: Option<&'a str>,
+    pub base_url: Option<&'a str>,
     pub api_key: &'a str,
 }
 

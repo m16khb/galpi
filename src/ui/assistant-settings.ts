@@ -3,6 +3,7 @@ import { nextTokenVisibility, tokenDisplayValue } from "./token-settings"
 
 const KEY_SELECTOR = "#settings-assistant-key"
 const MODEL_SELECTOR = "#settings-assistant-model"
+const BASE_URL_SELECTOR = "#settings-assistant-base-url"
 const BACKGROUND_SELECTOR = "#settings-assistant-background"
 
 export const DEFAULT_ASSISTANT_MODEL = "glm-5.3"
@@ -22,9 +23,12 @@ export class AssistantSettingsView {
   settings(): AssistantCredentials {
     const background = this.element<HTMLTextAreaElement>(BACKGROUND_SELECTOR).value.trim()
     const apiKey = this.persistedKey ?? this.element<HTMLInputElement>(KEY_SELECTOR).value.trim()
+    const baseUrl = this.element<HTMLInputElement>(BASE_URL_SELECTOR).value.trim()
+    const model = this.element<HTMLInputElement>(MODEL_SELECTOR).value.trim()
     return {
       apiKey: apiKey.length > 0 ? apiKey : null,
-      model: this.element<HTMLSelectElement>(MODEL_SELECTOR).value,
+      model: model.length > 0 ? model : DEFAULT_ASSISTANT_MODEL,
+      baseUrl: baseUrl.length > 0 ? baseUrl : null,
       background: background.length > 0 ? background : null,
     }
   }
@@ -37,7 +41,8 @@ export class AssistantSettingsView {
     input.readOnly = settings.apiKey !== null
     input.dataset["visible"] = "false"
     this.renderVisibility(false)
-    this.selectModel(settings.model ?? DEFAULT_ASSISTANT_MODEL)
+    this.element<HTMLInputElement>(MODEL_SELECTOR).value = settings.model ?? DEFAULT_ASSISTANT_MODEL
+    this.element<HTMLInputElement>(BASE_URL_SELECTOR).value = settings.baseUrl ?? ""
     this.element<HTMLTextAreaElement>(BACKGROUND_SELECTOR).value = settings.background ?? ""
     this.setConfigured(settings.apiKey !== null)
   }
@@ -60,21 +65,10 @@ export class AssistantSettingsView {
 
   setBusy(busy: boolean): void {
     this.element<HTMLInputElement>(KEY_SELECTOR).disabled = busy
-    this.element<HTMLSelectElement>(MODEL_SELECTOR).disabled = busy
+    this.element<HTMLInputElement>(MODEL_SELECTOR).disabled = busy
+    this.element<HTMLInputElement>(BASE_URL_SELECTOR).disabled = busy
     this.element<HTMLTextAreaElement>(BACKGROUND_SELECTOR).disabled = busy
     this.element<HTMLButtonElement>('[data-action="toggle-assistant-visibility"]').disabled = busy
-  }
-
-  private selectModel(model: string): void {
-    const select = this.element<HTMLSelectElement>(MODEL_SELECTOR)
-    const known = [...select.options].some((option) => option.value === model)
-    if (!known) {
-      const option = select.ownerDocument.createElement("option")
-      option.value = model
-      option.textContent = `${model} · 저장된 설정`
-      select.append(option)
-    }
-    select.value = model
   }
 
   private renderVisibility(visible: boolean): void {
