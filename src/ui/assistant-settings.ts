@@ -36,20 +36,24 @@ export class AssistantSettingsView {
   }
 
   setSettings(settings: AssistantCredentials): void {
-    const input = this.element<HTMLInputElement>(KEY_SELECTOR)
-    this.persistedKey = settings.apiKey
-    this.visible = false
-    input.value = settings.apiKey === null ? "" : tokenDisplayValue(settings.apiKey, false)
-    input.readOnly = settings.apiKey !== null
-    input.dataset["visible"] = "false"
-    this.renderVisibility(false)
     const model = settings.model ?? DEFAULT_ASSISTANT_MODEL
     this.element<HTMLInputElement>(MODEL_SELECTOR).value = model
     this.element<HTMLInputElement>(BASE_URL_SELECTOR).value = settings.baseUrl ?? ""
     this.element<HTMLSelectElement>(EFFORT_SELECTOR).value =
       settings.reasoningEffort ?? (model.toLowerCase().startsWith("glm") ? "max" : "")
     this.element<HTMLTextAreaElement>(BACKGROUND_SELECTOR).value = settings.background ?? ""
-    this.setConfigured(settings.apiKey !== null)
+    this.setPersistedKey(settings.apiKey)
+  }
+
+  setPersistedKey(apiKey: string | null): void {
+    const input = this.element<HTMLInputElement>(KEY_SELECTOR)
+    this.persistedKey = apiKey
+    this.visible = false
+    input.value = apiKey === null ? "" : tokenDisplayValue(apiKey, false)
+    input.readOnly = apiKey !== null
+    input.dataset["visible"] = "false"
+    this.renderVisibility(false)
+    this.setConfigured(apiKey !== null)
   }
 
   toggleVisibility(): void {

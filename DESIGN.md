@@ -130,6 +130,14 @@ All spacing derives from 4px.
 - **Accessibility**: labels are never placeholders; error and helper IDs connect with `aria-describedby`.
 - **Layout**: stack primitive; related controls use a wrapping cluster.
 
+### Settings Autosave
+
+- **Behavior**: text fields persist when the user commits the edit (blur or Enter); selects and row removals persist immediately. There is no global save button.
+- **Concurrency**: while one local write is active, later changes coalesce into one latest-state write instead of racing or disabling the sheet.
+- **Feedback**: the polite settings status line moves through `저장 중` → `자동 저장됨`, or an actionable error. Errors preserve the edited values and the next change retries.
+- **Destructive actions**: clearing a stored credential remains an explicit labeled action; autosave never turns a destructive clear into an implicit side effect.
+- **Accessibility**: persistence feedback uses the existing `role="status"` live region and never steals focus.
+
 ### Phase Timeline
 
 - **Structure**: waveform progress rule plus four named phases and live phase message.

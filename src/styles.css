@@ -648,6 +648,11 @@ summary:focus-visible {
   line-height: 1.5;
 }
 
+.settings-section p {
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
 .secret-field {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 42px;
@@ -740,15 +745,32 @@ summary:focus-visible {
   border-color: var(--accent-primary);
 }
 
+.settings-select:focus-visible,
+.settings-input:focus-visible,
+.settings-textarea:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
 .settings-message {
   min-height: 18px;
   margin: 14px 0 0;
   color: var(--status-success);
   font-size: 11px;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+.settings-header .settings-message {
+  margin-top: 6px;
 }
 
 .settings-message[data-state="error"] {
   color: var(--status-error);
+}
+
+.settings-message[data-state="saving"] {
+  color: var(--status-warning);
 }
 
 .settings-actions {

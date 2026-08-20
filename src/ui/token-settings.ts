@@ -66,15 +66,15 @@ export class TokenSettingsView {
 
   setBusy(busy: boolean): void {
     this.element<HTMLInputElement>("#settings-hf-token").disabled = busy
-    for (const action of ["save-token", "clear-token", "toggle-token-visibility"]) {
+    for (const action of ["clear-token", "toggle-token-visibility"]) {
       this.element<HTMLButtonElement>(`[data-action="${action}"]`).disabled = busy
     }
   }
 
-  showMessage(message: string, error = false): void {
+  showMessage(message: string, state: "ready" | "saving" | "error" = "ready"): void {
     const element = this.element("#settings-message")
     element.textContent = message
-    element.dataset["state"] = error ? "error" : "ready"
+    element.dataset["state"] = state
   }
 
   private renderVisibility(visible: boolean): void {

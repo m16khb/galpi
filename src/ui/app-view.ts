@@ -26,6 +26,7 @@ export class AppView {
   private hasResult = false
   private minutesReady = false
   private assistantKeyReady = false
+  private settingsChangeHandler: (() => void) | null = null
 
   constructor(root: HTMLElement) {
     this.root = root
@@ -34,8 +35,9 @@ export class AppView {
     this.assistantSettings = new AssistantSettingsView(root)
     this.participantSettings = new ParticipantSettingsView(root, () => {
       this.attendees.setRoster(this.participantSettings.roster())
+      this.settingsChangeHandler?.()
     })
-    this.glossarySettings = new GlossarySettingsView(root, () => {})
+    this.glossarySettings = new GlossarySettingsView(root, () => this.settingsChangeHandler?.())
     this.attendees = new ParticipantPickerView(root, (count) => this.applyAttendeeCount(count))
     bindTokenGuide(this.root)
   }
@@ -61,6 +63,20 @@ export class AppView {
   on(action: string, handler: () => void): void {
     for (const element of this.root.querySelectorAll<HTMLElement>(`[data-action="${action}"]`)) {
       element.addEventListener("click", handler)
+    }
+  }
+
+  onSettingsChange(handler: () => void): void {
+    this.settingsChangeHandler = handler
+    for (const selector of [
+      "#settings-hf-token",
+      "#settings-assistant-key",
+      "#settings-assistant-model",
+      "#settings-assistant-effort",
+      "#settings-assistant-base-url",
+      "#settings-assistant-background",
+    ]) {
+      this.element(selector).addEventListener("change", handler)
     }
   }
 

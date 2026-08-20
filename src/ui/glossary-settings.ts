@@ -10,7 +10,9 @@ export class GlossarySettingsView {
   constructor(root: HTMLElement, onChange: () => void) {
     this.root = root
     this.onChange = onChange
-    this.element(ROWS_SELECTOR).addEventListener("input", () => this.refreshCount())
+    const rows = this.element(ROWS_SELECTOR)
+    rows.addEventListener("input", () => this.refreshCount())
+    rows.addEventListener("change", () => this.onChange())
   }
 
   setEntries(entries: readonly GlossaryEntry[]): void {
@@ -68,6 +70,7 @@ export class GlossarySettingsView {
     remove.addEventListener("click", () => {
       row.remove()
       this.refreshCount()
+      this.onChange()
     })
     row.append(term, description, remove)
     return row
@@ -80,7 +83,6 @@ export class GlossarySettingsView {
     state.dataset["state"] = named === 0 ? "pending" : "ready"
     this.element("#glossary-rows-empty").hidden =
       this.root.querySelectorAll(".glossary-row").length > 0
-    this.onChange()
   }
 
   private field<T extends HTMLInputElement | HTMLTextAreaElement>(

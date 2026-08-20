@@ -15,7 +15,9 @@ export class ParticipantSettingsView {
   constructor(root: HTMLElement, onChange: () => void) {
     this.root = root
     this.onChange = onChange
-    this.element(ROWS_SELECTOR).addEventListener("input", () => this.refreshCount())
+    const rows = this.element(ROWS_SELECTOR)
+    rows.addEventListener("input", () => this.refreshCount())
+    rows.addEventListener("change", () => this.onChange())
   }
 
   setRoster(participants: readonly Participant[]): void {
@@ -86,6 +88,7 @@ export class ParticipantSettingsView {
     remove.addEventListener("click", () => {
       row.remove()
       this.refreshCount()
+      this.onChange()
     })
     fields.append(remove)
     const description = document.createElement("textarea")
@@ -119,7 +122,6 @@ export class ParticipantSettingsView {
     state.dataset["state"] = named === 0 ? "pending" : "ready"
     this.element("#participant-rows-empty").hidden =
       this.root.querySelectorAll(".participant-row").length > 0
-    this.onChange()
   }
 
   private field<T extends HTMLInputElement | HTMLTextAreaElement>(

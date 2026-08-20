@@ -1,0 +1,231 @@
+import { describe, expect, test } from "bun:test"
+import { Window } from "happy-dom"
+
+import type { BackendPort } from "../adapters/tauri-backend"
+import type { AssistantSettings } from "../domain/job"
+import { AppView } from "./app-view"
+import { AppController } from "./controller"
+
+const initialAssistant: AssistantSettings = {
+  apiKey: null,
+  model: "glm-5.3",
+  baseUrl: null,
+  reasoningEffort: "max",
+  background: null,
+  participants: [
+    {
+      id: "person-1",
+      name: "하빈",
+      team: "devops",
+      role: "팀원",
+      description: null,
+      aliases: [],
+    },
+  ],
+  glossary: [{ id: "term-1", term: "갈피", description: null }],
+}
+
+function createBackend(
+  onSave: (settings: AssistantSettings) => void | Promise<void>,
+): BackendPort {
+  return {
+    diagnose: async () => ({
+      engineReady: true,
+      modelsReady: true,
+      ffmpegReady: true,
+      dataDirectory: "/tmp/galpi",
+      defaultOutputDirectory: "/tmp/galpi/out",
+      engineVersion: "test",
+    }),
+    prepare: async () => {
+      throw new Error("unused prepare")
+    },
+    loadHuggingFaceToken: async () => null,
+    saveHuggingFaceToken: async () => undefined,
+    loadAssistantSettings: async () => initialAssistant,
+    saveAssistantSettings: async (settings) => {
+      await onSave(settings)
+    },
+    refineTranscript: async () => {
+      throw new Error("unused refinement")
+    },
+    transcribe: async () => {
+      throw new Error("unused transcription")
+    },
+    cancel: async () => undefined,
+    openArtifact: async () => undefined,
+    revealOutput: async () => undefined,
+    startRecording: async () => {
+      throw new Error("unused recording")
+    },
+    stopRecording: async () => {
+      throw new Error("unused recording")
+    },
+    cancelRecording: async () => undefined,
+    listenToRecordingFailures: async () => () => undefined,
+    chooseAudio: async () => null,
+    chooseOutputDirectory: async () => null,
+    openModelAccessPage: async () => undefined,
+    listenToJobs: async () => () => undefined,
+  }
+}
+
+function withTimeout<T>(value: Promise<T>): Promise<T> {
+  return Promise.race([
+    value,
+    new Promise<never>((_resolve, reject) => {
+      setTimeout(() => reject(new Error("settings autosave timed out")), 200)
+    }),
+  ])
+}
+
+function deferred<T>(): {
+  readonly promise: Promise<T>
+  readonly resolve: (value: T) => void
+} {
+  let resolver: ((value: T) => void) | undefined
+  const promise = new Promise<T>((resolve) => {
+    resolver = resolve
+  })
+  return {
+    promise,
+    resolve: (value) => {
+      if (resolver === undefined) throw new Error("deferred resolver is missing")
+      resolver(value)
+    },
+  }
+}
+
+function dispatchChange(window: Window, element: HTMLElement): void {
+  element.dispatchEvent(new window.Event("change", { bubbles: true }) as unknown as Event)
+}
+
+async function createHarness(
+  onSave: (settings: AssistantSettings) => void | Promise<void>,
+): Promise<{
+  readonly window: Window
+  readonly root: HTMLElement
+  readonly controller: AppController
+}> {
+  const window = new Window()
+  const root = window.document.createElement("div") as unknown as HTMLElement
+  window.document.body.appendChild(root as unknown as never)
+  const view = new AppView(root)
+  const controller = new AppController(createBackend(onSave), view)
+  await controller.start()
+  view.assistantSettings.setSettings(initialAssistant)
+  return { window, root, controller }
+}
+
+describe("settings autosave (real DOM)", () => {
+  test("persists a committed settings edit without a save button", async () => {
+    // Given
+    const saved = deferred<AssistantSettings>()
+    const { window, root, controller } = await createHarness((settings) =>
+      saved.resolve(settings),
+    )
+    const model = root.querySelector<HTMLInputElement>("#settings-assistant-model")
+    if (model === null) throw new Error("model field is missing")
+
+    // When
+    model.value = "glm-5-turbo"
+    dispatchChange(window, model)
+
+    // Then
+    const persisted = await withTimeout(saved.promise)
+    expect(persisted.model).toBe("glm-5-turbo")
+    expect(root.querySelector('[data-action="save-token"]')).toBeNull()
+    expect(root.querySelector("#settings-message")?.textContent).toContain("자동 저장")
+    controller.stop()
+  })
+
+  test("persists participant removal immediately", async () => {
+    // Given
+    const saved = deferred<AssistantSettings>()
+    const { root, controller } = await createHarness((settings) => saved.resolve(settings))
+    const remove = root.querySelector<HTMLButtonElement>(".participant-remove")
+    if (remove === null) throw new Error("participant remove button is missing")
+
+    // When
+    remove.click()
+
+    // Then
+    expect((await withTimeout(saved.promise)).participants).toEqual([])
+    controller.stop()
+  })
+
+  test("persists glossary edits when the field change is committed", async () => {
+    // Given
+    const saved = deferred<AssistantSettings>()
+    const { window, root, controller } = await createHarness((settings) =>
+      saved.resolve(settings),
+    )
+    const term = root.querySelector<HTMLInputElement>(".glossary-term")
+    if (term === null) throw new Error("glossary term field is missing")
+
+    // When
+    term.value = "화자분리"
+    dispatchChange(window, term)
+
+    // Then
+    expect((await withTimeout(saved.promise)).glossary[0]?.term).toBe("화자분리")
+    controller.stop()
+  })
+
+  test("coalesces edits made while a save is active", async () => {
+    // Given
+    const firstGate = deferred<void>()
+    const firstStarted = deferred<void>()
+    const secondSaved = deferred<AssistantSettings>()
+    let saves = 0
+    const { window, root, controller } = await createHarness(async (settings) => {
+      saves += 1
+      if (saves === 1) {
+        firstStarted.resolve(undefined)
+        await firstGate.promise
+      } else {
+        secondSaved.resolve(settings)
+      }
+    })
+    const model = root.querySelector<HTMLInputElement>("#settings-assistant-model")
+    if (model === null) throw new Error("model field is missing")
+
+    // When
+    model.value = "glm-5.2"
+    dispatchChange(window, model)
+    await withTimeout(firstStarted.promise)
+    model.value = "glm-5-turbo"
+    dispatchChange(window, model)
+    firstGate.resolve(undefined)
+
+    // Then
+    expect((await withTimeout(secondSaved.promise)).model).toBe("glm-5-turbo")
+    expect(saves).toBe(2)
+    controller.stop()
+  })
+
+  test("preserves edits and shows the error when autosave fails", async () => {
+    // Given
+    const attempted = deferred<void>()
+    const { window, root, controller } = await createHarness(() => {
+      attempted.resolve(undefined)
+      throw new Error("settings write failed")
+    })
+    const model = root.querySelector<HTMLInputElement>("#settings-assistant-model")
+    if (model === null) throw new Error("model field is missing")
+
+    // When
+    model.value = "glm-5-turbo"
+    dispatchChange(window, model)
+    await withTimeout(attempted.promise)
+    await Promise.resolve()
+
+    // Then
+    expect(model.value).toBe("glm-5-turbo")
+    expect(model.disabled).toBeFalse()
+    expect(root.querySelector("#settings-message")?.textContent).toContain(
+      "수정 내용은 유지되며 다음 변경 때 다시 저장합니다.",
+    )
+    controller.stop()
+  })
+})

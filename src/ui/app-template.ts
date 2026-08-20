@@ -182,7 +182,7 @@ export const appTemplate = `
     <div id="settings-dialog" class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
       <div class="settings-sheet">
         <header class="settings-header">
-          <div><span class="eyebrow">APP SETTINGS</span><h2 id="settings-title">설정</h2></div>
+          <div><span class="eyebrow">APP SETTINGS</span><h2 id="settings-title">설정</h2><p id="settings-message" class="settings-message" role="status" aria-live="polite" data-state="ready">변경사항은 자동으로 저장됩니다.</p></div>
           <button class="settings-close-button" type="button" data-action="close-settings" aria-label="설정 닫기"><i class="ph ph-x"></i></button>
         </header>
         <div class="settings-body">
@@ -268,10 +268,8 @@ export const appTemplate = `
           <textarea id="settings-assistant-background" class="settings-textarea" rows="8" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="settings-background-help" placeholder="제품/서비스: 갈피 (회의 녹음·전사 데스크톱 앱)&#10;팀: 하빈(팀리더), 지우(백엔드)&#10;별칭: 프로님 = 하빈&#10;도메인 용어: 화자분리, 정렬 체크포인트"></textarea>
           <p id="settings-background-help">참석자·제품명·약어·도메인 용어를 적어 두면 잘못 들린 단어와 화자를 보정합니다. 이 Mac에만 저장되고 회의록을 만들 때 함께 전송됩니다.</p>
         </section>
-        <p id="settings-message" class="settings-message" role="status" aria-live="polite"></p>
         <div class="settings-actions">
-          <button class="secondary-button danger" type="button" data-action="clear-token">저장된 토큰 지우기</button>
-          <button class="primary-button" type="button" data-action="save-token">설정 저장</button>
+          <button class="secondary-button danger" type="button" data-action="clear-token">Hugging Face 토큰 지우기</button>
         </div>
         </div>
       </div>

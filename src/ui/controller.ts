@@ -23,6 +23,8 @@ export class AppController {
   private readonly recording: RecordingController
   private unlisten: UnlistenFn | null = null
   private unlistenRecording: UnlistenFn | null = null
+  private settingsSavePending = false
+  private settingsSaveActive = false
 
   constructor(backend: BackendPort, view: AppView) {
     this.backend = backend
@@ -76,7 +78,7 @@ export class AppController {
     this.view.on("toggle-assistant-visibility", () =>
       this.view.assistantSettings.toggleVisibility(),
     )
-    this.view.on("save-token", () => void this.saveSettings())
+    this.view.onSettingsChange(() => this.requestSettingsSave())
     this.view.on("add-participant", () => this.view.participantSettings.addRow())
     this.view.on("add-glossary-entry", () => this.view.glossarySettings.addRow())
     this.view.on("clear-attendees", () => this.view.attendees.clear())
@@ -133,21 +135,20 @@ export class AppController {
       this.view.setAssistantKeyReady(loaded.apiKey !== null)
       this.view.participantSettings.setRoster(loaded.participants)
       this.view.glossarySettings.setEntries(loaded.glossary)
-      settings.showMessage("")
+      settings.showMessage("변경사항은 자동으로 저장됩니다.")
     } catch (error) {
-      settings.showMessage(errorMessage(error), true)
+      settings.showMessage(errorMessage(error), "error")
     } finally {
       settings.setBusy(false)
       assistant.setBusy(false)
     }
   }
 
-  private async saveSettings(): Promise<void> {
+  private async persistSettings(): Promise<void> {
     const settings = this.view.tokenSettings
     const assistant = this.view.assistantSettings
     const token = settings.token().trim()
-    settings.setBusy(true)
-    assistant.setBusy(true)
+    settings.showMessage("변경사항을 자동 저장하는 중입니다.", "saving")
     try {
       await this.backend.saveHuggingFaceToken(token)
       settings.setToken(token.length > 0 ? token : null)
@@ -157,17 +158,32 @@ export class AppController {
         glossary: this.view.glossarySettings.entries(),
       }
       await this.backend.saveAssistantSettings(saved)
-      assistant.setSettings(saved)
+      assistant.setPersistedKey(saved.apiKey)
       this.view.setAssistantKeyReady(saved.apiKey !== null)
-      this.view.participantSettings.setRoster(saved.participants)
-      this.view.glossarySettings.setEntries(saved.glossary)
       this.view.attendees.setRoster(saved.participants)
-      settings.showMessage("설정을 저장했습니다.")
+      settings.showMessage("변경사항을 자동 저장했습니다.")
     } catch (error) {
-      settings.showMessage(errorMessage(error), true)
+      settings.showMessage(
+        `${errorMessage(error)} · 수정 내용은 유지되며 다음 변경 때 다시 저장합니다.`,
+        "error",
+      )
+    }
+  }
+
+  private requestSettingsSave(): void {
+    this.settingsSavePending = true
+    if (!this.settingsSaveActive) void this.flushSettingsSaves()
+  }
+
+  private async flushSettingsSaves(): Promise<void> {
+    this.settingsSaveActive = true
+    try {
+      while (this.settingsSavePending) {
+        this.settingsSavePending = false
+        await this.persistSettings()
+      }
     } finally {
-      settings.setBusy(false)
-      assistant.setBusy(false)
+      this.settingsSaveActive = false
     }
   }
 
@@ -179,7 +195,7 @@ export class AppController {
       settings.clearToken()
       settings.showMessage("저장된 토큰을 지웠습니다.")
     } catch (error) {
-      settings.showMessage(errorMessage(error), true)
+      settings.showMessage(errorMessage(error), "error")
     } finally {
       settings.setBusy(false)
     }
