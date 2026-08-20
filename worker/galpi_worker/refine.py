@@ -23,8 +23,9 @@ SYSTEM_PROMPT = """당신은 한국어 회의 기록을 실행 가능한 회의�
 - 시간순 받아쓰기 요약을 만들지 않습니다. 회의가 끝난 뒤 남아야 하는 결정, 담당, 기한, 리스크, 후속 확인을 남깁니다.
 - 결정사항에는 확실한 내용만 씁니다. 불확실한 내용은 `리스크/열린 질문`이나 보정 부록에 씁니다.
 - 사전 정보에 있는 제품명, 서비스명, 팀 구성원, 별칭, 도메인 용어를 우선 적용해 오인식된 표현을 보정합니다.
+- 단어집에 등록된 용어는 표기를 그대로 따르고, 오인식된 표현은 단어집 기준으로 보정합니다.
 - 근거 없이 `SPEAKER_00` 같은 화자 라벨을 실명으로 바꾸지 않습니다. 근거가 부족하면 `{이름} 추정`으로 쓰고 보정 부록에 신뢰도를 남깁니다.
-- 참석자 명단이 주어지면 화자 라벨의 실명 후보는 그 명단 안에서만 찾습니다. 명단에 없는 사람을 추정해 넣지 않고, 명단의 별칭은 대표 이름으로 통일합니다.
+- 참석자 명단이 주어지면 화자 라벨의 실명 후보는 그 명단 안에서만 찾습니다. 명단에 없는 사람을 추정해 넣지 않고, 명단의 별칭은 대표 이름으로 통일합니다. 참석자 설명에 담긴 담당 업무는 액션 보드의 담당 매칭에 활용합니다.
 - 실행 항목은 산출물 중심으로 씁니다. 기한이 전사본에 없으면 `미정`으로 씁니다.
 - 원문 전사본은 별도 파일로 이미 보관되므로 회의록 본문에 다시 붙여넣지 않습니다.
 - 출력은 Markdown 문서 하나이며, 코드펜스로 전체를 감싸지 않습니다.
@@ -73,6 +74,7 @@ SYSTEM_PROMPT = """당신은 한국어 회의 기록을 실행 가능한 회의�
 
 NO_BACKGROUND = "(등록된 사전 정보가 없습니다. 전사본에 있는 근거만 사용하세요.)"
 NO_PARTICIPANTS = "(선택된 참석자가 없습니다. 전사본에 있는 근거만 사용하세요.)"
+NO_GLOSSARY = "(등록된 용어가 없습니다. 전사본에 있는 근거만 사용하세요.)"
 
 
 @dataclass(frozen=True)
@@ -80,8 +82,26 @@ class Participant:
     """One meeting attendee selected from the saved roster."""
 
     name: str
+    team: str | None
     role: str | None
+    description: str | None
     aliases: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class GlossaryEntry:
+    """One saved glossary term applied to every refinement."""
+
+    term: str
+    description: str | None
+
+
+def optional_text(value: object) -> str | None:
+    """Trim a roster field to text, treating blank as absent."""
+
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return None
 
 
 def parse_participants(payload: object) -> list[Participant]:
@@ -97,7 +117,9 @@ def parse_participants(payload: object) -> list[Participant]:
         name = fields.get("name")
         if not isinstance(name, str) or not name.strip():
             raise ValueError("participant entry had no name")
-        role = fields.get("role")
+        team = optional_text(fields.get("team"))
+        role = optional_text(fields.get("role"))
+        description = optional_text(fields.get("description"))
         raw_aliases = fields.get("aliases")
         aliases = (
             tuple(
@@ -111,11 +133,34 @@ def parse_participants(payload: object) -> list[Participant]:
         participants.append(
             Participant(
                 name=name.strip(),
-                role=role.strip() if isinstance(role, str) and role.strip() else None,
+                team=team,
+                role=role,
+                description=description,
                 aliases=aliases,
             )
         )
     return participants
+
+
+def parse_glossary(payload: object) -> list[GlossaryEntry]:
+    """Convert the glossary JSON handed over by the host into typed entries."""
+
+    if not isinstance(payload, list):
+        raise TypeError("glossary payload was not a JSON array")
+    entries: list[GlossaryEntry] = []
+    for entry in cast(list[object], payload):
+        if not isinstance(entry, dict):
+            raise TypeError("glossary entry was not a JSON object")
+        fields = cast(dict[str, object], entry)
+        term = fields.get("term")
+        if not isinstance(term, str) or not term.strip():
+            raise ValueError("glossary entry had no term")
+        entries.append(
+            GlossaryEntry(
+                term=term.strip(), description=optional_text(fields.get("description"))
+            )
+        )
+    return entries
 
 
 def render_participants(participants: list[Participant]) -> str:
@@ -125,17 +170,36 @@ def render_participants(participants: list[Participant]) -> str:
         return NO_PARTICIPANTS
     lines: list[str] = []
     for participant in participants:
-        line = f"- {participant.name}"
-        if participant.role is not None:
-            line += f" ({participant.role})"
+        detail = " · ".join(
+            part for part in (participant.team, participant.role) if part is not None
+        )
+        line = f"- {participant.name}" + (f" ({detail})" if detail else "")
         if participant.aliases:
             line += f" / 별칭: {', '.join(participant.aliases)}"
+        if participant.description is not None:
+            line += f" / 설명: {participant.description}"
         lines.append(line)
     return "\n".join(lines)
 
 
+def render_glossary(entries: list[GlossaryEntry]) -> str:
+    """Render the glossary as one prompt block."""
+
+    if not entries:
+        return NO_GLOSSARY
+    return "\n".join(
+        f"- {entry.term}: {entry.description}"
+        if entry.description is not None
+        else f"- {entry.term}"
+        for entry in entries
+    )
+
+
 def build_messages(
-    transcript: str, background: str, participants: list[Participant]
+    transcript: str,
+    background: str,
+    participants: list[Participant],
+    glossary: list[GlossaryEntry],
 ) -> list[dict[str, str]]:
     """Build the chat messages for one refinement request."""
 
@@ -151,6 +215,10 @@ def build_messages(
         "<참석자>\n"
         f"{render_participants(participants)}\n"
         "</참석자>\n\n"
+        "다음은 이 팀이 자주 쓰는 용어의 단어집입니다. 등록된 표기를 그대로 따르세요.\n"
+        "<단어집>\n"
+        f"{render_glossary(glossary)}\n"
+        "</단어집>\n\n"
         "다음은 화자분리된 회의 전사본입니다.\n"
         "<전사본>\n"
         f"{transcript.strip()}\n"
@@ -249,6 +317,7 @@ def refine(
     output_path: Path,
     background_path: Path | None,
     participants_path: Path | None,
+    glossary_path: Path | None,
     model: str,
     events: EventWriter,
 ) -> None:
@@ -271,6 +340,11 @@ def refine(
         if participants_path is not None and participants_path.is_file()
         else []
     )
+    glossary = (
+        parse_glossary(json.loads(glossary_path.read_text(encoding="utf-8")))
+        if glossary_path is not None and glossary_path.is_file()
+        else []
+    )
     events.emit(
         "phase",
         phase="refining",
@@ -278,7 +352,7 @@ def refine(
         message=f"{model} 모델로 회의록을 작성하는 중입니다.",
     )
     document = request_minutes(
-        build_messages(transcript, background, participants), model, api_key
+        build_messages(transcript, background, participants, glossary), model, api_key
     )
     events.emit(
         "phase", phase="writing", percent=90.0, message="회의록을 저장하는 중입니다."

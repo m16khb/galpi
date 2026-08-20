@@ -1,5 +1,7 @@
 use super::error::AppError;
-use super::model::{AssistantSettings, CompletedTranscription, EnvironmentStatus, Participant};
+use super::model::{
+    AssistantSettings, CompletedTranscription, EnvironmentStatus, GlossaryEntry, Participant,
+};
 use super::ports::{
     ArtifactPort, EnginePort, RecordingPort, RefinementJob, RefinementPort, SettingsPort,
     TranscriptionPort,
@@ -25,14 +27,25 @@ struct SeenRefinement {
     model: Option<String>,
     background: Option<String>,
     participants: Vec<String>,
+    glossary: Vec<String>,
 }
 
 fn participant(id: &str, name: &str) -> Participant {
     Participant {
         id: id.to_owned(),
         name: name.to_owned(),
+        team: None,
         role: None,
+        description: None,
         aliases: Vec::new(),
+    }
+}
+
+fn glossary_entry(id: &str, term: &str) -> GlossaryEntry {
+    GlossaryEntry {
+        id: id.to_owned(),
+        term: term.to_owned(),
+        description: None,
     }
 }
 
@@ -43,6 +56,7 @@ struct FakePort {
     settings_token: Mutex<Option<String>>,
     assistant: Mutex<AssistantSettings>,
     refinements: Mutex<Vec<SeenRefinement>>,
+    asr_contexts: Mutex<Vec<String>>,
     behavior: TranscriptionBehavior,
 }
 
@@ -55,6 +69,7 @@ impl FakePort {
             settings_token: Mutex::new(None),
             assistant: Mutex::new(AssistantSettings::default()),
             refinements: Mutex::new(Vec::new()),
+            asr_contexts: Mutex::new(Vec::new()),
             behavior,
         }
     }
@@ -96,6 +111,11 @@ impl RefinementPort for FakePort {
                     .participants
                     .iter()
                     .map(|participant| participant.name.clone())
+                    .collect(),
+                glossary: job
+                    .glossary
+                    .iter()
+                    .map(|entry| entry.term.clone())
                     .collect(),
             });
         Ok(job.output.to_owned())
@@ -183,7 +203,14 @@ impl TranscriptionPort for FakePort {
         _input: &Path,
         output: &Path,
         _hint: &SpeakerHint,
+        asr_context: Option<&str>,
     ) -> Result<CompletedTranscription, AppError> {
+        if let Some(context) = asr_context {
+            self.asr_contexts
+                .lock()
+                .map_err(|_| AppError::new("TEST_ERROR", "asr context lock poisoned"))?
+                .push(context.to_owned());
+        }
         match &self.behavior {
             TranscriptionBehavior::Success => Ok(completion(output)),
             TranscriptionBehavior::Failure => {
@@ -277,6 +304,66 @@ async fn invalid_hint_is_rejected_before_workspace_access() -> Result<(), AppErr
 }
 
 #[tokio::test]
+async fn transcription_carries_glossary_and_roster_for_asr_biasing() -> Result<(), AppError> {
+    // Given: a saved glossary and one participant with a spoken alias
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+    app.save_assistant_settings(AssistantSettings {
+        api_key: None,
+        model: None,
+        background: None,
+        participants: vec![Participant {
+            id: "hb".to_owned(),
+            name: "하빈".to_owned(),
+            team: None,
+            role: None,
+            description: None,
+            aliases: vec!["프로님".to_owned()],
+        }],
+        glossary: vec![GlossaryEntry {
+            id: "t1".to_owned(),
+            term: "갈피".to_owned(),
+            description: None,
+        }],
+    })
+    .await?;
+
+    // When
+    app.transcribe(request(SpeakerHint::Auto)).await?;
+
+    // Then: terms, names, and aliases all reach the worker for biasing
+    let seen = port
+        .asr_contexts
+        .lock()
+        .map_err(|_| AppError::new("TEST_ERROR", "asr context lock poisoned"))?;
+    let context = seen
+        .first()
+        .ok_or_else(|| AppError::new("TEST_ERROR", "asr context was not requested"))?;
+    assert!(context.contains("갈피"));
+    assert!(context.contains("하빈"));
+    assert!(context.contains("프로님"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn transcription_sends_no_asr_context_without_saved_context() -> Result<(), AppError> {
+    // Given: no glossary and no roster
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+
+    // When
+    app.transcribe(request(SpeakerHint::Auto)).await?;
+
+    // Then
+    let seen = port
+        .asr_contexts
+        .lock()
+        .map_err(|_| AppError::new("TEST_ERROR", "asr context lock poisoned"))?;
+    assert!(seen.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
 async fn failed_transcription_releases_active_job() -> Result<(), AppError> {
     let port = Arc::new(FakePort::new(TranscriptionBehavior::Failure));
     let app = port.application();
@@ -354,6 +441,10 @@ async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(),
             participant("jw", "지우"),
             participant("ms", "민수"),
         ],
+        glossary: vec![
+            glossary_entry("t1", "갈피"),
+            glossary_entry("t2", "화자분리"),
+        ],
     })
     .await?;
     let transcription = app.transcribe(request(SpeakerHint::Auto)).await?;
@@ -377,6 +468,8 @@ async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(),
     assert_eq!(job.background.as_deref(), Some("제품: 갈피\n팀리더: 하빈"));
     // Only the selected attendees travel, in roster order rather than selection order.
     assert_eq!(job.participants, ["하빈", "민수"]);
+    // The glossary is global context, so every saved term travels on each refinement.
+    assert_eq!(job.glossary, ["갈피", "화자분리"]);
 
     app.open_artifact(transcription.job_id, ArtifactKind::Minutes)?;
     let opened = port

@@ -7,8 +7,8 @@ const BACKGROUND_SELECTOR = "#settings-assistant-background"
 
 export const DEFAULT_ASSISTANT_MODEL = "glm-5.3"
 
-/** The assistant sheet owns credentials and context; the roster is edited beside it. */
-export type AssistantCredentials = Omit<AssistantSettings, "participants">
+/** The assistant sheet owns credentials and context; the roster and glossary are edited beside it. */
+export type AssistantCredentials = Omit<AssistantSettings, "participants" | "glossary">
 
 export class AssistantSettingsView {
   private readonly root: HTMLElement
@@ -80,10 +80,9 @@ export class AssistantSettingsView {
   private renderVisibility(visible: boolean): void {
     const button = this.element<HTMLButtonElement>("#toggle-assistant-visibility")
     button.setAttribute("aria-label", visible ? "토큰 숨기기" : "토큰 표시")
-    button.querySelector<HTMLElement>("i")?.setAttribute(
-      "class",
-      visible ? "ph ph-eye-slash" : "ph ph-eye",
-    )
+    button
+      .querySelector<HTMLElement>("i")
+      ?.setAttribute("class", visible ? "ph ph-eye-slash" : "ph ph-eye")
   }
 
   private element<T extends HTMLElement = HTMLElement>(selector: string): T {

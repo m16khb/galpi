@@ -41,8 +41,16 @@ const huggingFaceTokenSchema = z.string().nullable()
 const participantSchema = z.object({
   id: z.string(),
   name: z.string(),
+  team: z.string().nullable(),
   role: z.string().nullable(),
+  description: z.string().nullable(),
   aliases: z.array(z.string()),
+})
+
+const glossaryEntrySchema = z.object({
+  id: z.string(),
+  term: z.string(),
+  description: z.string().nullable(),
 })
 
 const assistantSettingsSchema = z.object({
@@ -50,6 +58,7 @@ const assistantSettingsSchema = z.object({
   model: z.string().nullable(),
   background: z.string().nullable(),
   participants: z.array(participantSchema),
+  glossary: z.array(glossaryEntrySchema),
 })
 
 const refinementResultSchema = z.object({
@@ -183,10 +192,7 @@ export class TauriBackend implements BackendPort {
     await invoke("save_assistant_settings", { settings })
   }
 
-  async refineTranscript(
-    jobId: string,
-    attendees: readonly string[],
-  ): Promise<RefinementResult> {
+  async refineTranscript(jobId: string, attendees: readonly string[]): Promise<RefinementResult> {
     return refinementResultSchema.parse(
       await invoke<unknown>("refine_transcript", { jobId, attendees }),
     )
@@ -216,15 +222,11 @@ export class TauriBackend implements BackendPort {
   }
 
   async startRecording(outputRoot: string): Promise<RecordingStatus> {
-    return recordingStatusSchema.parse(
-      await invoke<unknown>("start_recording", { outputRoot }),
-    )
+    return recordingStatusSchema.parse(await invoke<unknown>("start_recording", { outputRoot }))
   }
 
   async stopRecording(recordingId: string): Promise<RecordingResult> {
-    return recordingResultSchema.parse(
-      await invoke<unknown>("stop_recording", { recordingId }),
-    )
+    return recordingResultSchema.parse(await invoke<unknown>("stop_recording", { recordingId }))
   }
 
   async cancelRecording(recordingId: string): Promise<void> {

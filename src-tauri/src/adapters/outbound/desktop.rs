@@ -58,6 +58,7 @@ impl TranscriptionPort for DesktopAdapter {
         input: &Path,
         output: &Path,
         hint: &SpeakerHint,
+        asr_context: Option<&str>,
     ) -> Result<CompletedTranscription, AppError> {
         let paths = AppPaths::resolve(&self.app)?;
         transcription::run(
@@ -71,6 +72,7 @@ impl TranscriptionPort for DesktopAdapter {
             input,
             output,
             hint,
+            asr_context,
         )
         .await
     }

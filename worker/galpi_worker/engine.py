@@ -13,7 +13,12 @@ from .artifacts import (
     write_json_atomic,
     write_outputs_atomic,
 )
-from .core import SpeakerHint, validate_speaker_hint
+from .core import (
+    SpeakerHint,
+    build_asr_hotwords,
+    parse_asr_context,
+    validate_speaker_hint,
+)
 from .protocol import EventWriter
 from .runtime import configure_warnings, select_torch_device
 
@@ -26,6 +31,7 @@ def transcribe(
     output_dir: Path,
     speaker_hint: SpeakerHint,
     events: EventWriter,
+    asr_context_path: Path | None = None,
 ) -> None:
     """Transcribe, align, diarize, filter, and publish artifacts."""
 
@@ -62,15 +68,25 @@ def transcribe(
             percent=5.0,
             message="한국어 음성을 전사합니다. (CTranslate2 CPU · Apple Accelerate)",
         )
+        asr_options: dict[str, object] = {
+            "no_speech_threshold": 0.75,
+            "condition_on_previous_text": False,
+        }
+        if asr_context_path is not None and asr_context_path.is_file():
+            terms, names, aliases = parse_asr_context(
+                json.loads(asr_context_path.read_text(encoding="utf-8"))
+            )
+            hotwords = build_asr_hotwords(terms, names, aliases)
+            if hotwords:
+                # Bias recognition toward glossary terms and attendee names;
+                # the fixed-prompt batched path applies it to every chunk.
+                asr_options["hotwords"] = hotwords
         model = whisperx.load_model(
             "large-v3-turbo",
             "cpu",
             compute_type="int8",
             language="ko",
-            asr_options={
-                "no_speech_threshold": 0.75,
-                "condition_on_previous_text": False,
-            },
+            asr_options=asr_options,
             vad_options={"vad_onset": 0.6, "vad_offset": 0.4},
         )
         result = cast(

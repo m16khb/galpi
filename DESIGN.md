@@ -110,10 +110,16 @@ All spacing derives from 4px.
 
 ### Participant Chips
 
-- **Structure**: the per-meeting attendee picker renders one toggle chip per roster entry (`이름 · 역할`); a saved roster is edited in Settings under `참석자 명부` with name, optional role, and comma-separated aliases.
+- **Structure**: the per-meeting attendee picker renders one toggle chip per roster entry (`이름 · 팀 · 역할`, omitting absent parts); a saved roster is edited in Settings under `참석자 명부` with name, optional team, optional role, optional freeform description (`담당 업무 등 설명`), and comma-separated aliases. A chip's description surfaces as its tooltip; the chip label itself stays compact. An unselected chip renders no mark slot — the check glyph appears only on selection.
 - **States**: unselected, selected, disabled; selection state pairs the filled accent with a check glyph and the `N명 선택` counter, never color alone.
 - **Behavior**: selecting attendees fills the speaker-count hint (`정확히 N`) and a note says the value was auto-filled; a later manual change is never overridden. An empty roster shows a hint linking to Settings instead of an empty chip group.
 - **Accessibility**: each chip is a real checkbox inside `role="group"`; focus ring follows the global outline token; chips scroll independently above six entries.
+
+### Glossary
+
+- **Structure**: Settings hosts a `단어집` section of `용어` plus optional `뜻/설명` rows; entries persist with assistant settings and apply to every minutes refinement — there is no per-meeting toggle.
+- **Behavior**: entries reach the worker as a `<단어집>` prompt block so misheard terms are corrected against the saved spelling; an empty glossary states that no terms are registered.
+- **States**: the section header carries a `N개` counter (or `비어 있음`); rows are removed individually with a labeled X button.
 - **Accessibility**: `aria-busy` while loading and polite live label updates.
 - **Motion**: 100ms press scale, 180ms opacity label swap; instant under reduced motion.
 

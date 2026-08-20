@@ -1,4 +1,4 @@
-import { participantLabel, retainSelection, type Participant } from "../domain/participant"
+import { type Participant, participantLabel, retainSelection } from "../domain/participant"
 
 const CHIPS_SELECTOR = "#attendee-chips"
 
@@ -71,6 +71,9 @@ export class ParticipantPickerView {
     mark.setAttribute("aria-hidden", "true")
     const text = document.createElement("span")
     text.textContent = participantLabel(participant)
+    if (participant.description !== null) {
+      label.title = participant.description
+    }
     label.dataset["selected"] = String(input.checked)
     label.append(input, mark, text)
     return label

@@ -197,6 +197,15 @@ export const appTemplate = `
           <p id="participant-rows-empty" class="participant-empty">아직 등록한 참석자가 없습니다.</p>
           <button class="text-button" type="button" data-action="add-participant"><i class="ph ph-plus"></i> 참석자 추가</button>
         </section>
+        <section class="settings-section" aria-labelledby="glossary-settings-title">
+          <div class="settings-section-heading">
+            <div><strong id="glossary-settings-title">단어집</strong><span id="glossary-count-state">비어 있음</span></div>
+            <p>회의에서 자주 쓰는 용어를 등록하면 회의록에서 표기를 그대로 따르고 오인식을 보정합니다.</p>
+          </div>
+          <div id="glossary-rows" class="glossary-rows"></div>
+          <p id="glossary-rows-empty" class="participant-empty">아직 등록한 용어가 없습니다.</p>
+          <button class="text-button" type="button" data-action="add-glossary-entry"><i class="ph ph-plus"></i> 용어 추가</button>
+        </section>
         <section class="settings-section" aria-labelledby="assistant-settings-title">
           <div class="settings-section-heading">
             <div><strong id="assistant-settings-title">회의록 가공</strong><span id="assistant-configured-state">토큰 없음</span></div>

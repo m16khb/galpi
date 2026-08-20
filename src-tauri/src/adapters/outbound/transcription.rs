@@ -1,6 +1,7 @@
 use crate::adapters::outbound::environment::process_environment;
 use crate::adapters::outbound::paths::{AppPaths, worker_root};
 use crate::adapters::outbound::process::{ProcessSpec, run_process};
+use crate::adapters::outbound::refinement::write_private_file;
 use crate::application::error::AppError;
 use crate::application::model::CompletedTranscription;
 use crate::application::ports::JobEvents;
@@ -25,6 +26,36 @@ pub async fn run(
     input: &Path,
     output: &Path,
     hint: &SpeakerHint,
+    asr_context: Option<&str>,
+) -> Result<CompletedTranscription, AppError> {
+    let context = match asr_context {
+        Some(context) => Some(write_private_file(job_id, "asr-context", context).await?),
+        None => None,
+    };
+    let result = run_worker(
+        &runtime,
+        job_id,
+        cancel,
+        input,
+        output,
+        hint,
+        context.as_deref(),
+    )
+    .await;
+    if let Some(temporary) = context {
+        let _removed = tokio::fs::remove_file(&temporary).await;
+    }
+    result
+}
+
+async fn run_worker(
+    runtime: &Runtime<'_>,
+    job_id: Uuid,
+    cancel: &mut oneshot::Receiver<()>,
+    input: &Path,
+    output: &Path,
+    hint: &SpeakerHint,
+    asr_context: Option<&Path>,
 ) -> Result<CompletedTranscription, AppError> {
     let root = worker_root(runtime.app)?;
     let mut args = vec![
@@ -36,6 +67,10 @@ pub async fn run(
         "--output".into(),
         output.as_os_str().to_owned(),
     ];
+    if let Some(context) = asr_context {
+        args.push("--asr-context".into());
+        args.push(context.as_os_str().to_owned());
+    }
     match hint {
         SpeakerHint::Auto => {}
         SpeakerHint::Exact { count } => {

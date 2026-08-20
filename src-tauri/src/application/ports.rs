@@ -1,7 +1,7 @@
 use crate::application::error::AppError;
 use crate::application::model::{
-    AssistantSettings, CompletedTranscription, EnvironmentStatus, Participant, RecordingFailure,
-    RecordingResult, RecordingStatus,
+    AssistantSettings, CompletedTranscription, EnvironmentStatus, GlossaryEntry, Participant,
+    RecordingFailure, RecordingResult, RecordingStatus,
 };
 use crate::domain::job::{SetupRequest, SpeakerHint};
 use crate::domain::worker::WorkerEvent;
@@ -37,6 +37,7 @@ pub trait TranscriptionPort: Send + Sync {
         input: &Path,
         output: &Path,
         hint: &SpeakerHint,
+        asr_context: Option<&str>,
     ) -> Result<CompletedTranscription, AppError>;
 }
 
@@ -78,6 +79,7 @@ pub struct RefinementJob<'a> {
     pub output: &'a Path,
     pub background: Option<&'a str>,
     pub participants: &'a [Participant],
+    pub glossary: &'a [GlossaryEntry],
     pub model: Option<&'a str>,
     pub api_key: &'a str,
 }

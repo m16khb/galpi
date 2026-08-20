@@ -2,7 +2,7 @@ use super::environment::assistant_environment;
 use super::paths::{AppPaths, worker_root};
 use super::process::{ProcessSpec, run_process};
 use crate::application::error::AppError;
-use crate::application::model::Participant;
+use crate::application::model::{GlossaryEntry, Participant};
 use crate::application::ports::{JobEvents, RefinementJob};
 use crate::domain::worker::WorkerEvent;
 use std::path::{Path, PathBuf};
@@ -16,6 +16,19 @@ pub struct Runtime<'a> {
     pub paths: &'a AppPaths,
 }
 
+/// Temporary 0600 context files handed to the worker, removed after the run.
+struct ContextFiles {
+    background: Option<PathBuf>,
+    attendees: Option<PathBuf>,
+    glossary: Option<PathBuf>,
+}
+
+impl ContextFiles {
+    fn into_paths(self) -> [Option<PathBuf>; 3] {
+        [self.background, self.attendees, self.glossary]
+    }
+}
+
 pub async fn run(
     runtime: Runtime<'_>,
     job_id: Uuid,
@@ -23,27 +36,27 @@ pub async fn run(
     job: RefinementJob<'_>,
 ) -> Result<PathBuf, AppError> {
     let root = worker_root(runtime.app)?;
-    let background = match job.background {
-        Some(background) => Some(write_private_file(job_id, "background", background).await?),
-        None => None,
+    let context = ContextFiles {
+        background: match job.background {
+            Some(background) => Some(write_private_file(job_id, "background", background).await?),
+            None => None,
+        },
+        attendees: match job.participants {
+            [] => None,
+            participants => Some(
+                write_private_file(job_id, "participants", &participants_json(participants)?)
+                    .await?,
+            ),
+        },
+        glossary: match job.glossary {
+            [] => None,
+            glossary => {
+                Some(write_private_file(job_id, "glossary", &glossary_json(glossary)?).await?)
+            }
+        },
     };
-    let attendees = match job.participants {
-        [] => None,
-        participants => Some(
-            write_private_file(job_id, "participants", &participants_json(participants)?).await?,
-        ),
-    };
-    let result = run_worker(
-        &runtime,
-        job_id,
-        cancel,
-        &job,
-        &root,
-        background.as_deref(),
-        attendees.as_deref(),
-    )
-    .await;
-    for temporary in [background, attendees].into_iter().flatten() {
+    let result = run_worker(&runtime, job_id, cancel, &job, &root, &context).await;
+    for temporary in context.into_paths().into_iter().flatten() {
         let _removed = tokio::fs::remove_file(&temporary).await;
     }
     let minutes = result?;
@@ -62,8 +75,7 @@ async fn run_worker(
     cancel: &mut oneshot::Receiver<()>,
     job: &RefinementJob<'_>,
     root: &Path,
-    background: Option<&Path>,
-    attendees: Option<&Path>,
+    context: &ContextFiles,
 ) -> Result<PathBuf, AppError> {
     let mut args = vec![
         "-m".into(),
@@ -74,13 +86,17 @@ async fn run_worker(
         "--output".into(),
         job.output.as_os_str().to_owned(),
     ];
-    if let Some(background) = background {
+    if let Some(background) = context.background.as_deref() {
         args.push("--background".into());
         args.push(background.as_os_str().to_owned());
     }
-    if let Some(attendees) = attendees {
+    if let Some(attendees) = context.attendees.as_deref() {
         args.push("--participants".into());
         args.push(attendees.as_os_str().to_owned());
+    }
+    if let Some(glossary) = context.glossary.as_deref() {
+        args.push("--glossary".into());
+        args.push(glossary.as_os_str().to_owned());
     }
     if let Some(model) = job.model {
         args.push("--model".into());
@@ -118,8 +134,21 @@ fn participants_json(participants: &[Participant]) -> Result<String, AppError> {
     })
 }
 
+fn glossary_json(glossary: &[GlossaryEntry]) -> Result<String, AppError> {
+    serde_json::to_string(glossary).map_err(|error| {
+        AppError::new(
+            "SETTINGS_INVALID",
+            format!("단어집을 준비하지 못했습니다: {error}"),
+        )
+    })
+}
+
 /// Hand context to the worker through a 0600 temp file instead of the argument vector.
-async fn write_private_file(job_id: Uuid, kind: &str, contents: &str) -> Result<PathBuf, AppError> {
+pub(crate) async fn write_private_file(
+    job_id: Uuid,
+    kind: &str,
+    contents: &str,
+) -> Result<PathBuf, AppError> {
     let path = std::env::temp_dir().join(format!("galpi-{kind}-{job_id}"));
     tokio::fs::write(&path, contents)
         .await

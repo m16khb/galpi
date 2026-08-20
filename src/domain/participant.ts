@@ -1,7 +1,9 @@
 export interface Participant {
   readonly id: string
   readonly name: string
+  readonly team: string | null
   readonly role: string | null
+  readonly description: string | null
   readonly aliases: readonly string[]
 }
 
@@ -18,9 +20,11 @@ export function formatAliases(aliases: readonly string[]): string {
 }
 
 export function participantLabel(participant: Participant): string {
-  return participant.role === null
-    ? participant.name
-    : `${participant.name} · ${participant.role}`
+  const detail = [participant.team, participant.role]
+    .map((part) => part?.trim() ?? "")
+    .filter((part) => part.length > 0)
+    .join(" · ")
+  return detail.length === 0 ? participant.name : `${participant.name} · ${detail}`
 }
 
 /** Drop entries a nameless row would produce; a participant without a name cannot label a speaker. */
@@ -29,7 +33,9 @@ export function usableParticipants(participants: readonly Participant[]): Partic
     .map((participant) => ({
       id: participant.id,
       name: participant.name.trim(),
+      team: emptyToNull(participant.team),
       role: emptyToNull(participant.role),
+      description: emptyToNull(participant.description),
       aliases: participant.aliases.map((alias) => alias.trim()).filter((alias) => alias.length > 0),
     }))
     .filter((participant) => participant.name.length > 0)

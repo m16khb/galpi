@@ -1,9 +1,10 @@
 import type { JobViewState } from "../application/job-machine"
+import type { RecordingViewState } from "../application/recording-machine"
 import type { EnvironmentStatus, TranscriptionResult } from "../domain/job"
 import type { SpeakerForm, SpeakerMode } from "../domain/speaker"
-import type { RecordingViewState } from "../application/recording-machine"
 import { appTemplate } from "./app-template"
 import { AssistantSettingsView } from "./assistant-settings"
+import { GlossarySettingsView } from "./glossary-settings"
 import { ParticipantPickerView } from "./participant-picker"
 import { ParticipantSettingsView } from "./participant-settings"
 import { bindTokenGuide } from "./token-guide"
@@ -16,6 +17,7 @@ export class AppView {
   readonly tokenSettings: TokenSettingsView
   readonly assistantSettings: AssistantSettingsView
   readonly participantSettings: ParticipantSettingsView
+  readonly glossarySettings: GlossarySettingsView
   readonly attendees: ParticipantPickerView
   private engineReady = false
   private jobBusy = false
@@ -31,6 +33,7 @@ export class AppView {
     this.participantSettings = new ParticipantSettingsView(root, () => {
       this.attendees.setRoster(this.participantSettings.roster())
     })
+    this.glossarySettings = new GlossarySettingsView(root, () => {})
     this.attendees = new ParticipantPickerView(root, (count) => this.applyAttendeeCount(count))
     bindTokenGuide(this.root)
   }
@@ -54,9 +57,7 @@ export class AppView {
   }
 
   on(action: string, handler: () => void): void {
-    for (const element of this.root.querySelectorAll<HTMLElement>(
-      `[data-action="${action}"]`,
-    )) {
+    for (const element of this.root.querySelectorAll<HTMLElement>(`[data-action="${action}"]`)) {
       element.addEventListener("click", handler)
     }
   }
@@ -72,9 +73,7 @@ export class AppView {
   }
 
   speakerForm(): SpeakerForm {
-    const checked = this.root.querySelector<HTMLInputElement>(
-      'input[name="speaker-mode"]:checked',
-    )
+    const checked = this.root.querySelector<HTMLInputElement>('input[name="speaker-mode"]:checked')
     return {
       mode: (checked?.value ?? "auto") as SpeakerMode,
       exact: this.numberValue("#exact-speakers"),
@@ -125,8 +124,7 @@ export class AppView {
       this.element("#job-panel").hidden = kind === "setup"
       this.element("#job-phase-list").hidden = kind === "refinement"
     }
-    this.element<HTMLButtonElement>("#cancel-button").hidden =
-      !busy || this.jobKind === "setup"
+    this.element<HTMLButtonElement>("#cancel-button").hidden = !busy || this.jobKind === "setup"
     this.element<HTMLButtonElement>("#setup-cancel-button").hidden =
       !busy || this.jobKind !== "setup"
     this.element("#busy-label").textContent = busyLabel(kind)
@@ -220,9 +218,9 @@ export class AppView {
     const row = this.element(selector)
     row.dataset["state"] = ready ? "ready" : "pending"
     row.querySelector<HTMLElement>("[data-status-label]")?.replaceChildren(label)
-    row.querySelector<HTMLElement>("[data-status-value]")?.replaceChildren(
-      ready ? "준비됨" : "대기",
-    )
+    row
+      .querySelector<HTMLElement>("[data-status-value]")
+      ?.replaceChildren(ready ? "준비됨" : "대기")
   }
 
   private path(selector: string, value: string): void {

@@ -1,13 +1,13 @@
 import type { UnlistenFn } from "@tauri-apps/api/event"
+import { type ArtifactKind, type BackendPort, errorMessage } from "../adapters/tauri-backend"
 import {
   beginJob,
   completeJob,
   failJob,
   initialJobState,
-  reduceJobEvent,
   type JobViewState,
+  reduceJobEvent,
 } from "../application/job-machine"
-import { errorMessage, type ArtifactKind, type BackendPort } from "../adapters/tauri-backend"
 import type { TranscriptionResult } from "../domain/job"
 import { buildSpeakerHint, type SpeakerHint } from "../domain/speaker"
 import type { AppView } from "./app-view"
@@ -48,12 +48,11 @@ export class AppController {
       this.outputRoot = environment.defaultOutputDirectory
       this.view.setOutput(environment.defaultOutputDirectory)
       this.view.setEnvironment(environment)
-      this.view.tokenSettings.setConfigured(
-        (await this.backend.loadHuggingFaceToken()) !== null,
-      )
+      this.view.tokenSettings.setConfigured((await this.backend.loadHuggingFaceToken()) !== null)
       const assistant = await this.backend.loadAssistantSettings()
       this.view.assistantSettings.setConfigured(assistant.apiKey !== null)
       this.view.participantSettings.setRoster(assistant.participants)
+      this.view.glossarySettings.setEntries(assistant.glossary)
       this.view.attendees.setRoster(assistant.participants)
     } catch (error) {
       this.view.showError(errorMessage(error))
@@ -72,14 +71,13 @@ export class AppController {
     this.view.on("prepare", () => void this.prepare())
     this.view.on("open-settings", () => void this.openSettings())
     this.view.on("close-settings", () => this.view.tokenSettings.close())
-    this.view.on("toggle-token-visibility", () =>
-      this.view.tokenSettings.toggleVisibility(),
-    )
+    this.view.on("toggle-token-visibility", () => this.view.tokenSettings.toggleVisibility())
     this.view.on("toggle-assistant-visibility", () =>
       this.view.assistantSettings.toggleVisibility(),
     )
     this.view.on("save-token", () => void this.saveSettings())
     this.view.on("add-participant", () => this.view.participantSettings.addRow())
+    this.view.on("add-glossary-entry", () => this.view.glossarySettings.addRow())
     this.view.on("clear-attendees", () => this.view.attendees.clear())
     this.view.on("clear-token", () => void this.clearToken())
     this.view.on("refine", () => void this.refine())
@@ -132,6 +130,7 @@ export class AppController {
       const loaded = await this.backend.loadAssistantSettings()
       assistant.setSettings(loaded)
       this.view.participantSettings.setRoster(loaded.participants)
+      this.view.glossarySettings.setEntries(loaded.glossary)
       settings.showMessage("")
     } catch (error) {
       settings.showMessage(errorMessage(error), true)
@@ -150,10 +149,15 @@ export class AppController {
     try {
       await this.backend.saveHuggingFaceToken(token)
       settings.setToken(token.length > 0 ? token : null)
-      const saved = { ...assistant.settings(), participants: this.view.participantSettings.roster() }
+      const saved = {
+        ...assistant.settings(),
+        participants: this.view.participantSettings.roster(),
+        glossary: this.view.glossarySettings.entries(),
+      }
       await this.backend.saveAssistantSettings(saved)
       assistant.setSettings(saved)
       this.view.participantSettings.setRoster(saved.participants)
+      this.view.glossarySettings.setEntries(saved.glossary)
       this.view.attendees.setRoster(saved.participants)
       settings.showMessage("설정을 저장했습니다.")
     } catch (error) {
@@ -309,5 +313,4 @@ export class AppController {
     this.job = failJob(this.job, errorMessage(error))
     this.view.renderJob(this.job)
   }
-
 }

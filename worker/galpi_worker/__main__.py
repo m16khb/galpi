@@ -23,6 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
     run = commands.add_parser("transcribe")
     run.add_argument("--input", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
+    run.add_argument("--asr-context", type=Path)
     speaker_group = run.add_mutually_exclusive_group()
     speaker_group.add_argument("--num-speakers", type=int)
     speaker_group.add_argument(
@@ -34,6 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
     minutes.add_argument("--output", type=Path, required=True)
     minutes.add_argument("--background", type=Path)
     minutes.add_argument("--participants", type=Path)
+    minutes.add_argument("--glossary", type=Path)
     minutes.add_argument("--model", default=DEFAULT_MODEL)
     return parser
 
@@ -53,6 +55,7 @@ def main() -> int:
                     args.output,
                     args.background,
                     args.participants,
+                    args.glossary,
                     args.model,
                     events,
                 )
@@ -67,7 +70,7 @@ def main() -> int:
                     minimum=args.speaker_range[0],
                     maximum=args.speaker_range[1],
                 )
-            transcribe(args.input, args.output, hint, events)
+            transcribe(args.input, args.output, hint, events, args.asr_context)
         return 0
     except ValueError as error:
         events.fail("INVALID_INPUT", str(error))

@@ -1,6 +1,6 @@
 use super::paths::AppPaths;
 use crate::application::error::AppError;
-use crate::application::model::{AssistantSettings, Participant};
+use crate::application::model::{AssistantSettings, GlossaryEntry, Participant};
 use crate::application::ports::SettingsPort;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -30,6 +30,7 @@ struct LocalSettings {
     assistant_model: Option<String>,
     assistant_background: Option<String>,
     participants: Vec<Participant>,
+    glossary: Vec<GlossaryEntry>,
 }
 
 impl LocalSettings {
@@ -39,6 +40,7 @@ impl LocalSettings {
             && self.assistant_model.is_none()
             && self.assistant_background.is_none()
             && self.participants.is_empty()
+            && self.glossary.is_empty()
     }
 }
 
@@ -61,6 +63,7 @@ impl SettingsPort for LocalSettingsStore {
             model: settings.assistant_model,
             background: settings.assistant_background,
             participants: settings.participants,
+            glossary: settings.glossary,
         })
     }
 
@@ -70,6 +73,7 @@ impl SettingsPort for LocalSettingsStore {
         settings.assistant_model = assistant.model;
         settings.assistant_background = assistant.background;
         settings.participants = assistant.participants;
+        settings.glossary = assistant.glossary;
         store_settings(&self.path, &settings).await
     }
 }
@@ -133,7 +137,7 @@ async fn remove_settings(path: &Path) -> Result<(), AppError> {
 mod tests {
     use super::LocalSettingsStore;
     use crate::application::error::AppError;
-    use crate::application::model::{AssistantSettings, Participant};
+    use crate::application::model::{AssistantSettings, GlossaryEntry, Participant};
     use crate::application::ports::SettingsPort;
     use std::os::unix::fs::PermissionsExt;
     use uuid::Uuid;
@@ -183,8 +187,15 @@ mod tests {
                 participants: vec![Participant {
                     id: "hb".to_owned(),
                     name: "하빈".to_owned(),
+                    team: Some("갈피팀".to_owned()),
                     role: Some("팀리더".to_owned()),
+                    description: Some("녹음 파이프라인 담당".to_owned()),
                     aliases: vec!["프로님".to_owned()],
+                }],
+                glossary: vec![GlossaryEntry {
+                    id: "term-galpi".to_owned(),
+                    term: "갈피".to_owned(),
+                    description: Some("회의 녹음·전사 데스크톱 앱".to_owned()),
                 }],
             })
             .await?;
@@ -203,6 +214,15 @@ mod tests {
             .ok_or_else(|| AppError::new("TEST_ERROR", "participant was not persisted"))?;
         assert_eq!(saved.name, "하빈");
         assert_eq!(saved.aliases, ["프로님"]);
+        let term = assistant
+            .glossary
+            .first()
+            .ok_or_else(|| AppError::new("TEST_ERROR", "glossary entry was not persisted"))?;
+        assert_eq!(term.term, "갈피");
+        assert_eq!(
+            term.description.as_deref(),
+            Some("회의 녹음·전사 데스크톱 앱")
+        );
         tokio::fs::remove_dir_all(directory).await?;
         Ok(())
     }

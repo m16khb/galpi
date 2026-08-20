@@ -1,8 +1,8 @@
 import {
   formatAliases,
+  type Participant,
   parseAliases,
   usableParticipants,
-  type Participant,
 } from "../domain/participant"
 
 const ROWS_SELECTOR = "#participant-rows"
@@ -32,7 +32,9 @@ export class ParticipantSettingsView {
       [...this.root.querySelectorAll<HTMLElement>(".participant-row")].map((row) => ({
         id: row.dataset["participantId"] ?? crypto.randomUUID(),
         name: this.field(row, ".participant-name").value,
+        team: this.field(row, ".participant-team").value,
         role: this.field(row, ".participant-role").value,
+        description: this.field(row, ".participant-description").value,
         aliases: parseAliases(this.field(row, ".participant-aliases").value),
       })),
     )
@@ -42,7 +44,9 @@ export class ParticipantSettingsView {
     const row = this.buildRow({
       id: crypto.randomUUID(),
       name: "",
+      team: null,
       role: null,
+      description: null,
       aliases: [],
     })
     this.element(ROWS_SELECTOR).append(row)
@@ -62,10 +66,17 @@ export class ParticipantSettingsView {
     const row = document.createElement("div")
     row.className = "participant-row"
     row.dataset["participantId"] = participant.id
-    row.append(
+    const fields = document.createElement("div")
+    fields.className = "participant-fields"
+    fields.append(
       this.buildInput("participant-name", "이름", participant.name),
+      this.buildInput("participant-team", "팀 (선택)", participant.team ?? ""),
       this.buildInput("participant-role", "역할 (선택)", participant.role ?? ""),
-      this.buildInput("participant-aliases", "별칭 (쉼표로 구분)", formatAliases(participant.aliases)),
+      this.buildInput(
+        "participant-aliases",
+        "별칭 (쉼표로 구분)",
+        formatAliases(participant.aliases),
+      ),
     )
     const remove = document.createElement("button")
     remove.type = "button"
@@ -76,7 +87,16 @@ export class ParticipantSettingsView {
       row.remove()
       this.refreshCount()
     })
-    row.append(remove)
+    fields.append(remove)
+    const description = document.createElement("textarea")
+    description.className = "participant-description"
+    description.rows = 2
+    description.placeholder = "담당 업무 등 설명 (선택)"
+    description.value = participant.description ?? ""
+    description.autocomplete = "off"
+    description.spellcheck = false
+    description.setAttribute("aria-label", `${participant.name || "참석자"} 설명`)
+    row.append(fields, description)
     return row
   }
 
@@ -102,8 +122,11 @@ export class ParticipantSettingsView {
     this.onChange()
   }
 
-  private field(row: HTMLElement, selector: string): HTMLInputElement {
-    const input = row.querySelector<HTMLInputElement>(selector)
+  private field<T extends HTMLInputElement | HTMLTextAreaElement>(
+    row: HTMLElement,
+    selector: string,
+  ): T {
+    const input = row.querySelector<T>(selector)
     if (input === null) throw new Error(`참석자 입력란이 없습니다: ${selector}`)
     return input
   }

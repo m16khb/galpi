@@ -1,3 +1,4 @@
+import type { GlossaryEntry } from "./glossary"
 import type { Participant } from "./participant"
 
 export interface EnvironmentStatus {
@@ -24,6 +25,7 @@ export interface AssistantSettings {
   readonly model: string | null
   readonly background: string | null
   readonly participants: readonly Participant[]
+  readonly glossary: readonly GlossaryEntry[]
 }
 
 export interface RefinementResult {

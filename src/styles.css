@@ -1,8 +1,9 @@
 @import "@phosphor-icons/web/regular";
 
 :root {
-  font-family: "Avenir Next", "Pretendard", -apple-system, BlinkMacSystemFont,
-    "Apple SD Gothic Neo", sans-serif;
+  font-family:
+    "Avenir Next", "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    sans-serif;
   color: #24231f;
   background: #f7f6f2;
   font-synthesis: none;
@@ -282,7 +283,10 @@ summary:focus-visible {
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   cursor: pointer;
-  transition: color 160ms ease-out, border-color 160ms ease-out, transform 100ms ease-out;
+  transition:
+    color 160ms ease-out,
+    border-color 160ms ease-out,
+    transform 100ms ease-out;
 }
 
 .settings-button:hover,
@@ -309,7 +313,9 @@ summary:focus-visible {
   background: var(--surface-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
-  box-shadow: 0 1px 2px rgb(78 50 23 / 5%), 0 8px 24px rgb(78 50 23 / 4%);
+  box-shadow:
+    0 1px 2px rgb(78 50 23 / 5%),
+    0 8px 24px rgb(78 50 23 / 4%);
 }
 
 .panel + .panel {
@@ -521,7 +527,10 @@ summary:focus-visible {
 .token-guide-popover code {
   overflow-wrap: anywhere;
   color: var(--text-primary);
-  font: 10px/1.5 "SFMono-Regular", Menlo, monospace;
+  font:
+    10px / 1.5 "SFMono-Regular",
+    Menlo,
+    monospace;
 }
 
 .settings-dialog {
@@ -742,7 +751,10 @@ summary:focus-visible {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 100ms ease-out, background 180ms ease-out, opacity 180ms ease-out;
+  transition:
+    transform 100ms ease-out,
+    background 180ms ease-out,
+    opacity 180ms ease-out;
 }
 
 .primary-button {
@@ -868,7 +880,10 @@ button:disabled {
 }
 
 .recording-active time {
-  font: 700 14px "SFMono-Regular", Menlo, monospace;
+  font:
+    700 14px "SFMono-Regular",
+    Menlo,
+    monospace;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1065,7 +1080,10 @@ button:disabled {
   border: 1px solid var(--border-subtle);
   border-radius: 999px;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .participant-chip input {
@@ -1122,19 +1140,66 @@ button:disabled {
   color: var(--text-secondary);
 }
 
-.participant-rows {
+.participant-rows,
+.glossary-rows {
   display: grid;
   gap: 6px;
 }
 
 .participant-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.4fr) 32px;
+  gap: 6px;
+}
+
+.participant-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 1.2fr) 32px;
   gap: 6px;
   align-items: center;
 }
 
-.participant-row input {
+.participant-description {
+  min-width: 0;
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.participant-description:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+.glossary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 32px;
+  gap: 6px;
+  align-items: center;
+}
+
+.glossary-remove {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.glossary-remove:hover {
+  color: var(--status-danger);
+  background: var(--surface-secondary);
+}
+
+.participant-row input,
+.glossary-row input {
   min-width: 0;
   padding: 9px 10px;
   font: inherit;
@@ -1145,7 +1210,8 @@ button:disabled {
   border-radius: 8px;
 }
 
-.participant-row input:focus-visible {
+.participant-row input:focus-visible,
+.glossary-row input:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 1px;
 }
@@ -1214,12 +1280,11 @@ button:disabled {
   height: 28px;
   margin-top: var(--space-5);
   overflow: hidden;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 5px,
-      color-mix(in srgb, var(--border-default) 72%, transparent) 5px 7px
-    );
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 5px,
+    color-mix(in srgb, var(--border-default) 72%, transparent) 5px 7px
+  );
   border-radius: 4px;
 }
 
@@ -1228,12 +1293,7 @@ button:disabled {
   inset: 0 auto 0 0;
   width: var(--progress);
   content: "";
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 5px,
-      var(--accent-primary) 5px 7px
-    );
+  background: repeating-linear-gradient(90deg, transparent 0 5px, var(--accent-primary) 5px 7px);
   transition: width 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1312,7 +1372,10 @@ button:disabled {
   color: var(--text-inverse);
   background: var(--surface-inverse);
   border-radius: 9px;
-  font: 11px/1.65 "SFMono-Regular", Menlo, monospace;
+  font:
+    11px / 1.65 "SFMono-Regular",
+    Menlo,
+    monospace;
   white-space: pre-wrap;
 }
 

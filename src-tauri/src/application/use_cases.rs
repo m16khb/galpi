@@ -1,8 +1,8 @@
 use crate::application::error::AppError;
 use crate::application::jobs::JobRegistry;
 use crate::application::model::{
-    AssistantSettings, EnvironmentStatus, Participant, RefinementResult, SetupResult,
-    TranscriptionResult,
+    AssistantSettings, EnvironmentStatus, GlossaryEntry, Participant, RefinementResult,
+    SetupResult, TranscriptionResult,
 };
 use crate::application::model::{RecordingResult, RecordingStatus};
 use crate::application::ports::{
@@ -104,6 +104,7 @@ impl Application {
             .filter(|participant| attendees.contains(&participant.id))
             .cloned()
             .collect();
+        let glossary: Vec<GlossaryEntry> = assistant.glossary.clone();
         let api_key = assistant.api_key.ok_or_else(|| {
             AppError::new(
                 "ASSISTANT_KEY_MISSING",
@@ -122,6 +123,7 @@ impl Application {
                     output: &output,
                     background: assistant.background.as_deref(),
                     participants: &participants,
+                    glossary: &glossary,
                     model: assistant.model.as_deref(),
                     api_key: &api_key,
                 },
@@ -169,7 +171,14 @@ impl Application {
             .await?;
         let result = self
             .transcription
-            .transcribe(job_id, cancel, &input, &output, &request.speaker_hint)
+            .transcribe(
+                job_id,
+                cancel,
+                &input,
+                &output,
+                &request.speaker_hint,
+                self.asr_context().await?.as_deref(),
+            )
             .await;
         let completed = result?;
         self.jobs.register(job_id, completed.artifacts.clone())?;
@@ -194,6 +203,29 @@ impl Application {
 
     pub fn cancel(&self, id: Uuid) -> Result<(), AppError> {
         self.jobs.cancel(id)
+    }
+
+    /// Bias ASR recognition with the saved glossary and roster: terms first,
+    /// then participant names and spoken aliases, packed by the worker.
+    async fn asr_context(&self) -> Result<Option<String>, AppError> {
+        let assistant = self.settings.load_assistant().await?.trimmed();
+        let terms: Vec<&str> = assistant.glossary.iter().map(|e| e.term.as_str()).collect();
+        let names: Vec<&str> = assistant
+            .participants
+            .iter()
+            .map(|p| p.name.as_str())
+            .collect();
+        let aliases: Vec<&str> = assistant
+            .participants
+            .iter()
+            .flat_map(|p| p.aliases.iter().map(String::as_str))
+            .collect();
+        if terms.is_empty() && names.is_empty() && aliases.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(
+            serde_json::json!({"terms": terms, "names": names, "aliases": aliases}).to_string(),
+        ))
     }
 
     pub fn open_artifact(&self, id: Uuid, kind: ArtifactKind) -> Result<(), AppError> {

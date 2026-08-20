@@ -13,8 +13,15 @@ function createWindow(): { window: Window; root: HTMLElement } {
 }
 
 const roster: Participant[] = [
-  { id: "hb", name: "하빈", role: "팀리더", aliases: ["프로님"] },
-  { id: "jw", name: "지우", role: null, aliases: [] },
+  {
+    id: "hb",
+    name: "하빈",
+    team: null,
+    role: "팀리더",
+    description: "녹음 파이프라인 담당",
+    aliases: ["프로님"],
+  },
+  { id: "jw", name: "지우", team: null, role: null, description: null, aliases: [] },
 ]
 
 function at<T>(items: readonly T[], index: number): T {
@@ -56,6 +63,9 @@ describe("ParticipantPickerView (real DOM)", () => {
     // Then
     expect(root.querySelectorAll(".participant-chip").length).toBe(2)
     expect(root.querySelector(".participant-chip span")?.textContent).toBe("하빈 · 팀리더")
+    expect(root.querySelector(".participant-chip")?.getAttribute("title")).toBe(
+      "녹음 파이프라인 담당",
+    )
 
     // When
     view.setRoster([])
@@ -82,8 +92,7 @@ describe("ParticipantPickerView (real DOM)", () => {
     expect(counts).toEqual([1, 2])
     expect(root.querySelector("#attendee-count")?.textContent).toBe("2명 선택")
     expect(
-      (root.querySelector('input[name="speaker-mode"][value="exact"]') as HTMLInputElement)
-        .checked,
+      (root.querySelector('input[name="speaker-mode"][value="exact"]') as HTMLInputElement).checked,
     ).toBe(true)
     expect((root.querySelector("#exact-speakers") as HTMLInputElement).value).toBe("2")
     expect(root.querySelector("#speaker-hint-note")?.textContent).toContain("2명으로 맞췄습니다")
@@ -103,8 +112,7 @@ describe("ParticipantPickerView (real DOM)", () => {
     expect(view.selectedIds()).toEqual([])
     expect((root.querySelector("#attendee-clear") as HTMLElement).hidden).toBe(true)
     expect(
-      (root.querySelector('input[name="speaker-mode"][value="auto"]') as HTMLInputElement)
-        .checked,
+      (root.querySelector('input[name="speaker-mode"][value="auto"]') as HTMLInputElement).checked,
     ).toBe(true)
   })
 
