@@ -29,6 +29,7 @@ struct LocalSettings {
     assistant_api_key: Option<String>,
     assistant_model: Option<String>,
     assistant_base_url: Option<String>,
+    assistant_reasoning_effort: Option<String>,
     assistant_background: Option<String>,
     participants: Vec<Participant>,
     glossary: Vec<GlossaryEntry>,
@@ -40,6 +41,7 @@ impl LocalSettings {
             && self.assistant_api_key.is_none()
             && self.assistant_model.is_none()
             && self.assistant_base_url.is_none()
+            && self.assistant_reasoning_effort.is_none()
             && self.assistant_background.is_none()
             && self.participants.is_empty()
             && self.glossary.is_empty()
@@ -64,6 +66,7 @@ impl SettingsPort for LocalSettingsStore {
             api_key: settings.assistant_api_key,
             model: settings.assistant_model,
             base_url: settings.assistant_base_url,
+            reasoning_effort: settings.assistant_reasoning_effort,
             background: settings.assistant_background,
             participants: settings.participants,
             glossary: settings.glossary,
@@ -75,6 +78,7 @@ impl SettingsPort for LocalSettingsStore {
         settings.assistant_api_key = assistant.api_key;
         settings.assistant_model = assistant.model;
         settings.assistant_base_url = assistant.base_url;
+        settings.assistant_reasoning_effort = assistant.reasoning_effort;
         settings.assistant_background = assistant.background;
         settings.participants = assistant.participants;
         settings.glossary = assistant.glossary;
@@ -188,6 +192,7 @@ mod tests {
                 api_key: Some("zai_key".to_owned()),
                 model: Some("glm-5.2".to_owned()),
                 base_url: Some("https://openrouter.ai/api/v1".to_owned()),
+                reasoning_effort: Some("max".to_owned()),
                 background: Some("제품: 갈피".to_owned()),
                 participants: vec![Participant {
                     id: "hb".to_owned(),
@@ -216,6 +221,7 @@ mod tests {
             assistant.base_url.as_deref(),
             Some("https://openrouter.ai/api/v1")
         );
+        assert_eq!(assistant.reasoning_effort.as_deref(), Some("max"));
         assert_eq!(assistant.background.as_deref(), Some("제품: 갈피"));
         let saved = assistant
             .participants

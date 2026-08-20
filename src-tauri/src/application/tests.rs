@@ -26,6 +26,7 @@ struct SeenRefinement {
     api_key: String,
     model: Option<String>,
     base_url: Option<String>,
+    reasoning_effort: Option<String>,
     background: Option<String>,
     participants: Vec<String>,
     glossary: Vec<String>,
@@ -108,6 +109,7 @@ impl RefinementPort for FakePort {
                 api_key: job.api_key.to_owned(),
                 model: job.model.map(str::to_owned),
                 base_url: job.base_url.map(str::to_owned),
+                reasoning_effort: job.reasoning_effort.map(str::to_owned),
                 background: job.background.map(str::to_owned),
                 participants: job
                     .participants
@@ -314,6 +316,7 @@ async fn transcription_carries_glossary_and_roster_for_asr_biasing() -> Result<(
         api_key: None,
         model: None,
         base_url: None,
+        reasoning_effort: None,
         background: None,
         participants: vec![Participant {
             id: "hb".to_owned(),
@@ -439,6 +442,7 @@ async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(),
         api_key: Some("  zai_key  ".to_owned()),
         model: Some("glm-5-turbo".to_owned()),
         base_url: Some("https://openrouter.ai/api/v1".to_owned()),
+        reasoning_effort: Some("max".to_owned()),
         background: Some("제품: 갈피\n팀리더: 하빈".to_owned()),
         participants: vec![
             participant("hb", "하빈"),
@@ -473,6 +477,7 @@ async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(),
         job.base_url.as_deref(),
         Some("https://openrouter.ai/api/v1")
     );
+    assert_eq!(job.reasoning_effort.as_deref(), Some("max"));
     assert_eq!(job.background.as_deref(), Some("제품: 갈피\n팀리더: 하빈"));
     // Only the selected attendees travel, in roster order rather than selection order.
     assert_eq!(job.participants, ["하빈", "민수"]);

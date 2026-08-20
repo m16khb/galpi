@@ -126,6 +126,7 @@ impl Application {
                     glossary: &glossary,
                     model: assistant.model.as_deref(),
                     base_url: assistant.base_url.as_deref(),
+                    reasoning_effort: assistant.reasoning_effort.as_deref(),
                     api_key: &api_key,
                 },
             )

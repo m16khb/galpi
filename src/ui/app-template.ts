@@ -252,6 +252,15 @@ export const appTemplate = `
             <option value="glm-4.6">z.ai · 이전 세대</option>
           </datalist>
           <p id="settings-model-help">z.ai 코딩 플랜의 GLM 모델이 기본값입니다. 다른 제공자를 쓸 때는 그 제공자의 모델 이름을 그대로 입력하세요. 긴 회의는 상위 모델이, 짧은 회의는 Turbo가 유리합니다.</p>
+          <label class="settings-field-label" for="settings-assistant-effort">추론 강도</label>
+          <select id="settings-assistant-effort" class="settings-select" aria-describedby="settings-effort-help">
+            <option value="">제공자 기본값</option>
+            <option value="low">낮음</option>
+            <option value="medium">중간</option>
+            <option value="high">높음</option>
+            <option value="max" selected>최대</option>
+          </select>
+          <p id="settings-effort-help">모델이 회의록을 작성하기 전에 숙고하는 깊이입니다. GLM 모델은 최대가 기본이며, 추론 과정도 진행 상황에 표시됩니다.</p>
           <label class="settings-field-label" for="settings-assistant-base-url">API 주소 (선택)</label>
           <input id="settings-assistant-base-url" class="settings-input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://api.z.ai/api/coding/paas/v4 (기본값)" aria-describedby="settings-base-url-help" />
           <p id="settings-base-url-help">OpenAI 호환 엔드포인트라면 모두 사용할 수 있습니다. OpenRouter는 https://openrouter.ai/api/v1 를 입력하세요. 비워 두면 z.ai 코딩 플랜 주소를 사용합니다.</p>

@@ -84,11 +84,18 @@ pub fn assistant_environment(
     worker_root: &Path,
     api_key: &str,
     base_url: Option<&str>,
+    reasoning_effort: Option<&str>,
 ) -> HashMap<OsString, OsString> {
     let mut env = process_environment(paths, worker_root, None);
     env.insert("GALPI_ASSISTANT_API_KEY".into(), api_key.into());
     if let Some(base_url) = base_url {
         env.insert("GALPI_ASSISTANT_BASE_URL".into(), base_url.into());
+    }
+    if let Some(reasoning_effort) = reasoning_effort {
+        env.insert(
+            "GALPI_ASSISTANT_REASONING_EFFORT".into(),
+            reasoning_effort.into(),
+        );
     }
     env
 }

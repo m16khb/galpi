@@ -90,6 +90,8 @@ pub struct AssistantSettings {
     pub model: Option<String>,
     #[serde(default)]
     pub base_url: Option<String>,
+    #[serde(default)]
+    pub reasoning_effort: Option<String>,
     pub background: Option<String>,
     #[serde(default)]
     pub participants: Vec<Participant>,
@@ -103,6 +105,11 @@ impl AssistantSettings {
             api_key: keep_filled(self.api_key),
             model: keep_filled(self.model),
             base_url: keep_filled(self.base_url),
+            reasoning_effort: self.reasoning_effort.and_then(|effort| {
+                let lowered = effort.trim().to_lowercase();
+                (lowered == "low" || lowered == "medium" || lowered == "high" || lowered == "max")
+                    .then_some(lowered)
+            }),
             background: keep_filled(self.background),
             participants: self
                 .participants

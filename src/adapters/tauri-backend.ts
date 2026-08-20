@@ -57,6 +57,7 @@ const assistantSettingsSchema = z.object({
   apiKey: z.string().nullable(),
   model: z.string().nullable(),
   baseUrl: z.string().nullable(),
+  reasoningEffort: z.string().nullable(),
   background: z.string().nullable(),
   participants: z.array(participantSchema),
   glossary: z.array(glossaryEntrySchema),

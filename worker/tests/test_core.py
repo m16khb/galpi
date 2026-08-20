@@ -23,7 +23,9 @@ from ..galpi_worker.refine import (
     GlossaryEntry,
     Participant,
     build_messages,
+    build_request_body,
     consume_assistant_stream,
+    is_default_glm,
     parse_glossary,
     parse_participants,
     parse_sse_chunk,
@@ -468,6 +470,40 @@ class RefinementTests(unittest.TestCase):
             _ = consume_assistant_stream(
                 iter(lines), EventWriter(stream=StringIO()), 4000, "glm-5.3"
             )
+
+    def test_glm_budget_applies_only_on_the_default_zai_endpoint(self) -> None:
+        # Given / When / Then
+        self.assertTrue(
+            is_default_glm("glm-5.3", "https://api.z.ai/api/coding/paas/v4")
+        )
+        self.assertFalse(is_default_glm("glm-5.3", "https://openrouter.ai/api/v1"))
+        self.assertFalse(
+            is_default_glm("claude-sonnet-4", "https://api.z.ai/api/coding/paas/v4")
+        )
+
+    def test_request_body_carries_effort_and_glm_budget(self) -> None:
+        # Given
+        messages = [{"role": "user", "content": "안녕"}]
+
+        # When
+        zai = json.loads(
+            build_request_body(
+                "glm-5.3", messages, "https://api.z.ai/api/coding/paas/v4", "max"
+            )
+        )
+        other = json.loads(
+            build_request_body(
+                "glm-5.3", messages, "https://openrouter.ai/api/v1", None
+            )
+        )
+
+        # Then: GLM on z.ai gets the large reasoning budget and the effort
+        self.assertEqual(zai["max_tokens"], 131072)
+        self.assertEqual(zai["reasoning_effort"], "max")
+        # Other endpoints keep a clean body without the effort parameter
+        self.assertEqual(other["max_tokens"], 32768)
+        self.assertNotIn("reasoning_effort", other)
+        self.assertEqual(other["model"], "glm-5.3")
 
     def test_unwraps_a_document_wrapped_in_one_code_fence(self) -> None:
         # Given

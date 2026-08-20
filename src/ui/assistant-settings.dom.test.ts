@@ -9,6 +9,7 @@ function createView(): {
   key: HTMLInputElement
   model: HTMLInputElement
   baseUrl: HTMLInputElement
+  effort: HTMLSelectElement
   background: HTMLTextAreaElement
 } {
   const window = new Window()
@@ -20,6 +21,7 @@ function createView(): {
     key: root.querySelector("#settings-assistant-key") as HTMLInputElement,
     model: root.querySelector("#settings-assistant-model") as HTMLInputElement,
     baseUrl: root.querySelector("#settings-assistant-base-url") as HTMLInputElement,
+    effort: root.querySelector("#settings-assistant-effort") as HTMLSelectElement,
     background: root.querySelector("#settings-assistant-background") as HTMLTextAreaElement,
   }
 }
@@ -29,10 +31,11 @@ describe("AssistantSettingsView (real DOM)", () => {
   let key: HTMLInputElement
   let model: HTMLInputElement
   let baseUrl: HTMLInputElement
+  let effort: HTMLSelectElement
   let background: HTMLTextAreaElement
 
   beforeEach(() => {
-    ;({ view, key, model, baseUrl, background } = createView())
+    ;({ view, key, model, baseUrl, effort, background } = createView())
   })
 
   test("masks a persisted key while keeping it available for saving", () => {
@@ -41,6 +44,7 @@ describe("AssistantSettingsView (real DOM)", () => {
       apiKey: "zai_real_secret",
       model: "glm-5.2",
       baseUrl: null,
+      reasoningEffort: "max",
       background: "제품: 갈피",
     })
 
@@ -52,13 +56,20 @@ describe("AssistantSettingsView (real DOM)", () => {
       apiKey: "zai_real_secret",
       model: "glm-5.2",
       baseUrl: null,
+      reasoningEffort: "max",
       background: "제품: 갈피",
     })
   })
 
   test("reveals and hides the persisted key with the eye toggle", () => {
     // Given
-    view.setSettings({ apiKey: "zai_real_secret", model: null, baseUrl: null, background: null })
+    view.setSettings({
+      apiKey: "zai_real_secret",
+      model: null,
+      baseUrl: null,
+      reasoningEffort: "max",
+      background: null,
+    })
 
     // When
     view.toggleVisibility()
@@ -75,7 +86,13 @@ describe("AssistantSettingsView (real DOM)", () => {
 
   test("falls back to the default model when none was saved", () => {
     // Given / When
-    view.setSettings({ apiKey: null, model: null, baseUrl: null, background: null })
+    view.setSettings({
+      apiKey: null,
+      model: null,
+      baseUrl: null,
+      reasoningEffort: "max",
+      background: null,
+    })
 
     // Then
     expect(model.value).toBe(DEFAULT_ASSISTANT_MODEL)
@@ -88,6 +105,7 @@ describe("AssistantSettingsView (real DOM)", () => {
       apiKey: null,
       model: "anthropic/claude-sonnet-4",
       baseUrl: "https://openrouter.ai/api/v1",
+      reasoningEffort: null,
       background: null,
     })
 
@@ -102,6 +120,7 @@ describe("AssistantSettingsView (real DOM)", () => {
       apiKey: null,
       model: null,
       baseUrl: "https://openrouter.ai/api/v1",
+      reasoningEffort: "max",
       background: null,
     })
 
@@ -114,7 +133,13 @@ describe("AssistantSettingsView (real DOM)", () => {
 
   test("reports blank background context as absent instead of empty text", () => {
     // Given
-    view.setSettings({ apiKey: null, model: null, baseUrl: null, background: null })
+    view.setSettings({
+      apiKey: null,
+      model: null,
+      baseUrl: null,
+      reasoningEffort: "max",
+      background: null,
+    })
 
     // When
     background.value = "   \n  "
@@ -127,11 +152,18 @@ describe("AssistantSettingsView (real DOM)", () => {
 
   test("keeps a newly typed key, model, base URL, and background for the next save", () => {
     // Given
-    view.setSettings({ apiKey: null, model: null, baseUrl: null, background: null })
+    view.setSettings({
+      apiKey: null,
+      model: null,
+      baseUrl: null,
+      reasoningEffort: "max",
+      background: null,
+    })
 
     // When
     key.value = "  zai_typed  "
     model.value = "openai/gpt-5.6"
+    effort.value = "max"
     baseUrl.value = " https://openrouter.ai/api/v1 "
     background.value = "팀리더: 하빈"
 
@@ -140,6 +172,7 @@ describe("AssistantSettingsView (real DOM)", () => {
       apiKey: "zai_typed",
       model: "openai/gpt-5.6",
       baseUrl: "https://openrouter.ai/api/v1",
+      reasoningEffort: "max",
       background: "팀리더: 하빈",
     })
   })

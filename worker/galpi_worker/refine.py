@@ -14,9 +14,12 @@ from .protocol import EventWriter
 
 API_KEY_VARIABLE = "GALPI_ASSISTANT_API_KEY"
 BASE_URL_VARIABLE = "GALPI_ASSISTANT_BASE_URL"
+EFFORT_VARIABLE = "GALPI_ASSISTANT_REASONING_EFFORT"
 DEFAULT_BASE_URL = "https://api.z.ai/api/coding/paas/v4"
 DEFAULT_MODEL = "glm-5.3"
 MAX_OUTPUT_TOKENS = 32768
+GLM_MAX_OUTPUT_TOKENS = 131072
+REASONING_EFFORTS = frozenset({"low", "medium", "high", "max"})
 REQUEST_TIMEOUT_SECONDS = 600
 
 # Streaming progress maps accumulated characters onto this band; completion
@@ -399,6 +402,39 @@ def consume_assistant_stream(
     raise RuntimeError(f"assistant returned an empty message{detail}")
 
 
+def is_default_glm(model: str, base_url: str) -> bool:
+    """Whether this request targets a GLM model on the default z.ai endpoint."""
+
+    return base_url == DEFAULT_BASE_URL and model.lower().startswith("glm")
+
+
+def build_request_body(
+    model: str,
+    messages: list[dict[str, str]],
+    base_url: str,
+    effort: str | None,
+) -> bytes:
+    """Assemble the chat-completion request body for one refinement.
+
+    Reasoning stays on for GLM: the z.ai budget (131072) is large enough for
+    reasoning plus the document. `reasoning_effort` is included only when the
+    user chose one, so other providers see a clean OpenAI-compatible body.
+    """
+
+    payload: dict[str, object] = {
+        "model": model,
+        "messages": messages,
+        "stream": True,
+        "temperature": 0.2,
+        "max_tokens": GLM_MAX_OUTPUT_TOKENS
+        if is_default_glm(model, base_url)
+        else MAX_OUTPUT_TOKENS,
+    }
+    if effort is not None:
+        payload["reasoning_effort"] = effort
+    return json.dumps(payload, ensure_ascii=False).encode("utf-8")
+
+
 def request_minutes(
     messages: list[dict[str, str]],
     model: str,
@@ -409,16 +445,10 @@ def request_minutes(
     """Stream the chat completion and report writing progress as it arrives."""
 
     base_url = os.environ.get(BASE_URL_VARIABLE, DEFAULT_BASE_URL).rstrip("/")
-    body = json.dumps(
-        {
-            "model": model,
-            "messages": messages,
-            "stream": True,
-            "temperature": 0.2,
-            "max_tokens": MAX_OUTPUT_TOKENS,
-        },
-        ensure_ascii=False,
-    ).encode("utf-8")
+    effort = os.environ.get(EFFORT_VARIABLE, "").strip().lower()
+    if effort not in REASONING_EFFORTS:
+        effort = None
+    body = build_request_body(model, messages, base_url, effort)
     request = urllib.request.Request(
         f"{base_url}/chat/completions",
         data=body,
