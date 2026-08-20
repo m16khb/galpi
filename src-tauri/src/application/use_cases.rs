@@ -1,7 +1,8 @@
 use crate::application::error::AppError;
 use crate::application::jobs::JobRegistry;
 use crate::application::model::{
-    AssistantSettings, EnvironmentStatus, RefinementResult, SetupResult, TranscriptionResult,
+    AssistantSettings, EnvironmentStatus, Participant, RefinementResult, SetupResult,
+    TranscriptionResult,
 };
 use crate::application::model::{RecordingResult, RecordingStatus};
 use crate::application::ports::{
@@ -87,9 +88,22 @@ impl Application {
     }
 
     /// Turn a completed transcript into meeting minutes with the configured assistant.
-    pub async fn refine_transcript(&self, target: Uuid) -> Result<RefinementResult, AppError> {
+    ///
+    /// `attendees` holds the roster ids selected for this meeting; an empty selection
+    /// sends no participant context at all.
+    pub async fn refine_transcript(
+        &self,
+        target: Uuid,
+        attendees: &[String],
+    ) -> Result<RefinementResult, AppError> {
         let artifacts = self.jobs.artifacts(target)?;
         let assistant = self.settings.load_assistant().await?.trimmed();
+        let participants: Vec<Participant> = assistant
+            .participants
+            .iter()
+            .filter(|participant| attendees.contains(&participant.id))
+            .cloned()
+            .collect();
         let api_key = assistant.api_key.ok_or_else(|| {
             AppError::new(
                 "ASSISTANT_KEY_MISSING",
@@ -107,6 +121,7 @@ impl Application {
                     transcript: &artifacts.txt,
                     output: &output,
                     background: assistant.background.as_deref(),
+                    participants: &participants,
                     model: assistant.model.as_deref(),
                     api_key: &api_key,
                 },

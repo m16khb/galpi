@@ -51,9 +51,10 @@ export class AppController {
       this.view.tokenSettings.setConfigured(
         (await this.backend.loadHuggingFaceToken()) !== null,
       )
-      this.view.assistantSettings.setConfigured(
-        (await this.backend.loadAssistantSettings()).apiKey !== null,
-      )
+      const assistant = await this.backend.loadAssistantSettings()
+      this.view.assistantSettings.setConfigured(assistant.apiKey !== null)
+      this.view.participantSettings.setRoster(assistant.participants)
+      this.view.attendees.setRoster(assistant.participants)
     } catch (error) {
       this.view.showError(errorMessage(error))
     }
@@ -78,6 +79,8 @@ export class AppController {
       this.view.assistantSettings.toggleVisibility(),
     )
     this.view.on("save-token", () => void this.saveSettings())
+    this.view.on("add-participant", () => this.view.participantSettings.addRow())
+    this.view.on("clear-attendees", () => this.view.attendees.clear())
     this.view.on("clear-token", () => void this.clearToken())
     this.view.on("refine", () => void this.refine())
     this.view.on("open-minutes", () => void this.openArtifact("minutes"))
@@ -126,7 +129,9 @@ export class AppController {
     settings.showMessage("저장된 설정을 불러오는 중입니다.")
     try {
       settings.setToken(await this.backend.loadHuggingFaceToken())
-      assistant.setSettings(await this.backend.loadAssistantSettings())
+      const loaded = await this.backend.loadAssistantSettings()
+      assistant.setSettings(loaded)
+      this.view.participantSettings.setRoster(loaded.participants)
       settings.showMessage("")
     } catch (error) {
       settings.showMessage(errorMessage(error), true)
@@ -145,9 +150,11 @@ export class AppController {
     try {
       await this.backend.saveHuggingFaceToken(token)
       settings.setToken(token.length > 0 ? token : null)
-      const saved = assistant.settings()
+      const saved = { ...assistant.settings(), participants: this.view.participantSettings.roster() }
       await this.backend.saveAssistantSettings(saved)
       assistant.setSettings(saved)
+      this.view.participantSettings.setRoster(saved.participants)
+      this.view.attendees.setRoster(saved.participants)
       settings.showMessage("설정을 저장했습니다.")
     } catch (error) {
       settings.showMessage(errorMessage(error), true)
@@ -247,7 +254,10 @@ export class AppController {
     }
     this.begin("refinement", "저장한 사전 정보로 회의록을 만듭니다.")
     try {
-      const refined = await this.backend.refineTranscript(result.jobId)
+      const refined = await this.backend.refineTranscript(
+        result.jobId,
+        this.view.attendees.selectedIds(),
+      )
       this.job = {
         ...this.job,
         status: "completed",

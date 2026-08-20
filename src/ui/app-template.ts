@@ -93,13 +93,22 @@ export const appTemplate = `
               </div>
             </div>
             <fieldset class="speaker-panel">
-              <legend>화자 수 힌트</legend>
+              <legend>참석자</legend>
+              <div class="participant-picker">
+                <div class="participant-picker-header">
+                  <span id="attendee-count">0명 선택</span>
+                  <button id="attendee-clear" class="text-button" type="button" data-action="clear-attendees" hidden>전체 해제</button>
+                </div>
+                <div id="attendee-chips" class="participant-chips" role="group" aria-label="참석자 선택"></div>
+                <p id="attendee-empty" class="participant-empty">설정에서 참석자 명부를 만들면 회의마다 여기서 고를 수 있습니다. <button class="text-button" type="button" data-action="open-settings">명부 만들기</button></p>
+              </div>
+              <p class="speaker-hint-label">화자 수 힌트</p>
               <div class="segmented-control">
                 <label><input type="radio" name="speaker-mode" value="auto" checked /><span>자동</span></label>
                 <label><input type="radio" name="speaker-mode" value="exact" /><span>정확히</span></label>
                 <label><input type="radio" name="speaker-mode" value="range" /><span>범위</span></label>
               </div>
-              <p>참석 인원을 모르면 자동을 선택해도 됩니다.</p>
+              <p id="speaker-hint-note">참석 인원을 모르면 자동을 선택해도 됩니다.</p>
               <div id="exact-fields" class="number-fields" hidden><label for="exact-speakers">참석 인원</label><input id="exact-speakers" type="number" min="1" max="30" value="4" /></div>
               <div id="range-fields" class="number-fields range" hidden><label for="min-speakers">최소</label><input id="min-speakers" type="number" min="1" max="30" value="3" /><span>–</span><label for="max-speakers">최대</label><input id="max-speakers" type="number" min="1" max="30" value="7" /></div>
             </fieldset>
@@ -177,6 +186,15 @@ export const appTemplate = `
             </div>
           </div>
           <button class="text-button" type="button" data-action="model-access">모델 이용 조건 페이지 열기 <i class="ph ph-arrow-up-right"></i></button>
+        </section>
+        <section class="settings-section" aria-labelledby="participants-settings-title">
+          <div class="settings-section-heading">
+            <div><strong id="participants-settings-title">참석자 명부</strong><span id="participants-count-state">비어 있음</span></div>
+            <p>한 번 만들어 두면 회의마다 참석자를 골라 화자 이름을 맞출 수 있습니다.</p>
+          </div>
+          <div id="participant-rows" class="participant-rows"></div>
+          <p id="participant-rows-empty" class="participant-empty">아직 등록한 참석자가 없습니다.</p>
+          <button class="text-button" type="button" data-action="add-participant"><i class="ph ph-plus"></i> 참석자 추가</button>
         </section>
         <section class="settings-section" aria-labelledby="assistant-settings-title">
           <div class="settings-section-heading">

@@ -1,5 +1,5 @@
 use super::error::AppError;
-use super::model::{AssistantSettings, CompletedTranscription, EnvironmentStatus};
+use super::model::{AssistantSettings, CompletedTranscription, EnvironmentStatus, Participant};
 use super::ports::{
     ArtifactPort, EnginePort, RecordingPort, RefinementJob, RefinementPort, SettingsPort,
     TranscriptionPort,
@@ -24,6 +24,16 @@ struct SeenRefinement {
     api_key: String,
     model: Option<String>,
     background: Option<String>,
+    participants: Vec<String>,
+}
+
+fn participant(id: &str, name: &str) -> Participant {
+    Participant {
+        id: id.to_owned(),
+        name: name.to_owned(),
+        role: None,
+        aliases: Vec::new(),
+    }
 }
 
 struct FakePort {
@@ -82,6 +92,11 @@ impl RefinementPort for FakePort {
                 api_key: job.api_key.to_owned(),
                 model: job.model.map(str::to_owned),
                 background: job.background.map(str::to_owned),
+                participants: job
+                    .participants
+                    .iter()
+                    .map(|participant| participant.name.clone())
+                    .collect(),
             });
         Ok(job.output.to_owned())
     }
@@ -334,12 +349,19 @@ async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(),
         api_key: Some("  zai_key  ".to_owned()),
         model: Some("glm-5-turbo".to_owned()),
         background: Some("제품: 갈피\n팀리더: 하빈".to_owned()),
+        participants: vec![
+            participant("hb", "하빈"),
+            participant("jw", "지우"),
+            participant("ms", "민수"),
+        ],
     })
     .await?;
     let transcription = app.transcribe(request(SpeakerHint::Auto)).await?;
 
     // When
-    let refined = app.refine_transcript(transcription.job_id).await?;
+    let refined = app
+        .refine_transcript(transcription.job_id, &["ms".to_owned(), "hb".to_owned()])
+        .await?;
 
     // Then
     assert_eq!(refined.minutes, "/tmp/output/job/meeting_회의록.md");
@@ -353,6 +375,8 @@ async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(),
     assert_eq!(job.api_key, "zai_key");
     assert_eq!(job.model.as_deref(), Some("glm-5-turbo"));
     assert_eq!(job.background.as_deref(), Some("제품: 갈피\n팀리더: 하빈"));
+    // Only the selected attendees travel, in roster order rather than selection order.
+    assert_eq!(job.participants, ["하빈", "민수"]);
 
     app.open_artifact(transcription.job_id, ArtifactKind::Minutes)?;
     let opened = port
@@ -374,7 +398,7 @@ async fn refinement_is_rejected_before_a_token_is_saved() -> Result<(), AppError
     let transcription = app.transcribe(request(SpeakerHint::Auto)).await?;
 
     // When
-    let result = app.refine_transcript(transcription.job_id).await;
+    let result = app.refine_transcript(transcription.job_id, &[]).await;
 
     // Then
     let Err(error) = result else {

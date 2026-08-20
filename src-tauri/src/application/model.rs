@@ -26,13 +26,43 @@ pub struct CompletedTranscription {
     pub filtered: usize,
 }
 
-/// Assistant credentials and the background context sent with every refinement.
+/// One saved meeting participant reused across meetings.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Participant {
+    pub id: String,
+    pub name: String,
+    pub role: Option<String>,
+    #[serde(default)]
+    pub aliases: Vec<String>,
+}
+
+impl Participant {
+    /// Drop a nameless entry; a participant without a name cannot label a speaker.
+    fn trimmed(self) -> Option<Self> {
+        let name = keep_filled(Some(self.name))?;
+        Some(Self {
+            id: self.id,
+            name,
+            role: keep_filled(self.role),
+            aliases: self
+                .aliases
+                .into_iter()
+                .filter_map(|alias| keep_filled(Some(alias)))
+                .collect(),
+        })
+    }
+}
+
+/// Assistant credentials, background context, and the saved participant roster.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AssistantSettings {
     pub api_key: Option<String>,
     pub model: Option<String>,
     pub background: Option<String>,
+    #[serde(default)]
+    pub participants: Vec<Participant>,
 }
 
 impl AssistantSettings {
@@ -41,6 +71,11 @@ impl AssistantSettings {
             api_key: keep_filled(self.api_key),
             model: keep_filled(self.model),
             background: keep_filled(self.background),
+            participants: self
+                .participants
+                .into_iter()
+                .filter_map(Participant::trimmed)
+                .collect(),
         }
     }
 }

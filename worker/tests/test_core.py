@@ -14,8 +14,12 @@ from ..galpi_worker.core import (
 from ..galpi_worker.protocol import EventWriter
 from ..galpi_worker.refine import (
     NO_BACKGROUND,
+    NO_PARTICIPANTS,
+    Participant,
     build_messages,
     extract_minutes,
+    parse_participants,
+    render_participants,
     strip_document_fence,
 )
 from ..galpi_worker.runtime import configure_warnings, select_torch_device
@@ -89,6 +93,68 @@ class HallucinationFilterTests(unittest.TestCase):
         self.assertEqual(select_torch_device(mps_available=False), "cpu")
 
 
+class ParticipantTests(unittest.TestCase):
+    def test_parses_the_host_roster_payload(self) -> None:
+        # Given
+        payload: list[object] = [
+            {
+                "id": "hb",
+                "name": "  하빈 ",
+                "role": " 팀리더 ",
+                "aliases": [" 프로님 ", "", "하빈님"],
+            },
+            {"id": "jw", "name": "지우", "role": None, "aliases": []},
+        ]
+
+        # When
+        participants = parse_participants(payload)
+
+        # Then
+        self.assertEqual(
+            participants,
+            [
+                Participant(name="하빈", role="팀리더", aliases=("프로님", "하빈님")),
+                Participant(name="지우", role=None, aliases=()),
+            ],
+        )
+
+    def test_rejects_a_participant_without_a_name(self) -> None:
+        # Given / When / Then
+        with self.assertRaisesRegex(ValueError, "no name"):
+            _ = parse_participants([{"id": "x", "name": "   "}])
+
+    def test_renders_roles_and_aliases_into_one_block(self) -> None:
+        # Given
+        participants = [
+            Participant(name="하빈", role="팀리더", aliases=("프로님",)),
+            Participant(name="지우", role=None, aliases=()),
+        ]
+
+        # When
+        rendered = render_participants(participants)
+
+        # Then
+        self.assertEqual(rendered, "- 하빈 (팀리더) / 별칭: 프로님\n- 지우")
+
+    def test_marks_an_empty_selection_instead_of_leaving_it_blank(self) -> None:
+        # Given / When
+        messages = build_messages("[SPEAKER_00] (0s) 안녕.", "", [])
+
+        # Then
+        self.assertIn(NO_PARTICIPANTS, messages[1]["content"])
+
+    def test_carries_the_attendee_block_into_the_prompt(self) -> None:
+        # Given
+        participants = [Participant(name="하빈", role=None, aliases=())]
+
+        # When
+        messages = build_messages("[SPEAKER_00] (0s) 안녕.", "", participants)
+
+        # Then
+        self.assertIn("<참석자>", messages[1]["content"])
+        self.assertIn("- 하빈", messages[1]["content"])
+
+
 class RefinementTests(unittest.TestCase):
     def test_carries_background_into_the_prompt(self) -> None:
         # Given
@@ -96,7 +162,7 @@ class RefinementTests(unittest.TestCase):
         background = "제품: 갈피\n팀: 하빈(팀리더)"
 
         # When
-        messages = build_messages(transcript, background)
+        messages = build_messages(transcript, background, [])
 
         # Then
         self.assertEqual(messages[0]["role"], "system")
@@ -105,7 +171,7 @@ class RefinementTests(unittest.TestCase):
 
     def test_marks_missing_background_instead_of_leaving_it_blank(self) -> None:
         # Given / When
-        messages = build_messages("[SPEAKER_00] (0s) 안녕하세요.", "   ")
+        messages = build_messages("[SPEAKER_00] (0s) 안녕하세요.", "   ", [])
 
         # Then
         self.assertIn(NO_BACKGROUND, messages[1]["content"])
@@ -113,7 +179,7 @@ class RefinementTests(unittest.TestCase):
     def test_rejects_empty_transcript_before_calling_the_assistant(self) -> None:
         # Given / When / Then
         with self.assertRaisesRegex(ValueError, "transcript is empty"):
-            _ = build_messages("   \n", "제품: 갈피")
+            _ = build_messages("   \n", "제품: 갈피", [])
 
     def test_reads_the_assistant_message_from_a_chat_completion(self) -> None:
         # Given

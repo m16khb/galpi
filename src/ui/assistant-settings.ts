@@ -7,6 +7,9 @@ const BACKGROUND_SELECTOR = "#settings-assistant-background"
 
 export const DEFAULT_ASSISTANT_MODEL = "glm-5.3"
 
+/** The assistant sheet owns credentials and context; the roster is edited beside it. */
+export type AssistantCredentials = Omit<AssistantSettings, "participants">
+
 export class AssistantSettingsView {
   private readonly root: HTMLElement
   private persistedKey: string | null = null
@@ -16,7 +19,7 @@ export class AssistantSettingsView {
     this.root = root
   }
 
-  settings(): AssistantSettings {
+  settings(): AssistantCredentials {
     const background = this.element<HTMLTextAreaElement>(BACKGROUND_SELECTOR).value.trim()
     const apiKey = this.persistedKey ?? this.element<HTMLInputElement>(KEY_SELECTOR).value.trim()
     return {
@@ -26,7 +29,7 @@ export class AssistantSettingsView {
     }
   }
 
-  setSettings(settings: AssistantSettings): void {
+  setSettings(settings: AssistantCredentials): void {
     const input = this.element<HTMLInputElement>(KEY_SELECTOR)
     this.persistedKey = settings.apiKey
     this.visible = false

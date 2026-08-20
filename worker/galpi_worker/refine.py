@@ -4,6 +4,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -23,6 +24,7 @@ SYSTEM_PROMPT = """당신은 한국어 회의 기록을 실행 가능한 회의�
 - 결정사항에는 확실한 내용만 씁니다. 불확실한 내용은 `리스크/열린 질문`이나 보정 부록에 씁니다.
 - 사전 정보에 있는 제품명, 서비스명, 팀 구성원, 별칭, 도메인 용어를 우선 적용해 오인식된 표현을 보정합니다.
 - 근거 없이 `SPEAKER_00` 같은 화자 라벨을 실명으로 바꾸지 않습니다. 근거가 부족하면 `{이름} 추정`으로 쓰고 보정 부록에 신뢰도를 남깁니다.
+- 참석자 명단이 주어지면 화자 라벨의 실명 후보는 그 명단 안에서만 찾습니다. 명단에 없는 사람을 추정해 넣지 않고, 명단의 별칭은 대표 이름으로 통일합니다.
 - 실행 항목은 산출물 중심으로 씁니다. 기한이 전사본에 없으면 `미정`으로 씁니다.
 - 원문 전사본은 별도 파일로 이미 보관되므로 회의록 본문에 다시 붙여넣지 않습니다.
 - 출력은 Markdown 문서 하나이며, 코드펜스로 전체를 감싸지 않습니다.
@@ -70,9 +72,71 @@ SYSTEM_PROMPT = """당신은 한국어 회의 기록을 실행 가능한 회의�
 """
 
 NO_BACKGROUND = "(등록된 사전 정보가 없습니다. 전사본에 있는 근거만 사용하세요.)"
+NO_PARTICIPANTS = "(선택된 참석자가 없습니다. 전사본에 있는 근거만 사용하세요.)"
 
 
-def build_messages(transcript: str, background: str) -> list[dict[str, str]]:
+@dataclass(frozen=True)
+class Participant:
+    """One meeting attendee selected from the saved roster."""
+
+    name: str
+    role: str | None
+    aliases: tuple[str, ...]
+
+
+def parse_participants(payload: object) -> list[Participant]:
+    """Convert the roster JSON handed over by the host into typed participants."""
+
+    if not isinstance(payload, list):
+        raise TypeError("participants payload was not a JSON array")
+    participants: list[Participant] = []
+    for entry in cast(list[object], payload):
+        if not isinstance(entry, dict):
+            raise TypeError("participant entry was not a JSON object")
+        fields = cast(dict[str, object], entry)
+        name = fields.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("participant entry had no name")
+        role = fields.get("role")
+        raw_aliases = fields.get("aliases")
+        aliases = (
+            tuple(
+                alias.strip()
+                for alias in cast(list[object], raw_aliases)
+                if isinstance(alias, str) and alias.strip()
+            )
+            if isinstance(raw_aliases, list)
+            else ()
+        )
+        participants.append(
+            Participant(
+                name=name.strip(),
+                role=role.strip() if isinstance(role, str) and role.strip() else None,
+                aliases=aliases,
+            )
+        )
+    return participants
+
+
+def render_participants(participants: list[Participant]) -> str:
+    """Render the attendee roster as one prompt block."""
+
+    if not participants:
+        return NO_PARTICIPANTS
+    lines: list[str] = []
+    for participant in participants:
+        line = f"- {participant.name}"
+        if participant.role is not None:
+            line += f" ({participant.role})"
+        if participant.aliases:
+            line += f" / 별칭: {', '.join(participant.aliases)}"
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def build_messages(
+    transcript: str, background: str, participants: list[Participant]
+) -> list[dict[str, str]]:
     """Build the chat messages for one refinement request."""
 
     if not transcript.strip():
@@ -83,6 +147,10 @@ def build_messages(transcript: str, background: str) -> list[dict[str, str]]:
         "<사전정보>\n"
         f"{context}\n"
         "</사전정보>\n\n"
+        "다음은 이 회의에 참석한 사람들입니다. 화자 실명 후보는 이 명단 안에서만 찾으세요.\n"
+        "<참석자>\n"
+        f"{render_participants(participants)}\n"
+        "</참석자>\n\n"
         "다음은 화자분리된 회의 전사본입니다.\n"
         "<전사본>\n"
         f"{transcript.strip()}\n"
@@ -180,6 +248,7 @@ def refine(
     transcript_path: Path,
     output_path: Path,
     background_path: Path | None,
+    participants_path: Path | None,
     model: str,
     events: EventWriter,
 ) -> None:
@@ -197,13 +266,20 @@ def refine(
         if background_path is not None and background_path.is_file()
         else ""
     )
+    participants = (
+        parse_participants(json.loads(participants_path.read_text(encoding="utf-8")))
+        if participants_path is not None and participants_path.is_file()
+        else []
+    )
     events.emit(
         "phase",
         phase="refining",
         percent=35.0,
         message=f"{model} 모델로 회의록을 작성하는 중입니다.",
     )
-    document = request_minutes(build_messages(transcript, background), model, api_key)
+    document = request_minutes(
+        build_messages(transcript, background, participants), model, api_key
+    )
     events.emit(
         "phase", phase="writing", percent=90.0, message="회의록을 저장하는 중입니다."
     )

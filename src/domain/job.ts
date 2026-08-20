@@ -1,3 +1,5 @@
+import type { Participant } from "./participant"
+
 export interface EnvironmentStatus {
   readonly engineReady: boolean
   readonly modelsReady: boolean
@@ -21,6 +23,7 @@ export interface AssistantSettings {
   readonly apiKey: string | null
   readonly model: string | null
   readonly background: string | null
+  readonly participants: readonly Participant[]
 }
 
 export interface RefinementResult {

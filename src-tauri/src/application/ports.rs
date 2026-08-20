@@ -1,6 +1,6 @@
 use crate::application::error::AppError;
 use crate::application::model::{
-    AssistantSettings, CompletedTranscription, EnvironmentStatus, RecordingFailure,
+    AssistantSettings, CompletedTranscription, EnvironmentStatus, Participant, RecordingFailure,
     RecordingResult, RecordingStatus,
 };
 use crate::domain::job::{SetupRequest, SpeakerHint};
@@ -77,6 +77,7 @@ pub struct RefinementJob<'a> {
     pub transcript: &'a Path,
     pub output: &'a Path,
     pub background: Option<&'a str>,
+    pub participants: &'a [Participant],
     pub model: Option<&'a str>,
     pub api_key: &'a str,
 }

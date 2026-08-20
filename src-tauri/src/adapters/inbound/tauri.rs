@@ -61,8 +61,9 @@ pub async fn save_assistant_settings(
 pub async fn refine_transcript(
     application: State<'_, Application>,
     job_id: Uuid,
+    attendees: Vec<String>,
 ) -> Result<RefinementResult, AppError> {
-    application.refine_transcript(job_id).await
+    application.refine_transcript(job_id, &attendees).await
 }
 
 #[tauri::command]

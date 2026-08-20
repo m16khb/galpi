@@ -33,6 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
     minutes.add_argument("--transcript", type=Path, required=True)
     minutes.add_argument("--output", type=Path, required=True)
     minutes.add_argument("--background", type=Path)
+    minutes.add_argument("--participants", type=Path)
     minutes.add_argument("--model", default=DEFAULT_MODEL)
     return parser
 
@@ -48,7 +49,12 @@ def main() -> int:
 
             if args.command == "refine":
                 refine(
-                    args.transcript, args.output, args.background, args.model, events
+                    args.transcript,
+                    args.output,
+                    args.background,
+                    args.participants,
+                    args.model,
+                    events,
                 )
                 return 0
 

@@ -38,10 +38,18 @@ const setupResultSchema = z.object({
 })
 const huggingFaceTokenSchema = z.string().nullable()
 
+const participantSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  role: z.string().nullable(),
+  aliases: z.array(z.string()),
+})
+
 const assistantSettingsSchema = z.object({
   apiKey: z.string().nullable(),
   model: z.string().nullable(),
   background: z.string().nullable(),
+  participants: z.array(participantSchema),
 })
 
 const refinementResultSchema = z.object({
@@ -126,7 +134,7 @@ export interface BackendPort {
   saveHuggingFaceToken(token: string): Promise<void>
   loadAssistantSettings(): Promise<AssistantSettings>
   saveAssistantSettings(settings: AssistantSettings): Promise<void>
-  refineTranscript(jobId: string): Promise<RefinementResult>
+  refineTranscript(jobId: string, attendees: readonly string[]): Promise<RefinementResult>
   transcribe(request: {
     readonly jobId: string
     readonly inputPath: string
@@ -175,8 +183,13 @@ export class TauriBackend implements BackendPort {
     await invoke("save_assistant_settings", { settings })
   }
 
-  async refineTranscript(jobId: string): Promise<RefinementResult> {
-    return refinementResultSchema.parse(await invoke<unknown>("refine_transcript", { jobId }))
+  async refineTranscript(
+    jobId: string,
+    attendees: readonly string[],
+  ): Promise<RefinementResult> {
+    return refinementResultSchema.parse(
+      await invoke<unknown>("refine_transcript", { jobId, attendees }),
+    )
   }
 
   async transcribe(request: {

@@ -107,6 +107,13 @@ All spacing derives from 4px.
 - **Structure**: one label plus optional progress/status glyph from Phosphor Icons.
 - **Variants**: primary, secondary, quiet, destructive.
 - **States**: idle, loading, success, error, disabled.
+
+### Participant Chips
+
+- **Structure**: the per-meeting attendee picker renders one toggle chip per roster entry (`이름 · 역할`); a saved roster is edited in Settings under `참석자 명부` with name, optional role, and comma-separated aliases.
+- **States**: unselected, selected, disabled; selection state pairs the filled accent with a check glyph and the `N명 선택` counter, never color alone.
+- **Behavior**: selecting attendees fills the speaker-count hint (`정확히 N`) and a note says the value was auto-filled; a later manual change is never overridden. An empty roster shows a hint linking to Settings instead of an empty chip group.
+- **Accessibility**: each chip is a real checkbox inside `role="group"`; focus ring follows the global outline token; chips scroll independently above six entries.
 - **Accessibility**: `aria-busy` while loading and polite live label updates.
 - **Motion**: 100ms press scale, 180ms opacity label swap; instant under reduced motion.
 

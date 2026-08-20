@@ -4,6 +4,8 @@ import type { SpeakerForm, SpeakerMode } from "../domain/speaker"
 import type { RecordingViewState } from "../application/recording-machine"
 import { appTemplate } from "./app-template"
 import { AssistantSettingsView } from "./assistant-settings"
+import { ParticipantPickerView } from "./participant-picker"
+import { ParticipantSettingsView } from "./participant-settings"
 import { bindTokenGuide } from "./token-guide"
 import { TokenSettingsView } from "./token-settings"
 
@@ -13,6 +15,8 @@ export class AppView {
   readonly root: HTMLElement
   readonly tokenSettings: TokenSettingsView
   readonly assistantSettings: AssistantSettingsView
+  readonly participantSettings: ParticipantSettingsView
+  readonly attendees: ParticipantPickerView
   private engineReady = false
   private jobBusy = false
   private jobKind: BusyKind = null
@@ -24,7 +28,29 @@ export class AppView {
     this.root.innerHTML = appTemplate
     this.tokenSettings = new TokenSettingsView(root)
     this.assistantSettings = new AssistantSettingsView(root)
+    this.participantSettings = new ParticipantSettingsView(root, () => {
+      this.attendees.setRoster(this.participantSettings.roster())
+    })
+    this.attendees = new ParticipantPickerView(root, (count) => this.applyAttendeeCount(count))
     bindTokenGuide(this.root)
+  }
+
+  /** Selecting attendees fills the speaker count; a later manual change is left alone. */
+  applyAttendeeCount(count: number): void {
+    const mode: SpeakerMode = count > 0 ? "exact" : "auto"
+    for (const input of this.root.querySelectorAll<HTMLInputElement>(
+      'input[name="speaker-mode"]',
+    )) {
+      input.checked = input.value === mode
+    }
+    this.setSpeakerMode(mode)
+    if (count > 0) {
+      this.element<HTMLInputElement>("#exact-speakers").value = String(count)
+    }
+    this.element("#speaker-hint-note").textContent =
+      count > 0
+        ? `참석자 ${count}명으로 맞췄습니다. 필요하면 직접 바꿀 수 있습니다.`
+        : "참석 인원을 모르면 자동을 선택해도 됩니다."
   }
 
   on(action: string, handler: () => void): void {
@@ -228,6 +254,7 @@ export class AppView {
       this.jobBusy || this.recordingActive
     this.element<HTMLButtonElement>("#start-button").disabled =
       !this.engineReady || this.jobBusy || this.recordingActive
+    this.attendees.setBusy(this.jobBusy || this.recordingActive)
     this.element<HTMLButtonElement>("#record-button").disabled = this.jobBusy
     this.element<HTMLButtonElement>("#audio-selection").disabled =
       this.jobBusy || this.recordingActive
