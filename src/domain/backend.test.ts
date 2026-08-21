@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { errorDetail, errorMessage } from "./tauri-backend"
+import { errorDetail, errorMessage } from "./backend"
 
 describe("errorMessage", () => {
   test("passes through AppError copy from the native boundary", () => {

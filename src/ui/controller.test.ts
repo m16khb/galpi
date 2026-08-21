@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { Window } from "happy-dom"
 
-import type { BackendPort } from "../adapters/tauri-backend"
+import type { BackendPort } from "../domain/backend"
 import { AppView } from "./app-view"
 import { AppController } from "./controller"
 

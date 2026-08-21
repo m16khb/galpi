@@ -1,9 +1,18 @@
 import { invoke } from "@tauri-apps/api/core"
-import { listen, type UnlistenFn } from "@tauri-apps/api/event"
+import { listen } from "@tauri-apps/api/event"
 import { open } from "@tauri-apps/plugin-dialog"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { z } from "zod"
 
+import type {
+  ArtifactKind,
+  BackendPort,
+  RecordingFailure,
+  RecordingResult,
+  RecordingStatus,
+  SetupResult,
+  TranscriptionRequest,
+} from "../domain/backend"
 import type {
   AssistantSettings,
   EnvironmentStatus,
@@ -11,7 +20,6 @@ import type {
   RefinementResult,
   TranscriptionResult,
 } from "../domain/job"
-import type { SpeakerHint } from "../domain/speaker"
 
 const environmentSchema = z.object({
   engineReady: z.boolean(),
@@ -37,7 +45,6 @@ const setupResultSchema = z.object({
   status: environmentSchema,
 })
 const huggingFaceTokenSchema = z.string().nullable()
-
 const participantSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -127,44 +134,6 @@ const rawJobEventSchema = z.discriminatedUnion("type", [
   }),
 ])
 
-export interface SetupResult {
-  readonly jobId: string
-  readonly status: EnvironmentStatus
-}
-
-export type ArtifactKind = "srt" | "speaker_text" | "checkpoint" | "minutes"
-
-export type RecordingStatus = z.infer<typeof recordingStatusSchema>
-export type RecordingResult = z.infer<typeof recordingResultSchema>
-export type RecordingFailure = z.infer<typeof recordingFailureSchema>
-
-export interface BackendPort {
-  diagnose(): Promise<EnvironmentStatus>
-  prepare(): Promise<SetupResult>
-  loadHuggingFaceToken(): Promise<string | null>
-  saveHuggingFaceToken(token: string): Promise<void>
-  loadAssistantSettings(): Promise<AssistantSettings>
-  saveAssistantSettings(settings: AssistantSettings): Promise<void>
-  refineTranscript(jobId: string, attendees: readonly string[]): Promise<RefinementResult>
-  transcribe(request: {
-    readonly jobId: string
-    readonly inputPath: string
-    readonly outputRoot: string
-    readonly speakerHint: SpeakerHint
-  }): Promise<TranscriptionResult>
-  cancel(jobId: string): Promise<void>
-  openArtifact(jobId: string, kind: ArtifactKind): Promise<void>
-  revealOutput(jobId: string): Promise<void>
-  startRecording(outputRoot: string): Promise<RecordingStatus>
-  stopRecording(recordingId: string): Promise<RecordingResult>
-  cancelRecording(recordingId: string): Promise<void>
-  listenToRecordingFailures(handler: (event: RecordingFailure) => void): Promise<UnlistenFn>
-  chooseAudio(): Promise<string | null>
-  chooseOutputDirectory(): Promise<string | null>
-  openModelAccessPage(): Promise<void>
-  listenToJobs(handler: (event: JobEvent) => void): Promise<UnlistenFn>
-}
-
 export class TauriBackend implements BackendPort {
   async diagnose(): Promise<EnvironmentStatus> {
     return environmentSchema.parse(await invoke<unknown>("diagnose_environment"))
@@ -200,12 +169,7 @@ export class TauriBackend implements BackendPort {
     )
   }
 
-  async transcribe(request: {
-    readonly jobId: string
-    readonly inputPath: string
-    readonly outputRoot: string
-    readonly speakerHint: SpeakerHint
-  }): Promise<TranscriptionResult> {
+  async transcribe(request: TranscriptionRequest): Promise<TranscriptionResult> {
     return transcriptionResultSchema.parse(
       await invoke<unknown>("start_transcription", { request }),
     )
@@ -235,7 +199,7 @@ export class TauriBackend implements BackendPort {
     await invoke("cancel_recording", { recordingId })
   }
 
-  listenToRecordingFailures(handler: (event: RecordingFailure) => void): Promise<UnlistenFn> {
+  listenToRecordingFailures(handler: (event: RecordingFailure) => void): Promise<() => void> {
     return listen<unknown>("recording-event", ({ payload }) => {
       handler(recordingFailureSchema.parse(payload))
     })
@@ -264,7 +228,7 @@ export class TauriBackend implements BackendPort {
     await openUrl("https://huggingface.co/pyannote/speaker-diarization-community-1")
   }
 
-  async listenToJobs(handler: (event: JobEvent) => void): Promise<UnlistenFn> {
+  async listenToJobs(handler: (event: JobEvent) => void): Promise<() => void> {
     return listen<unknown>("job-event", ({ payload }) => {
       const raw = rawJobEventSchema.parse(payload)
       const event: JobEvent =
@@ -278,35 +242,4 @@ export class TauriBackend implements BackendPort {
       handler(event)
     })
   }
-}
-
-const UNEXPECTED_ERROR_MESSAGE = "예기치 못한 오류가 발생했습니다."
-
-function isAppError(error: object): error is { code: string; message: string } {
-  return (
-    "code" in error &&
-    typeof error.code === "string" &&
-    "message" in error &&
-    typeof error.message === "string"
-  )
-}
-
-/** Native commands fail with AppError {code, message}; its message is user-facing
- * Korean copy. Anything else is a runtime fault the user cannot act on, so it gets
- * stable Korean copy while errorDetail keeps the raw diagnostic for the log. */
-export function errorMessage(error: unknown): string {
-  if (typeof error === "object" && error !== null && isAppError(error)) {
-    return error.message
-  }
-  return UNEXPECTED_ERROR_MESSAGE
-}
-
-export function errorDetail(error: unknown): string {
-  if (typeof error === "object" && error !== null && "message" in error) {
-    const message = error.message
-    if (typeof message === "string") {
-      return message
-    }
-  }
-  return error instanceof Error ? error.message : String(error)
 }

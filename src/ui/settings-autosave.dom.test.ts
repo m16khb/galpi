@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { Window } from "happy-dom"
 
-import type { BackendPort } from "../adapters/tauri-backend"
+import type { BackendPort } from "../domain/backend"
 import type { AssistantSettings } from "../domain/job"
 import { AppView } from "./app-view"
 import { AppController } from "./controller"
@@ -25,9 +25,7 @@ const initialAssistant: AssistantSettings = {
   glossary: [{ id: "term-1", term: "갈피", description: null }],
 }
 
-function createBackend(
-  onSave: (settings: AssistantSettings) => void | Promise<void>,
-): BackendPort {
+function createBackend(onSave: (settings: AssistantSettings) => void | Promise<void>): BackendPort {
   return {
     diagnose: async () => ({
       engineReady: true,
@@ -121,9 +119,7 @@ describe("settings autosave (real DOM)", () => {
   test("persists a committed settings edit without a save button", async () => {
     // Given
     const saved = deferred<AssistantSettings>()
-    const { window, root, controller } = await createHarness((settings) =>
-      saved.resolve(settings),
-    )
+    const { window, root, controller } = await createHarness((settings) => saved.resolve(settings))
     const model = root.querySelector<HTMLInputElement>("#settings-assistant-model")
     if (model === null) throw new Error("model field is missing")
 
@@ -157,9 +153,7 @@ describe("settings autosave (real DOM)", () => {
   test("persists glossary edits when the field change is committed", async () => {
     // Given
     const saved = deferred<AssistantSettings>()
-    const { window, root, controller } = await createHarness((settings) =>
-      saved.resolve(settings),
-    )
+    const { window, root, controller } = await createHarness((settings) => saved.resolve(settings))
     const term = root.querySelector<HTMLInputElement>(".glossary-term")
     if (term === null) throw new Error("glossary term field is missing")
 

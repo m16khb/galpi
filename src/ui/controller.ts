@@ -1,5 +1,3 @@
-import type { UnlistenFn } from "@tauri-apps/api/event"
-import { type ArtifactKind, type BackendPort, errorDetail, errorMessage } from "../adapters/tauri-backend"
 import {
   beginJob,
   completeJob,
@@ -8,6 +6,7 @@ import {
   type JobViewState,
   reduceJobEvent,
 } from "../application/job-machine"
+import { type ArtifactKind, type BackendPort, errorDetail, errorMessage } from "../domain/backend"
 import type { TranscriptionResult } from "../domain/job"
 import { buildSpeakerHint, type SpeakerHint } from "../domain/speaker"
 import type { AppView } from "./app-view"
@@ -21,8 +20,8 @@ export class AppController {
   private job: JobViewState = initialJobState
   private lastResult: TranscriptionResult | null = null
   private readonly recording: RecordingController
-  private unlisten: UnlistenFn | null = null
-  private unlistenRecording: UnlistenFn | null = null
+  private unlisten: (() => void) | null = null
+  private unlistenRecording: (() => void) | null = null
   private settingsSavePending = false
   private settingsSaveActive = false
 

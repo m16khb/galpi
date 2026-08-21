@@ -1,0 +1,97 @@
+import type {
+  AssistantSettings,
+  EnvironmentStatus,
+  JobEvent,
+  RefinementResult,
+  TranscriptionResult,
+} from "./job"
+import type { SpeakerHint } from "./speaker"
+
+/**
+ * Port contract between the UI controllers and the native runtime.
+ * The inner layers own this interface; `TauriBackend` in `adapters/` implements it.
+ */
+export interface BackendPort {
+  diagnose(): Promise<EnvironmentStatus>
+  prepare(): Promise<SetupResult>
+  loadHuggingFaceToken(): Promise<string | null>
+  saveHuggingFaceToken(token: string): Promise<void>
+  loadAssistantSettings(): Promise<AssistantSettings>
+  saveAssistantSettings(settings: AssistantSettings): Promise<void>
+  refineTranscript(jobId: string, attendees: readonly string[]): Promise<RefinementResult>
+  transcribe(request: TranscriptionRequest): Promise<TranscriptionResult>
+  cancel(jobId: string): Promise<void>
+  openArtifact(jobId: string, kind: ArtifactKind): Promise<void>
+  revealOutput(jobId: string): Promise<void>
+  startRecording(outputRoot: string): Promise<RecordingStatus>
+  stopRecording(recordingId: string): Promise<RecordingResult>
+  cancelRecording(recordingId: string): Promise<void>
+  listenToRecordingFailures(handler: (event: RecordingFailure) => void): Promise<() => void>
+  chooseAudio(): Promise<string | null>
+  chooseOutputDirectory(): Promise<string | null>
+  openModelAccessPage(): Promise<void>
+  listenToJobs(handler: (event: JobEvent) => void): Promise<() => void>
+}
+
+export interface SetupResult {
+  readonly jobId: string
+  readonly status: EnvironmentStatus
+}
+
+export interface TranscriptionRequest {
+  readonly jobId: string
+  readonly inputPath: string
+  readonly outputRoot: string
+  readonly speakerHint: SpeakerHint
+}
+
+export type ArtifactKind = "srt" | "speaker_text" | "checkpoint" | "minutes"
+
+export interface RecordingStatus {
+  readonly recordingId: string
+  readonly path: string
+  readonly sampleRate: number
+  readonly channels: number
+}
+
+export interface RecordingResult extends RecordingStatus {
+  readonly frames: number
+  readonly durationSeconds: number
+}
+
+export interface RecordingFailure {
+  readonly recordingId: string
+  readonly code: string
+  readonly message: string
+}
+
+const UNEXPECTED_ERROR_MESSAGE = "예기치 못한 오류가 발생했습니다."
+
+function isAppError(error: object): error is { code: string; message: string } {
+  return (
+    "code" in error &&
+    typeof error.code === "string" &&
+    "message" in error &&
+    typeof error.message === "string"
+  )
+}
+
+/** Native commands fail with AppError {code, message}; its message is user-facing
+ * Korean copy. Anything else is a runtime fault the user cannot act on, so it gets
+ * stable Korean copy while errorDetail keeps the raw diagnostic for the log. */
+export function errorMessage(error: unknown): string {
+  if (typeof error === "object" && error !== null && isAppError(error)) {
+    return error.message
+  }
+  return UNEXPECTED_ERROR_MESSAGE
+}
+
+export function errorDetail(error: unknown): string {
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = error.message
+    if (typeof message === "string") {
+      return message
+    }
+  }
+  return error instanceof Error ? error.message : String(error)
+}

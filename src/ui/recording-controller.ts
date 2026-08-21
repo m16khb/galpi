@@ -1,4 +1,3 @@
-import { type BackendPort, errorMessage, type RecordingFailure } from "../adapters/tauri-backend"
 import {
   beginRecordingState,
   cancelRecordingState,
@@ -11,6 +10,7 @@ import {
   stopRecordingState,
   tickRecording,
 } from "../application/recording-machine"
+import { type BackendPort, errorMessage, type RecordingFailure } from "../domain/backend"
 import type { AppView } from "./app-view"
 
 export class RecordingController {
