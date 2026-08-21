@@ -3,28 +3,56 @@ import { readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
 
 const RUST_ROOT = join(import.meta.dir, "..", "src-tauri", "src")
+const TS_ROOT = join(import.meta.dir, "..", "src")
 
 interface Fence {
   readonly root: string
   readonly forbidden: readonly string[]
+  readonly extension: ".rs" | ".ts"
 }
 
 const fences: readonly Fence[] = [
   {
     root: join(RUST_ROOT, "domain"),
+    extension: ".rs",
     forbidden: ["crate::application", "crate::adapters", "crate::composition", "tauri::"],
   },
   {
     root: join(RUST_ROOT, "application"),
+    extension: ".rs",
     forbidden: ["crate::adapters", "crate::composition", "tauri::"],
   },
   {
     root: join(RUST_ROOT, "adapters", "inbound"),
+    extension: ".rs",
     forbidden: ["adapters::outbound", "crate::composition"],
   },
   {
     root: join(RUST_ROOT, "adapters", "outbound"),
+    extension: ".rs",
     forbidden: ["adapters::inbound", "crate::composition"],
+  },
+  // Frontend mirrors the same dependency rule: contracts live in `domain`,
+  // the Tauri implementation stays in `adapters`, and `ui` stays framework-free.
+  {
+    root: join(TS_ROOT, "domain"),
+    extension: ".ts",
+    forbidden: ["../application/", "../ui/", "../adapters/"],
+  },
+  {
+    root: join(TS_ROOT, "application"),
+    extension: ".ts",
+    forbidden: ["../ui/", "../adapters/", "@tauri-apps/"],
+  },
+  {
+    root: join(TS_ROOT, "ui"),
+    extension: ".ts",
+    forbidden: ["../adapters/", "@tauri-apps/"],
+  },
+  {
+    root: join(TS_ROOT, "adapters"),
+    extension: ".ts",
+    forbidden: ["../ui/", "../application/"],
   },
 ]
 
@@ -32,15 +60,15 @@ class ArchitectureError extends Error {
   readonly name = "ArchitectureError"
 }
 
-async function rustFiles(root: string): Promise<readonly string[]> {
+async function sourceFiles(root: string, extension: string): Promise<readonly string[]> {
   const entries: readonly Dirent[] = await readdir(root, { withFileTypes: true })
   const nested = await Promise.all(
     entries.map(async (entry): Promise<readonly string[]> => {
       const path = join(root, entry.name)
       if (entry.isDirectory()) {
-        return rustFiles(path)
+        return sourceFiles(path, extension)
       }
-      return entry.isFile() && path.endsWith(".rs") ? [path] : []
+      return entry.isFile() && path.endsWith(extension) ? [path] : []
     }),
   )
   return nested.flat()
@@ -48,7 +76,7 @@ async function rustFiles(root: string): Promise<readonly string[]> {
 
 async function checkFence(fence: Fence): Promise<readonly string[]> {
   const violations: string[] = []
-  for (const path of await rustFiles(fence.root)) {
+  for (const path of await sourceFiles(fence.root, fence.extension)) {
     const source = await readFile(path, "utf8")
     for (const forbidden of fence.forbidden) {
       if (source.includes(forbidden)) {
@@ -65,7 +93,7 @@ async function checkFrameworkLocality(): Promise<readonly string[]> {
   const composition = join(RUST_ROOT, "composition.rs")
   const processAdapter = join(RUST_ROOT, "adapters", "outbound", "process.rs")
   const processAdapterDirectory = join(RUST_ROOT, "adapters", "outbound", "process")
-  for (const path of await rustFiles(RUST_ROOT)) {
+  for (const path of await sourceFiles(RUST_ROOT, ".rs")) {
     const source = await readFile(path, "utf8")
     if (source.includes("#[tauri::command]") && path !== inbound) {
       violations.push(`${path}: Tauri command belongs in the inbound adapter`)
