@@ -45,17 +45,20 @@ Galpi is a calm local audio workbench: technically precise, quiet during long wo
 
 ### Scale
 
+Values below are the implemented compact scale, px-locked to `src/styles.css`
+(the stylesheet is authoritative; this table documents it — drift is a defect).
+
 | Level | Size | Weight | Line Height | Tracking | Usage |
 |---|---:|---:|---:|---:|---|
-| Display | `2.25rem` | 400 | 1.12 | `-0.025em` | Current task heading |
-| H1 | `1.75rem` | 500 | 1.2 | `-0.02em` | Page heading |
-| H2 | `1.25rem` | 600 | 1.3 | `-0.01em` | Panel heading |
-| H3 | `1rem` | 600 | 1.4 | 0 | Control group heading |
-| Body/lg | `1rem` | 400 | 1.6 | `0.01em` | Introductory copy |
-| Body | `0.9375rem` | 400 | 1.55 | `0.01em` | Default UI |
-| Body/sm | `0.8125rem` | 400 | 1.5 | `0.015em` | Supporting text |
-| Caption | `0.75rem` | 600 | 1.4 | `0.04em` | Status labels |
-| Mono | `0.75rem` | 400 | 1.65 | 0 | Logs and paths |
+| Display | `clamp(24px, 3vw, 36px)` | 500 | 1.12 | `-0.03em` | Topbar task heading |
+| H2 | `21px` | 700 | 1.3 | `-0.015em` | Panel heading |
+| Brand | `19px` | 700 | normal | `-0.02em` | Rail brand lockup |
+| Step title | `14px` | 700 | normal | 0 | Rail step names |
+| Status label | `13px` | 400 | normal | 0 | Status rows, job messages |
+| Body | `12px` | 400 | 1.55 | normal | Default UI prose |
+| Body/sm | `11px` | 400 | normal | 0 | Supporting copy, small labels |
+| Caption/eyebrow | `10px` | 700 | normal | `0.12em` | Eyebrows, section indices, footer |
+| Mono | `10–12px` | 400 | 1.5 | 0 | Logs, paths, inline code |
 
 ### Font Stack
 
