@@ -14,13 +14,14 @@ bundled Python/WhisperX worker connected by a versioned JSONL protocol.
 
 ```text
 galpi/
+├── docs/ARCHITECTURE.md          # Normative DDD/hexagonal/clean/OOP/SOLID mapping
 ├── src/                         # Framework-light DOM frontend and Tauri IPC adapter
 │   ├── application/             # Pure job and recording state machines
-│   ├── domain/                  # Frontend contracts and speaker validation
+│   ├── domain/                  # Frontend contracts (job, speaker, backend port) and validation
 │   └── ui/                      # Controllers, view, template, and interaction helpers
 ├── src-tauri/                   # Rust crate, Tauri configuration, and bundle metadata
 │   └── src/
-│       ├── domain/              # Framework-free requests, artifacts, worker protocol
+│       ├── domain/              # Framework-free requests, roster value objects, artifacts, worker protocol
 │       ├── application/         # Ports, use cases, job/recording lifecycle
 │       └── adapters/            # Tauri ingress and OS/process/audio egress
 ├── worker/                      # Python WhisperX sidecar, strict stubs, unittest contracts
@@ -42,11 +43,13 @@ Generated trees (`node_modules`, `dist`, `src-tauri/target`,
 | DOM rendering | `src/ui/app-view.ts` | Required selectors fail fast |
 | UI markup/style contract | `src/ui/app-template.ts`, `src/styles.css`, `DESIGN.md` | Keep all three aligned |
 | Pure frontend transitions | `src/application/*-machine.ts` | Immutable reducers; colocated Bun tests |
+| Frontend backend port | `src/domain/backend.ts` | Port contract owned by the inner layer; `TauriBackend` implements it |
 | Tauri IPC client | `src/adapters/tauri-backend.ts` | `invoke`/`listen` plus Zod boundary parsing |
 | Native composition | `src-tauri/src/composition.rs` | Only concrete port wiring and Tauri registration |
-| IPC command surface | `src-tauri/src/adapters/inbound/tauri.rs` | Nine frontend commands and event bridges |
+| IPC command surface | `src-tauri/src/adapters/inbound/tauri.rs` | Fourteen frontend commands and event bridges |
 | Backend use cases | `src-tauri/src/application/use_cases.rs` | Central `Application` facade |
 | Port contracts | `src-tauri/src/application/ports.rs` | Add platform behavior behind a port |
+| Roster value objects | `src-tauri/src/domain/roster.rs` | `AssistantSettings`, `Participant`, `GlossaryEntry`, trimming rules |
 | Worker supervision | `src-tauri/src/adapters/outbound/process.rs` | Bounded JSONL, cancellation, process groups |
 | Native recording | `src-tauri/src/adapters/outbound/recording/` | CPAL callback, bounded queue, WAV writer |
 | Worker pipeline | `worker/galpi_worker/engine.py` | ASR, alignment, diarization, output publication |
@@ -63,7 +66,7 @@ call sites, not semantic workspace references.
 |--------|------|----------|------|------|
 | `AppController` | class | `src/ui/controller.ts` | 1 construction | Frontend workflow coordinator |
 | `TauriBackend` | class | `src/adapters/tauri-backend.ts` | 1 construction | IPC and runtime-validation boundary |
-| `Application` | struct | `src-tauri/src/application/use_cases.rs` | 9 command paths | Backend use-case facade |
+| `Application` | struct | `src-tauri/src/application/use_cases.rs` | 14 command paths | Backend use-case facade |
 | `run` | function | `src-tauri/src/composition.rs` | 1 entry call | Native composition root |
 | `run_process` | async function | `src-tauri/src/adapters/outbound/process.rs` | 3 production calls | Worker/process supervisor |
 | `NativeRecorder` | struct | `src-tauri/src/adapters/outbound/recording/mod.rs` | 1 production wiring | Recording port implementation |
@@ -72,8 +75,17 @@ call sites, not semantic workspace references.
 
 ## CONVENTIONS
 
+- `docs/ARCHITECTURE.md` is the normative architecture document: DDD tactical
+  mapping, hexagonal port ownership, SOLID enforcement, change-set rules, and the
+  deliberate non-refactors. Boundary questions resolve there first.
+- One dependency rule across all three runtimes: dependencies point inward
+  (domain). Ports are owned by the consuming inner layer; adapters implement
+  them. Framework code (Tauri, Zod, CPAL, tokio::process) lives only in
+  adapters and composition.
 - Keep runtime boundaries explicit: TypeScript -> Tauri commands -> `Application` ports
   -> outbound adapters -> Python worker.
+- Frontend `ui/` and `application/` import contracts from `src/domain/backend.ts`;
+  they never import the `TauriBackend` implementation or `@tauri-apps/*` symbols.
 - TypeScript uses strict mode, exact optional properties, unchecked index checks,
   type-only imports, named exports, double quotes, 2 spaces, and no semicolons.
 - Parse native responses/events with Zod before exposing them to frontend state.
@@ -89,6 +101,10 @@ call sites, not semantic workspace references.
 
 - Do not add `application`, `adapters`, `composition`, or Tauri dependencies to Rust `domain`.
 - Do not add adapter, composition, or Tauri dependencies to Rust `application`.
+- Do not define frontend port/contract types in `src/adapters/`; the adapter implements
+  contracts declared in `src/domain/`.
+- Value objects with business rules (validation, trimming) belong in Rust `domain/`,
+  not `application/model.rs`.
 - Keep Tauri commands in `src-tauri/src/adapters/inbound/tauri.rs`.
 - Keep `.manage`, `.plugin`, and handler registration in `composition.rs`.
 - Keep `tokio::process` and `nix` process primitives inside the process adapter.
@@ -102,6 +118,7 @@ call sites, not semantic workspace references.
 
 - User-facing copy is Korean; protocol/error identifiers remain stable ASCII.
 - `DESIGN.md` is normative for palette, layout, motion, accessibility, and component states.
+- `docs/ARCHITECTURE.md` is normative for layering and port ownership.
 - Status always pairs color with text; labels are never placeholders.
 - Running setup/transcription exposes cancellation; progress reports phase completion, not ETA.
 - Output names (`.aligned.v2.json`, `.srt`, `_화자별.txt`) are external behavior.

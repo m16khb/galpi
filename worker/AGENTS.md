@@ -5,6 +5,9 @@
 Python sidecar launched and supervised by Rust. `prepare` warms dependencies and
 models; `transcribe` runs Korean ASR, alignment, diarization, filtering, and
 artifact publication. Stdout is a machine-readable protocol, not a log stream.
+The worker's boundary is purity: `core`, `artifacts`, `minutes_*` modules stay
+importable and testable without the ML stack. Repo-wide architecture rules
+(DDD/hexagonal/SOLID mapping) live in `../docs/ARCHITECTURE.md`.
 
 ## STRUCTURE
 
