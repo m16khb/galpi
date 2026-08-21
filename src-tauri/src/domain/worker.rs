@@ -3,6 +3,41 @@ use thiserror::Error;
 
 const PROTOCOL_VERSION: u8 = 1;
 
+/// ASR biasing lists handed to the worker as one JSON object on disk.
+/// Keys and list order are the wire contract read by `parse_asr_context`.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct AsrContext {
+    pub terms: Vec<String>,
+    pub names: Vec<String>,
+    pub aliases: Vec<String>,
+}
+
+impl AsrContext {
+    /// Build the biasing lists; `None` when nothing can bias recognition.
+    pub fn new(terms: Vec<String>, names: Vec<String>, aliases: Vec<String>) -> Option<Self> {
+        if terms.is_empty() && names.is_empty() && aliases.is_empty() {
+            return None;
+        }
+        Some(Self {
+            terms,
+            names,
+            aliases,
+        })
+    }
+
+    /// Serialize in the wire format the worker's `parse_asr_context` reads:
+    /// glossary terms first, then participant names, then spoken aliases.
+    /// Consumed once on the way to the worker context file.
+    pub fn into_wire_json(self) -> String {
+        serde_json::json!({
+            "terms": self.terms,
+            "names": self.names,
+            "aliases": self.aliases,
+        })
+        .to_string()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum WorkerEvent {
@@ -107,5 +142,34 @@ mod tests {
             parse_worker_event(line),
             Err(ProtocolError::InvalidJson(_))
         ));
+    }
+
+    #[test]
+    fn asr_context_serializes_the_worker_wire_format() -> Result<(), serde_json::Error> {
+        // Given
+        let context = super::AsrContext {
+            terms: vec!["갈피".to_owned()],
+            names: vec!["하빈".to_owned()],
+            aliases: vec!["하빈이".to_owned()],
+        };
+
+        // When
+        let parsed: serde_json::Value = context.into_wire_json().parse()?;
+
+        // Then: same keys and lists `parse_asr_context` reads on the worker side
+        assert_eq!(parsed["terms"], serde_json::json!(["갈피"]));
+        assert_eq!(parsed["names"], serde_json::json!(["하빈"]));
+        assert_eq!(parsed["aliases"], serde_json::json!(["하빈이"]));
+        Ok(())
+    }
+
+    #[test]
+    fn asr_context_is_built_only_when_a_list_can_bias_recognition() {
+        // Given / When / Then
+        assert!(
+            super::AsrContext::new(Vec::new(), Vec::new(), Vec::new()).is_none(),
+            "an all-empty context must stay absent from the wire"
+        );
+        assert!(super::AsrContext::new(Vec::new(), vec!["하빈".to_owned()], Vec::new()).is_some());
     }
 }

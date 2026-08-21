@@ -1,8 +1,7 @@
 use crate::application::error::AppError;
 use crate::application::jobs::JobRegistry;
 use crate::application::model::{
-    AssistantSettings, EnvironmentStatus, GlossaryEntry, Participant, RefinementResult,
-    SetupResult, TranscriptionResult,
+    EnvironmentStatus, RefinementResult, SetupResult, TranscriptionResult,
 };
 use crate::application::model::{RecordingResult, RecordingStatus};
 use crate::application::ports::{
@@ -11,6 +10,8 @@ use crate::application::ports::{
 };
 use crate::domain::artifact::{ArtifactKind, minutes_path};
 use crate::domain::job::{SetupRequest, TranscriptionRequest, validate_speaker_hint};
+use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
+use crate::domain::worker::AsrContext;
 use std::path::Path;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -211,23 +212,20 @@ impl Application {
     /// then participant names and spoken aliases, packed by the worker.
     async fn asr_context(&self) -> Result<Option<String>, AppError> {
         let assistant = self.settings.load_assistant().await?.trimmed();
-        let terms: Vec<&str> = assistant.glossary.iter().map(|e| e.term.as_str()).collect();
-        let names: Vec<&str> = assistant
-            .participants
-            .iter()
-            .map(|p| p.name.as_str())
-            .collect();
-        let aliases: Vec<&str> = assistant
-            .participants
-            .iter()
-            .flat_map(|p| p.aliases.iter().map(String::as_str))
-            .collect();
-        if terms.is_empty() && names.is_empty() && aliases.is_empty() {
-            return Ok(None);
-        }
-        Ok(Some(
-            serde_json::json!({"terms": terms, "names": names, "aliases": aliases}).to_string(),
-        ))
+        let context = AsrContext::new(
+            assistant.glossary.iter().map(|e| e.term.clone()).collect(),
+            assistant
+                .participants
+                .iter()
+                .map(|p| p.name.clone())
+                .collect(),
+            assistant
+                .participants
+                .iter()
+                .flat_map(|p| p.aliases.clone())
+                .collect(),
+        );
+        Ok(context.map(AsrContext::into_wire_json))
     }
 
     pub fn open_artifact(&self, id: Uuid, kind: ArtifactKind) -> Result<(), AppError> {

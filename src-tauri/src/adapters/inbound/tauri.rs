@@ -1,12 +1,13 @@
 use crate::application::error::AppError;
 use crate::application::model::{
-    AssistantSettings, EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus,
-    RefinementResult, SetupResult, TranscriptionResult,
+    EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus, RefinementResult,
+    SetupResult, TranscriptionResult,
 };
 use crate::application::ports::{JobEvents, RecordingEvents};
 use crate::application::use_cases::Application;
 use crate::domain::artifact::ArtifactKind;
 use crate::domain::job::{SetupRequest, TranscriptionRequest};
+use crate::domain::roster::AssistantSettings;
 use crate::domain::worker::WorkerEvent;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};

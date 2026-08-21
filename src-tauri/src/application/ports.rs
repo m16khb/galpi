@@ -1,9 +1,9 @@
 use crate::application::error::AppError;
 use crate::application::model::{
-    AssistantSettings, CompletedTranscription, EnvironmentStatus, GlossaryEntry, Participant,
-    RecordingFailure, RecordingResult, RecordingStatus,
+    CompletedTranscription, EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus,
 };
 use crate::domain::job::{SetupRequest, SpeakerHint};
+use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
 use crate::domain::worker::WorkerEvent;
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};

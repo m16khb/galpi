@@ -1,7 +1,7 @@
 use super::paths::AppPaths;
 use crate::application::error::AppError;
-use crate::application::model::{AssistantSettings, GlossaryEntry, Participant};
 use crate::application::ports::SettingsPort;
+use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::io::ErrorKind;
@@ -145,8 +145,8 @@ async fn remove_settings(path: &Path) -> Result<(), AppError> {
 mod tests {
     use super::LocalSettingsStore;
     use crate::application::error::AppError;
-    use crate::application::model::{AssistantSettings, GlossaryEntry, Participant};
     use crate::application::ports::SettingsPort;
+    use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
     use std::os::unix::fs::PermissionsExt;
     use uuid::Uuid;
 

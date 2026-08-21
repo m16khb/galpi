@@ -1,7 +1,5 @@
 use super::error::AppError;
-use super::model::{
-    AssistantSettings, CompletedTranscription, EnvironmentStatus, GlossaryEntry, Participant,
-};
+use super::model::{CompletedTranscription, EnvironmentStatus};
 use super::ports::{
     ArtifactPort, EnginePort, RecordingPort, RefinementJob, RefinementPort, SettingsPort,
     TranscriptionPort,
@@ -9,6 +7,7 @@ use super::ports::{
 use super::use_cases::Application;
 use crate::domain::artifact::{ArtifactKind, Artifacts};
 use crate::domain::job::{SetupRequest, SpeakerHint, TranscriptionRequest};
+use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
