@@ -72,6 +72,22 @@ describe("TokenSettingsView (real DOM)", () => {
     expect(state.textContent).toBe("저장된 토큰 없음")
   })
 
+  test("moves focus into the dialog when it opens", () => {
+    // Given: the user opened settings from the topbar gear button
+    const body = input.closest("body") as HTMLElement
+    const trigger = body.querySelector(".settings-button") as HTMLElement
+    trigger.focus()
+
+    // When: the dialog opens
+    view.show()
+
+    // Then: focus lands on the close button inside the modal — it stays
+    // enabled while setBusy(true) disables the fields during load (BUG-001)
+    const close = body.querySelector(".settings-close-button") as HTMLElement
+    expect(body.ownerDocument.activeElement).toBe(close)
+    expect(body.ownerDocument.activeElement?.closest("#settings-dialog")).not.toBeNull()
+  })
+
   test("returns focus to the invoking trigger when the dialog closes", () => {
     // Given: the user opened settings from the topbar gear button
     const body = input.closest("body") as HTMLElement

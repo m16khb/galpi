@@ -27,6 +27,11 @@ export class TokenSettingsView {
     this.previouslyFocused = this.root.ownerDocument.activeElement as HTMLElement | null
     this.element("#settings-dialog").hidden = false
     this.showMessage("")
+    // APG dialog pattern: move focus into the dialog on open so keyboard and
+    // screen-reader users land inside the modal, not on the invoker behind it.
+    // The close button is the target because it stays enabled while setBusy()
+    // disables the fields during load (BUG-001).
+    this.element<HTMLButtonElement>(".settings-close-button").focus()
   }
 
   close(): void {
