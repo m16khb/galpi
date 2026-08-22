@@ -175,11 +175,12 @@ Rust application
 
 | Path | Responsibility |
 |---|---|
-| `src/` | State machines, Zod boundaries, DOM UI |
-| `src-tauri/` | Tauri commands, Rust use cases, recording and process adapters |
+| `src/` | Domain contracts (job, speaker, backend port) with validation, state machines, Zod boundaries, DOM UI |
+| `src-tauri/` | Tauri commands, Rust use cases and domain value objects, recording and process adapters |
 | `worker/` | WhisperX transcription, alignment, diarization, and minutes refinement |
 | `scripts/` | Architecture checks, sidecar staging, and DMG packaging |
 | `DESIGN.md` | Normative UI, accessibility, and component-state contract |
+| `docs/ARCHITECTURE.md` | Normative layering and port ownership |
 | `docs/ROADMAP.md` | Current state and planned product milestones |
 
 ## Development commands

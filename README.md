@@ -175,11 +175,12 @@ Rust application
 
 | 경로 | 역할 |
 |---|---|
-| `src/` | 상태 머신, Zod 경계, DOM UI |
-| `src-tauri/` | Tauri 명령, Rust use case, 녹음·프로세스 어댑터 |
+| `src/` | 도메인 계약(작업·화자·백엔드 포트)과 검증, 상태 머신, Zod 경계, DOM UI |
+| `src-tauri/` | Tauri 명령, Rust use case·도메인 값 객체, 녹음·프로세스 어댑터 |
 | `worker/` | WhisperX 전사, 정렬, 화자분리, 회의록 가공 |
 | `scripts/` | 아키텍처 검사, sidecar staging, DMG 패키징 |
 | `DESIGN.md` | UI, 접근성, 컴포넌트 상태의 규범 |
+| `docs/ARCHITECTURE.md` | 레이어 구조와 포트 소유권의 규범 |
 | `docs/ROADMAP.md` | 현재 상태와 다음 제품 단계 |
 
 ## 개발 명령
