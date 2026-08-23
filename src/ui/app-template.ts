@@ -140,9 +140,9 @@ export const appTemplate = `
         <section id="results-panel" class="panel results-panel" hidden aria-labelledby="results-title">
           <div class="section-heading"><div><span id="results-index" class="section-index">02 / 전사 결과</span><h2 id="results-title">전사 결과</h2></div><p id="result-summary"></p></div>
           <div class="artifact-list">
-            <div class="artifact-row"><i class="ph ph-subtitles"></i><div><strong>자막 파일</strong><code id="result-srt"></code></div><button type="button" data-action="open-srt">열기</button></div>
+            <div id="result-srt-row" class="artifact-row"><i class="ph ph-subtitles"></i><div><strong>자막 파일</strong><code id="result-srt"></code></div><button type="button" data-action="open-srt">열기</button></div>
             <div class="artifact-row"><i class="ph ph-users-three"></i><div><strong>화자별 텍스트</strong><code id="result-txt"></code></div><button type="button" data-action="open-txt">열기</button></div>
-            <div class="artifact-row"><i class="ph ph-database"></i><div><strong>정렬 체크포인트</strong><code id="result-checkpoint"></code></div><button type="button" data-action="open-checkpoint">열기</button></div>
+            <div id="result-checkpoint-row" class="artifact-row"><i class="ph ph-database"></i><div><strong>정렬 체크포인트</strong><code id="result-checkpoint"></code></div><button type="button" data-action="open-checkpoint">열기</button></div>
           </div>
           <div class="panel-actions">
             <button class="secondary-button" type="button" data-action="reveal-output"><i class="ph ph-folder-open"></i>Finder에서 보기</button>
@@ -159,6 +159,12 @@ export const appTemplate = `
             <p>AI 증강에는 OpenAI 호환 API 키가 필요합니다. <button class="text-button" type="button" data-action="open-settings">설정에서 등록</button></p>
           </div>
           <p id="augment-waiting" class="augment-hint"><i class="ph ph-hourglass" aria-hidden="true"></i>전사가 끝나면 이 단계에서 회의록을 증강할 수 있습니다.</p>
+          <div class="choice-divider"><span>또는 이미 완성된 전사문</span></div>
+          <button id="transcript-selection" class="file-picker" type="button" data-action="import-transcript" data-selected="false">
+            <span class="file-icon"><i class="ph ph-file-text"></i></span>
+            <span><strong>전사문 파일 가져오기</strong><small id="transcript-path">새 녹음·전사 없이 바로 AI 증강</small></span>
+            <i class="ph ph-caret-right"></i>
+          </button>
           <div id="augment-progress" class="setup-progress-card" hidden>
             <div class="job-header"><div><span class="section-index">AI 증강 진행 중</span><h3>회의록을 작성하고 있습니다</h3></div><strong id="augment-job-percent">0%</strong></div>
             <div id="augment-job-progress" class="wave-progress" role="progressbar" aria-label="AI 증강 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>

@@ -1,6 +1,7 @@
 import type {
   AssistantSettings,
   EnvironmentStatus,
+  ImportedTranscript,
   JobEvent,
   RefinementResult,
   TranscriptionResult,
@@ -20,6 +21,7 @@ export interface BackendPort {
   saveAssistantSettings(settings: AssistantSettings): Promise<void>
   refineTranscript(jobId: string, attendees: readonly string[]): Promise<RefinementResult>
   transcribe(request: TranscriptionRequest): Promise<TranscriptionResult>
+  importTranscript(request: TranscriptImportRequest): Promise<ImportedTranscript>
   cancel(jobId: string): Promise<void>
   openArtifact(jobId: string, kind: ArtifactKind): Promise<void>
   revealOutput(jobId: string): Promise<void>
@@ -28,6 +30,7 @@ export interface BackendPort {
   cancelRecording(recordingId: string): Promise<void>
   listenToRecordingFailures(handler: (event: RecordingFailure) => void): Promise<() => void>
   chooseAudio(): Promise<string | null>
+  chooseTranscript(): Promise<string | null>
   chooseOutputDirectory(): Promise<string | null>
   openModelAccessPage(): Promise<void>
   listenToJobs(handler: (event: JobEvent) => void): Promise<() => void>
@@ -43,6 +46,12 @@ export interface TranscriptionRequest {
   readonly inputPath: string
   readonly outputRoot: string
   readonly speakerHint: SpeakerHint
+}
+
+export interface TranscriptImportRequest {
+  readonly jobId: string
+  readonly inputPath: string
+  readonly outputRoot: string
 }
 
 export type ArtifactKind = "srt" | "speaker_text" | "checkpoint" | "minutes"

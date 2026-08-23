@@ -1,6 +1,10 @@
 import type { JobViewState } from "../application/job-machine"
 import type { RecordingViewState } from "../application/recording-machine"
-import type { EnvironmentStatus, TranscriptionResult } from "../domain/job"
+import type {
+  EnvironmentStatus,
+  ImportedTranscript,
+  TranscriptionResult,
+} from "../domain/job"
 import type { SpeakerForm, SpeakerMode } from "../domain/speaker"
 import { appTemplate } from "./app-template"
 import { AssistantSettingsView } from "./assistant-settings"
@@ -129,6 +133,11 @@ export class AppView {
     this.element("#audio-selection").dataset["selected"] = "true"
   }
 
+  setTranscript(path: string): void {
+    this.path("#transcript-path", path)
+    this.element("#transcript-selection").dataset["selected"] = "true"
+  }
+
   setOutput(path: string): void {
     this.path("#output-path", path)
   }
@@ -219,9 +228,26 @@ export class AppView {
     this.element("#results-panel").hidden = false
     this.element("#result-summary").textContent =
       `${result.segments}개 발화 보존 · ${result.filtered}개 환각 제거`
+    this.element("#result-srt-row").hidden = false
+    this.element("#result-checkpoint-row").hidden = false
     this.path("#result-srt", result.srt)
     this.path("#result-txt", result.txt)
     this.path("#result-checkpoint", result.checkpoint)
+    this.element("#result-minutes-row").hidden = true
+    this.element("#augment-panel").hidden = false
+    this.element("#augment-waiting").hidden = true
+    this.hasResult = true
+    this.refreshStages()
+    this.refreshActions()
+  }
+
+  /** An imported transcript is a result too: augmentation starts from it. */
+  renderImportedTranscript(result: ImportedTranscript): void {
+    this.element("#results-panel").hidden = false
+    this.element("#result-summary").textContent = "가져온 전사문 · AI 증강 준비 완료"
+    this.element("#result-srt-row").hidden = true
+    this.element("#result-checkpoint-row").hidden = true
+    this.path("#result-txt", result.txt)
     this.element("#result-minutes-row").hidden = true
     this.element("#augment-panel").hidden = false
     this.element("#augment-waiting").hidden = true
@@ -327,6 +353,8 @@ export class AppView {
     this.attendees.setBusy(this.jobBusy || this.recordingActive)
     this.element<HTMLButtonElement>("#record-button").disabled = this.jobBusy
     this.element<HTMLButtonElement>("#audio-selection").disabled =
+      this.jobBusy || this.recordingActive
+    this.element<HTMLButtonElement>("#transcript-selection").disabled =
       this.jobBusy || this.recordingActive
     this.element<HTMLButtonElement>("#output-button").disabled =
       this.jobBusy || this.recordingActive

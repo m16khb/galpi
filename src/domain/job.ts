@@ -35,6 +35,12 @@ export interface RefinementResult {
   readonly minutes: string
 }
 
+export interface ImportedTranscript {
+  readonly jobId: string
+  readonly txt: string
+  readonly outputDirectory: string
+}
+
 export type JobEvent =
   | {
       readonly jobId: string

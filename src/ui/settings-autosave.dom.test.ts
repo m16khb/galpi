@@ -50,6 +50,9 @@ function createBackend(onSave: (settings: AssistantSettings) => void | Promise<v
     transcribe: async () => {
       throw new Error("unused transcription")
     },
+    importTranscript: async () => {
+      throw new Error("unused import")
+    },
     cancel: async () => undefined,
     openArtifact: async () => undefined,
     revealOutput: async () => undefined,
@@ -62,6 +65,7 @@ function createBackend(onSave: (settings: AssistantSettings) => void | Promise<v
     cancelRecording: async () => undefined,
     listenToRecordingFailures: async () => () => undefined,
     chooseAudio: async () => null,
+    chooseTranscript: async () => null,
     chooseOutputDirectory: async () => null,
     openModelAccessPage: async () => undefined,
     listenToJobs: async () => () => undefined,

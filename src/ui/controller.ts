@@ -7,7 +7,7 @@ import {
   reduceJobEvent,
 } from "../application/job-machine"
 import { type ArtifactKind, type BackendPort, errorDetail, errorMessage } from "../domain/backend"
-import type { TranscriptionResult } from "../domain/job"
+import type { ImportedTranscript, TranscriptionResult } from "../domain/job"
 import { buildSpeakerHint, type SpeakerHint } from "../domain/speaker"
 import type { AppView } from "./app-view"
 import { RecordingController } from "./recording-controller"
@@ -18,7 +18,7 @@ export class AppController {
   private audioPath: string | null = null
   private outputRoot: string | null = null
   private job: JobViewState = initialJobState
-  private lastResult: TranscriptionResult | null = null
+  private lastResult: TranscriptionResult | ImportedTranscript | null = null
   private readonly recording: RecordingController
   private unlisten: (() => void) | null = null
   private unlistenRecording: (() => void) | null = null
@@ -95,6 +95,7 @@ export class AppController {
     this.view.on("open-minutes", () => void this.openArtifact("minutes"))
     this.view.on("model-access", () => void this.openModelAccess())
     this.view.on("choose-audio", () => void this.chooseAudio())
+    this.view.on("import-transcript", () => void this.importTranscript())
     this.view.on("choose-output", () => void this.chooseOutput())
     this.view.on("transcribe", () => void this.transcribe())
     this.view.on("record", () => void this.recording.start(this.outputRoot))
@@ -224,6 +225,33 @@ export class AppController {
         this.audioPath = selected
         this.view.setAudio(selected)
       }
+    } catch (error) {
+      this.view.showError(errorMessage(error))
+    }
+  }
+
+  private async importTranscript(): Promise<void> {
+    if (this.outputRoot === null) {
+      this.view.showError("결과를 저장할 폴더를 선택해 주세요.")
+      return
+    }
+    let selected: string | null
+    try {
+      selected = await this.backend.chooseTranscript()
+    } catch (error) {
+      this.view.showError(errorMessage(error))
+      return
+    }
+    if (selected === null) return
+    try {
+      const imported = await this.backend.importTranscript({
+        jobId: crypto.randomUUID(),
+        inputPath: selected,
+        outputRoot: this.outputRoot,
+      })
+      this.lastResult = imported
+      this.view.setTranscript(selected)
+      this.view.renderImportedTranscript(imported)
     } catch (error) {
       this.view.showError(errorMessage(error))
     }

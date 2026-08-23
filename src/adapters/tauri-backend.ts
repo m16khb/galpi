@@ -11,11 +11,13 @@ import type {
   RecordingResult,
   RecordingStatus,
   SetupResult,
+  TranscriptImportRequest,
   TranscriptionRequest,
 } from "../domain/backend"
 import type {
   AssistantSettings,
   EnvironmentStatus,
+  ImportedTranscript,
   JobEvent,
   RefinementResult,
   TranscriptionResult,
@@ -73,6 +75,12 @@ const assistantSettingsSchema = z.object({
 const refinementResultSchema = z.object({
   jobId: z.string(),
   minutes: z.string(),
+})
+
+const transcriptImportSchema = z.object({
+  jobId: z.string(),
+  txt: z.string(),
+  outputDirectory: z.string(),
 })
 
 const recordingStatusSchema = z.object({
@@ -175,6 +183,10 @@ export class TauriBackend implements BackendPort {
     )
   }
 
+  async importTranscript(request: TranscriptImportRequest): Promise<ImportedTranscript> {
+    return transcriptImportSchema.parse(await invoke<unknown>("import_transcript", { request }))
+  }
+
   async cancel(jobId: string): Promise<void> {
     await invoke("cancel_job", { jobId })
   }
@@ -215,6 +227,15 @@ export class TauriBackend implements BackendPort {
           extensions: ["m4a", "mp3", "wav", "mp4", "mov", "aac", "flac", "ogg"],
         },
       ],
+    })
+    return typeof selection === "string" ? selection : null
+  }
+
+  async chooseTranscript(): Promise<string | null> {
+    const selection = await open({
+      multiple: false,
+      directory: false,
+      filters: [{ name: "전사문", extensions: ["txt", "md"] }],
     })
     return typeof selection === "string" ? selection : null
   }
