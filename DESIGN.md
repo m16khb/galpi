@@ -106,7 +106,7 @@ All spacing derives from 4px.
 ### Step Rail
 
 - **Structure**: three user stages — `01 회의 전사`, `02 전사 결과`, `03 전사 결과 AI 증강` — each with a state label and short explanation. Engine and model preparation are a pre-gate panel (`00 / 준비`), not rail stages; they disappear once the local environment is ready.
-- **Stage mapping**: `01` completes when transcription artifacts render; `02` becomes current with the results panel; `03` completes when augmented minutes render. The augment stage hint links to Settings when no assistant key is saved and otherwise waits for a transcription. Augmentation streams progress: the refine phase emits `N자 작성됨` updates on the existing phase-event channel while the provider generates.
+- **Stage mapping**: `01` completes when transcription artifacts render; `02` becomes current with the results panel; `03` completes when augmented minutes render. The augment stage hint links to Settings when no assistant key is saved and otherwise waits for a transcription, or starts directly from an imported transcript file (`전사문 파일 가져오기`) which registers the transcript as the meeting result without a new recording. Augmentation streams progress: the refine phase emits `N자 작성됨` updates on the existing phase-event channel while the provider generates.
 - **States**: pending, current, completed, blocked.
 - **Accessibility**: `aria-current="step"` on the current item; text accompanies every state color.
 - **Motion**: current marker fades and translates no more than 4px; no motion under reduced motion.
@@ -157,7 +157,7 @@ All spacing derives from 4px.
 
 ### Artifact Row
 
-- **Structure**: artifact kind, canonical path, open and reveal actions.
+- **Structure**: artifact kind, canonical path, open and reveal actions. An imported transcript renders only the transcript row — subtitle and checkpoint rows stay hidden until a real transcription produces them.
 - **States**: ready, opening, missing, error.
 - **Accessibility**: action labels include artifact kind; paths remain selectable.
 - **Layout**: cluster that wraps actions before the path overflows.

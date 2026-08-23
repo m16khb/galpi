@@ -10,8 +10,9 @@ cleanup, and stable error codes are the contract here.
 
 ```text
 outbound/
-├── desktop.rs        # EnginePort, TranscriptionPort, ArtifactPort facade
+├── desktop.rs        # EnginePort, TranscriptionPort, TranscriptImportPort, ArtifactPort facade
 ├── environment.rs    # Readiness probe and worker environment
+├── import.rs         # Transcript import into a per-meeting folder
 ├── model_cache.rs    # Safe model import from the user Hugging Face cache
 ├── paths.rs          # Debug/release resources, job dirs, checkpoint seeding
 ├── process.rs        # Child supervisor and bounded line reader
@@ -32,6 +33,7 @@ outbound/
 | Change backpressure/RIFF caps | `recording/writer.rs` |
 | Change error mapping | `recording/cleanup.rs`, `recording/failure.rs` |
 | Change worker variables | `process_environment` in `environment.rs` |
+| Change meeting folder or artifact naming | `paths.rs` (`meeting_stem`, `create_meeting_directory`, `recording_folder_name`, `sanitize_name`); default root in `environment.rs` (`~/Documents/Galpi`) |
 | Change debug/release paths | `uv_binary`, `worker_root` in `paths.rs` |
 
 ## CONVENTIONS

@@ -109,7 +109,7 @@ This context helps Galpi produce stable names and terminology in refined meeting
 
 ### Generate AI meeting minutes
 
-After transcription, select `AI 증강 실행` (Run AI augmentation) to create Markdown through an OpenAI-compatible API.
+After transcription, select `AI 증강 실행` (Run AI augmentation) to create Markdown through an OpenAI-compatible API. You can also augment an existing transcript without a new recording: use `전사문 파일 가져오기` (Import transcript file) in the augmentation panel (txt/md).
 
 - Default model: `glm-5.3`
 - Default API: `https://api.z.ai/api/coding/paas/v4`
@@ -127,17 +127,24 @@ Setup:
 
 ## Outputs
 
-Microphone recordings are saved directly under the selected output folder. Transcription results use an isolated per-job directory to avoid collisions.
+The default location is `~/Documents/Galpi` (changeable from the output folder picker). One folder corresponds to one meeting: a microphone recording creates `YYYY-MM-DD HHMMSS 녹음` named after its start time, while imported audio and transcripts keep their original file name. Every artifact inside a meeting folder shares the folder's name.
 
 ```text
-<output folder>/
-├── galpi-recording-<recording UUID>.wav
-└── <file name>-<job ID>/
-    ├── <file name>.srt
-    ├── <file name>_화자별.txt
-    ├── <file name>.aligned.v2.json
-    └── <file name>_회의록.md      # produced by AI augmentation
+~/Documents/Galpi/
+├── 2026-08-24 143052 녹음/     # microphone recording (auto-named by start time)
+│   ├── 2026-08-24 143052 녹음.wav
+│   ├── 2026-08-24 143052 녹음.srt
+│   ├── 2026-08-24 143052 녹음_화자별.txt
+│   ├── 2026-08-24 143052 녹음.aligned.v2.json
+│   └── 2026-08-24 143052 녹음_회의록.md      # produced by AI augmentation
+└── 팀미팅/                      # imported audio/transcript (original name)
+    ├── 팀미팅.srt
+    ├── 팀미팅_화자별.txt
+    ├── 팀미팅.aligned.v2.json
+    └── 팀미팅_회의록.md
 ```
+
+Name collisions get a numeric suffix such as `팀미팅 2`. When an alignment checkpoint (`.aligned.v2.json`) exists, re-transcribing the same audio skips the transcription and alignment stages.
 
 | File | Purpose |
 |---|---|
