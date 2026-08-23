@@ -1,8 +1,10 @@
+import appIconUrl from "../../assets/app-icon.svg"
+
 export const appTemplate = `
   <div class="app-shell">
     <aside class="setup-rail" aria-label="진행 단계">
       <div class="brand-lockup">
-        <span class="brand-mark" aria-hidden="true"><i class="ph ph-waveform"></i></span>
+        <span class="brand-mark" aria-hidden="true"><img src="${appIconUrl}" alt="" /></span>
         <div><strong>갈피</strong><span>LOCAL TRANSCRIPTION</span></div>
       </div>
       <ol class="step-list">
