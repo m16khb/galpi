@@ -139,9 +139,9 @@ async fn validate_artifacts(
     let txt = canonical_artifact(&root, txt).await?;
     let checkpoint = canonical_artifact(&root, checkpoint).await?;
     Ok(Artifacts {
-        srt,
+        srt: Some(srt),
         txt,
-        checkpoint,
+        checkpoint: Some(checkpoint),
         minutes: None,
         output_directory: root,
     })

@@ -3,9 +3,9 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct Artifacts {
-    pub srt: PathBuf,
+    pub srt: Option<PathBuf>,
     pub txt: PathBuf,
-    pub checkpoint: PathBuf,
+    pub checkpoint: Option<PathBuf>,
     pub minutes: Option<PathBuf>,
     pub output_directory: PathBuf,
 }
@@ -22,9 +22,9 @@ pub enum ArtifactKind {
 impl Artifacts {
     pub fn path_for(&self, kind: ArtifactKind) -> Option<&PathBuf> {
         match kind {
-            ArtifactKind::Srt => Some(&self.srt),
+            ArtifactKind::Srt => self.srt.as_ref(),
             ArtifactKind::SpeakerText => Some(&self.txt),
-            ArtifactKind::Checkpoint => Some(&self.checkpoint),
+            ArtifactKind::Checkpoint => self.checkpoint.as_ref(),
             ArtifactKind::Minutes => self.minutes.as_ref(),
         }
     }
@@ -43,6 +43,7 @@ pub fn minutes_path(transcript: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::minutes_path;
+    use crate::domain::artifact::{ArtifactKind, Artifacts};
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -67,5 +68,26 @@ mod tests {
 
         // Then
         assert_eq!(minutes, PathBuf::from("/tmp/job/notes_회의록.md"));
+    }
+
+    #[test]
+    fn imported_transcripts_have_no_optional_artifacts() {
+        // Given: a transcript imported without running a transcription job
+        let artifacts = Artifacts {
+            srt: None,
+            txt: PathBuf::from("/tmp/job/notes.txt"),
+            checkpoint: None,
+            minutes: None,
+            output_directory: PathBuf::from("/tmp/job"),
+        };
+
+        // When / Then: only the transcript itself is addressable
+        assert_eq!(
+            artifacts.path_for(ArtifactKind::SpeakerText),
+            Some(&PathBuf::from("/tmp/job/notes.txt"))
+        );
+        assert_eq!(artifacts.path_for(ArtifactKind::Srt), None);
+        assert_eq!(artifacts.path_for(ArtifactKind::Checkpoint), None);
+        assert_eq!(artifacts.path_for(ArtifactKind::Minutes), None);
     }
 }

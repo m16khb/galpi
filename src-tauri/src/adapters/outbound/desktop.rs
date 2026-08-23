@@ -1,10 +1,12 @@
 use super::paths::{AppPaths, prepare_job_directory};
-use super::{refinement, setup, transcription};
+use super::{import, refinement, setup, transcription};
 use crate::application::error::AppError;
 use crate::application::model::{CompletedTranscription, EnvironmentStatus};
 use crate::application::ports::{
-    ArtifactPort, EnginePort, JobEvents, RefinementJob, RefinementPort, TranscriptionPort,
+    ArtifactPort, EnginePort, JobEvents, RefinementJob, RefinementPort, TranscriptImportPort,
+    TranscriptionPort,
 };
+use crate::domain::artifact::Artifacts;
 use crate::domain::job::{SetupRequest, SpeakerHint};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
@@ -98,6 +100,17 @@ impl RefinementPort for DesktopAdapter {
             job,
         )
         .await
+    }
+}
+
+#[async_trait]
+impl TranscriptImportPort for DesktopAdapter {
+    async fn import_transcript(
+        &self,
+        input: &Path,
+        output_root: &Path,
+    ) -> Result<Artifacts, AppError> {
+        import::import_transcript(input, output_root).await
     }
 }
 

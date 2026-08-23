@@ -1,12 +1,12 @@
 use crate::application::error::AppError;
 use crate::application::model::{
     EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus, RefinementResult,
-    SetupResult, TranscriptionResult,
+    SetupResult, TranscriptImportResult, TranscriptionResult,
 };
 use crate::application::ports::{JobEvents, RecordingEvents};
 use crate::application::use_cases::Application;
 use crate::domain::artifact::ArtifactKind;
-use crate::domain::job::{SetupRequest, TranscriptionRequest};
+use crate::domain::job::{SetupRequest, TranscriptImportRequest, TranscriptionRequest};
 use crate::domain::roster::AssistantSettings;
 use crate::domain::worker::WorkerEvent;
 use serde::Serialize;
@@ -73,6 +73,14 @@ pub async fn start_transcription(
     request: TranscriptionRequest,
 ) -> Result<TranscriptionResult, AppError> {
     application.transcribe(request).await
+}
+
+#[tauri::command]
+pub async fn import_transcript(
+    application: State<'_, Application>,
+    request: TranscriptImportRequest,
+) -> Result<TranscriptImportResult, AppError> {
+    application.import_transcript(request).await
 }
 
 #[tauri::command]

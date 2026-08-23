@@ -1,5 +1,6 @@
 pub mod desktop;
 mod environment;
+pub mod import;
 mod model_cache;
 mod paths;
 mod process;

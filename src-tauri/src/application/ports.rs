@@ -2,6 +2,7 @@ use crate::application::error::AppError;
 use crate::application::model::{
     CompletedTranscription, EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus,
 };
+use crate::domain::artifact::Artifacts;
 use crate::domain::job::{SetupRequest, SpeakerHint};
 use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
 use crate::domain::worker::WorkerEvent;
@@ -44,6 +45,16 @@ pub trait TranscriptionPort: Send + Sync {
 pub trait ArtifactPort: Send + Sync {
     fn open_file(&self, path: &Path, trusted_root: &Path) -> Result<(), AppError>;
     fn open_directory(&self, path: &Path) -> Result<(), AppError>;
+}
+
+/// Copies an existing transcript into a meeting folder without transcribing.
+#[async_trait]
+pub trait TranscriptImportPort: Send + Sync {
+    async fn import_transcript(
+        &self,
+        input: &Path,
+        output_root: &Path,
+    ) -> Result<Artifacts, AppError>;
 }
 
 pub trait JobEvents: Send + Sync {

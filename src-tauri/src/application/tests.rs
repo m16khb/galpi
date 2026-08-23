@@ -2,11 +2,13 @@ use super::error::AppError;
 use super::model::{CompletedTranscription, EnvironmentStatus};
 use super::ports::{
     ArtifactPort, EnginePort, RecordingPort, RefinementJob, RefinementPort, SettingsPort,
-    TranscriptionPort,
+    TranscriptImportPort, TranscriptionPort,
 };
 use super::use_cases::Application;
 use crate::domain::artifact::{ArtifactKind, Artifacts};
-use crate::domain::job::{SetupRequest, SpeakerHint, TranscriptionRequest};
+use crate::domain::job::{
+    SetupRequest, SpeakerHint, TranscriptImportRequest, TranscriptionRequest,
+};
 use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
@@ -22,6 +24,7 @@ enum TranscriptionBehavior {
 }
 
 struct SeenRefinement {
+    transcript: PathBuf,
     api_key: String,
     model: Option<String>,
     base_url: Option<String>,
@@ -78,6 +81,7 @@ impl FakePort {
     fn application(self: &Arc<Self>) -> Application {
         let engine: Arc<dyn EnginePort> = self.clone();
         let transcription: Arc<dyn TranscriptionPort> = self.clone();
+        let imports: Arc<dyn TranscriptImportPort> = self.clone();
         let artifacts: Arc<dyn ArtifactPort> = self.clone();
         let recording: Arc<dyn RecordingPort> = self.clone();
         let settings: Arc<dyn SettingsPort> = self.clone();
@@ -85,6 +89,7 @@ impl FakePort {
         Application::new(
             engine,
             transcription,
+            imports,
             artifacts,
             recording,
             settings,
@@ -105,6 +110,7 @@ impl RefinementPort for FakePort {
             .lock()
             .map_err(|_| AppError::new("TEST_ERROR", "refinement lock poisoned"))?
             .push(SeenRefinement {
+                transcript: job.transcript.to_owned(),
                 api_key: job.api_key.to_owned(),
                 model: job.model.map(str::to_owned),
                 base_url: job.base_url.map(str::to_owned),
@@ -250,6 +256,23 @@ impl ArtifactPort for FakePort {
             .map_err(|_| AppError::new("TEST_ERROR", "opener lock poisoned"))?
             .push(path.to_owned());
         Ok(())
+    }
+}
+
+#[async_trait]
+impl TranscriptImportPort for FakePort {
+    async fn import_transcript(
+        &self,
+        input: &Path,
+        _output_root: &Path,
+    ) -> Result<Artifacts, AppError> {
+        Ok(Artifacts {
+            srt: None,
+            txt: input.to_owned(),
+            checkpoint: None,
+            minutes: None,
+            output_directory: input.parent().unwrap_or(Path::new("/tmp")).to_owned(),
+        })
     }
 }
 
@@ -528,15 +551,80 @@ fn request(speaker_hint: SpeakerHint) -> TranscriptionRequest {
 fn completion(output: &Path) -> CompletedTranscription {
     CompletedTranscription {
         artifacts: Artifacts {
-            srt: output.join("meeting.srt"),
+            srt: Some(output.join("meeting.srt")),
             txt: output.join("meeting_화자별.txt"),
-            checkpoint: output.join("meeting.aligned.v2.json"),
+            checkpoint: Some(output.join("meeting.aligned.v2.json")),
             minutes: None,
             output_directory: output.to_owned(),
         },
         segments: 8,
         filtered: 1,
     }
+}
+
+#[tokio::test]
+async fn imported_transcript_is_refinable_without_transcription() -> Result<(), AppError> {
+    // Given: an assistant key and an existing transcript file, no transcription run
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+    app.save_assistant_settings(AssistantSettings {
+        api_key: Some("zai_key".to_owned()),
+        ..AssistantSettings::default()
+    })
+    .await?;
+
+    // When
+    let imported = app
+        .import_transcript(TranscriptImportRequest {
+            job_id: Uuid::now_v7(),
+            input_path: "/tmp/galpi/팀미팅/팀미팅.txt".to_owned(),
+            output_root: "/tmp/galpi".to_owned(),
+        })
+        .await?;
+    app.refine_transcript(imported.job_id, &[]).await?;
+
+    // Then: refinement received the imported transcript itself
+    let seen = port
+        .refinements
+        .lock()
+        .map_err(|_| AppError::new("TEST_ERROR", "refinement lock poisoned"))?;
+    let job = seen
+        .first()
+        .ok_or_else(|| AppError::new("TEST_ERROR", "refinement was not requested"))?;
+    assert_eq!(job.transcript, Path::new("/tmp/galpi/팀미팅/팀미팅.txt"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn imported_transcript_has_no_srt_or_checkpoint() -> Result<(), AppError> {
+    // Given
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+    let imported = app
+        .import_transcript(TranscriptImportRequest {
+            job_id: Uuid::now_v7(),
+            input_path: "/tmp/galpi/팀미팅/팀미팅.txt".to_owned(),
+            output_root: "/tmp/galpi".to_owned(),
+        })
+        .await?;
+
+    // When / Then: only artifacts that exist can be opened
+    let Err(error) = app.open_artifact(imported.job_id, ArtifactKind::Srt) else {
+        return Err(AppError::new(
+            "TEST_ERROR",
+            "srt artifact unexpectedly opened",
+        ));
+    };
+    assert_eq!(error.code, "ARTIFACT_NOT_FOUND");
+    let Err(error) = app.open_artifact(imported.job_id, ArtifactKind::Checkpoint) else {
+        return Err(AppError::new(
+            "TEST_ERROR",
+            "checkpoint artifact unexpectedly opened",
+        ));
+    };
+    assert_eq!(error.code, "ARTIFACT_NOT_FOUND");
+    app.open_artifact(imported.job_id, ArtifactKind::SpeakerText)?;
+    Ok(())
 }
 
 mod recording;

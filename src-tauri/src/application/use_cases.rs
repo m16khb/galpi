@@ -1,15 +1,17 @@
 use crate::application::error::AppError;
 use crate::application::jobs::JobRegistry;
 use crate::application::model::{
-    EnvironmentStatus, RefinementResult, SetupResult, TranscriptionResult,
+    EnvironmentStatus, RefinementResult, SetupResult, TranscriptImportResult, TranscriptionResult,
 };
 use crate::application::model::{RecordingResult, RecordingStatus};
 use crate::application::ports::{
     ArtifactPort, EnginePort, RecordingPort, RefinementJob, RefinementPort, SettingsPort,
-    TranscriptionPort,
+    TranscriptImportPort, TranscriptionPort,
 };
 use crate::domain::artifact::{ArtifactKind, minutes_path};
-use crate::domain::job::{SetupRequest, TranscriptionRequest, validate_speaker_hint};
+use crate::domain::job::{
+    SetupRequest, TranscriptImportRequest, TranscriptionRequest, validate_speaker_hint,
+};
 use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
 use crate::domain::worker::AsrContext;
 use std::path::Path;
@@ -19,6 +21,7 @@ use uuid::Uuid;
 pub struct Application {
     engine: Arc<dyn EnginePort>,
     transcription: Arc<dyn TranscriptionPort>,
+    imports: Arc<dyn TranscriptImportPort>,
     artifacts: Arc<dyn ArtifactPort>,
     recording: Arc<dyn RecordingPort>,
     settings: Arc<dyn SettingsPort>,
@@ -31,6 +34,7 @@ impl Application {
     pub fn new(
         engine: Arc<dyn EnginePort>,
         transcription: Arc<dyn TranscriptionPort>,
+        imports: Arc<dyn TranscriptImportPort>,
         artifacts: Arc<dyn ArtifactPort>,
         recording: Arc<dyn RecordingPort>,
         settings: Arc<dyn SettingsPort>,
@@ -39,6 +43,7 @@ impl Application {
         Self {
             engine,
             transcription,
+            imports,
             artifacts,
             recording,
             settings,
@@ -153,6 +158,30 @@ impl Application {
         result
     }
 
+    /// Register an existing transcript file as a finished meeting so it can be
+    /// refined without recording or transcribing anything.
+    pub async fn import_transcript(
+        &self,
+        request: TranscriptImportRequest,
+    ) -> Result<TranscriptImportResult, AppError> {
+        let (job_id, _unused_cancel) = self.jobs.claim_with_id(request.job_id)?;
+        let result = self
+            .imports
+            .import_transcript(
+                Path::new(&request.input_path),
+                Path::new(&request.output_root),
+            )
+            .await;
+        self.jobs.finish(job_id)?;
+        let artifacts = result?;
+        self.jobs.register(job_id, artifacts.clone())?;
+        Ok(TranscriptImportResult {
+            job_id,
+            txt: artifacts.txt.to_string_lossy().into_owned(),
+            output_directory: artifacts.output_directory.to_string_lossy().into_owned(),
+        })
+    }
+
     async fn run_transcription(
         &self,
         job_id: Uuid,
@@ -187,13 +216,9 @@ impl Application {
         self.jobs.register(job_id, completed.artifacts.clone())?;
         Ok(TranscriptionResult {
             job_id,
-            srt: completed.artifacts.srt.to_string_lossy().into_owned(),
+            srt: artifact_path(completed.artifacts.srt.as_ref()),
             txt: completed.artifacts.txt.to_string_lossy().into_owned(),
-            checkpoint: completed
-                .artifacts
-                .checkpoint
-                .to_string_lossy()
-                .into_owned(),
+            checkpoint: artifact_path(completed.artifacts.checkpoint.as_ref()),
             output_directory: completed
                 .artifacts
                 .output_directory
@@ -289,4 +314,11 @@ fn verify_recording_id(active: Option<Uuid>, requested: Uuid) -> Result<(), AppE
             "진행 중인 마이크 녹음이 없습니다.",
         )),
     }
+}
+
+/// Completed transcriptions always carry srt and checkpoint artifacts; keep
+/// the IPC shape a plain string either way.
+fn artifact_path(path: Option<&std::path::PathBuf>) -> String {
+    path.map(|path| path.to_string_lossy().into_owned())
+        .unwrap_or_default()
 }

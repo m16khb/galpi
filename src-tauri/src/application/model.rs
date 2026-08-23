@@ -52,6 +52,14 @@ pub struct TranscriptionResult {
     pub filtered: usize,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TranscriptImportResult {
+    pub job_id: Uuid,
+    pub txt: String,
+    pub output_directory: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RecordingStatus {

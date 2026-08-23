@@ -25,6 +25,14 @@ pub struct TranscriptionRequest {
     pub speaker_hint: SpeakerHint,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TranscriptImportRequest {
+    pub job_id: Uuid,
+    pub input_path: String,
+    pub output_root: String,
+}
+
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum RequestError {
     #[error("speaker count must be greater than zero")]
