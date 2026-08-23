@@ -231,12 +231,14 @@ export class TauriBackend implements BackendPort {
     return typeof selection === "string" ? selection : null
   }
 
-  async chooseTranscript(): Promise<string | null> {
-    const selection = await open({
+  async chooseTranscript(defaultPath: string | null): Promise<string | null> {
+    const options: Parameters<typeof open>[0] = {
       multiple: false,
       directory: false,
       filters: [{ name: "전사문", extensions: ["txt", "md"] }],
-    })
+    }
+    if (defaultPath !== null) options.defaultPath = defaultPath
+    const selection = await open(options)
     return typeof selection === "string" ? selection : null
   }
 

@@ -30,7 +30,8 @@ export interface BackendPort {
   cancelRecording(recordingId: string): Promise<void>
   listenToRecordingFailures(handler: (event: RecordingFailure) => void): Promise<() => void>
   chooseAudio(): Promise<string | null>
-  chooseTranscript(): Promise<string | null>
+  /** Opens at the Galpi meeting root when one is known (default ~/Documents/Galpi). */
+  chooseTranscript(defaultPath: string | null): Promise<string | null>
   chooseOutputDirectory(): Promise<string | null>
   openModelAccessPage(): Promise<void>
   listenToJobs(handler: (event: JobEvent) => void): Promise<() => void>

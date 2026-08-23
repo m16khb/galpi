@@ -109,6 +109,7 @@ describe("AppController transcript import", () => {
     const root = window.document.createElement("div") as unknown as HTMLElement
     window.document.body.appendChild(root as unknown as never)
     const unavailable = () => Promise.reject(new Error("unused"))
+    let capturedDefaultPath: string | null | undefined
     const backend = {
       diagnose: async () => ({
         engineReady: false,
@@ -146,7 +147,10 @@ describe("AppController transcript import", () => {
       cancelRecording: unavailable,
       listenToRecordingFailures: async () => () => undefined,
       chooseAudio: unavailable,
-      chooseTranscript: async () => "/tmp/팀미팅.txt",
+      chooseTranscript: async (defaultPath: string | null) => {
+        capturedDefaultPath = defaultPath
+        return "/tmp/팀미팅.txt"
+      },
       chooseOutputDirectory: unavailable,
       openModelAccessPage: unavailable,
       listenToJobs: async () => () => undefined,
@@ -160,6 +164,7 @@ describe("AppController transcript import", () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Then: the transcript renders as the meeting result and augmentation unlocks
+    expect(capturedDefaultPath).toBe("/tmp/Documents/Galpi")
     expect((root.querySelector("#transcript-selection") as HTMLElement).dataset["selected"]).toBe(
       "true",
     )

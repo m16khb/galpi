@@ -237,7 +237,7 @@ export class AppController {
     }
     let selected: string | null
     try {
-      selected = await this.backend.chooseTranscript()
+      selected = await this.backend.chooseTranscript(this.outputRoot)
     } catch (error) {
       this.view.showError(errorMessage(error))
       return
