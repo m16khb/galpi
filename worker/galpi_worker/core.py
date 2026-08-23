@@ -1,6 +1,7 @@
 """Pure domain helpers for the Galpi worker."""
 
 import re
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal, cast
@@ -25,6 +26,15 @@ _HALLUCINATION_PATTERN = re.compile(
     r"시청해\s*주?셔서|한글자막\s*by|구독과\s*좋아요|이\s*시각\s*세계였습니다"
 )
 
+# A repetition loop is a Whisper failure mode on silence or noise: one short
+# token repeats with high confidence for the whole segment (a person's name
+# dozens of times), so confidence-based rules never catch it. Meeting speech
+# never has one token dominating a whole segment, so token dominance is the
+# tell: at least six tokens with the same token covering 80% of them.
+_REPETITION_MIN_TOKENS = 6
+_REPETITION_DOMINANCE = 0.8
+_REPETITION_TOKEN_SPLIT = re.compile(r"[,\.\s]+")
+
 
 def validate_speaker_hint(hint: SpeakerHint) -> None:
     """Validate speaker hints before model work starts."""
@@ -44,9 +54,17 @@ def validate_speaker_hint(hint: SpeakerHint) -> None:
 
 
 def should_filter_segment(text: str) -> bool:
-    """Return whether a segment matches a known hallucination pattern."""
+    """Return whether a segment is a known hallucination or a repetition loop."""
 
-    return _HALLUCINATION_PATTERN.search(text) is not None
+    return _HALLUCINATION_PATTERN.search(text) is not None or _is_repetition_loop(text)
+
+
+def _is_repetition_loop(text: str) -> bool:
+    tokens = [token for token in _REPETITION_TOKEN_SPLIT.split(text) if token]
+    if len(tokens) < _REPETITION_MIN_TOKENS:
+        return False
+    dominant_count = Counter(tokens).most_common(1)[0][1]
+    return dominant_count / len(tokens) >= _REPETITION_DOMINANCE
 
 
 def parse_asr_context(payload: object) -> tuple[list[str], list[str], list[str]]:

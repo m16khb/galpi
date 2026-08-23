@@ -134,6 +134,50 @@ class HallucinationFilterTests(unittest.TestCase):
         # Then
         self.assertFalse(filtered)
 
+    def test_filters_repeated_name_loop_from_silence(self) -> None:
+        # Given: Whisper repeating one name through a silent stretch
+        text = "김관식, " * 56
+
+        # When
+        filtered = should_filter_segment(text)
+
+        # Then
+        self.assertTrue(filtered)
+
+    def test_filters_repetition_loop_even_with_corrupted_copies(self) -> None:
+        # Given: a dominant loop with a few corrupted variants still inside
+        text = ", ".join(["김현현"] * 55 + ["김현현현"])
+
+        # When
+        filtered = should_filter_segment(text)
+
+        # Then
+        self.assertTrue(filtered)
+
+    def test_keeps_brief_backchannel_repeats(self) -> None:
+        # Given: a real speaker acknowledging a few times in one breath
+        for text in ["네, 네, 네", "네 네 네 네 널"]:
+            # When
+            filtered = should_filter_segment(text)
+
+            # Then
+            self.assertFalse(filtered, text)
+
+    def test_repetition_threshold_sits_at_six_dominant_tokens(self) -> None:
+        # Given / When / Then: five repeats stay, six or more are a loop
+        self.assertFalse(should_filter_segment("네, " * 5))
+        self.assertTrue(should_filter_segment("네, " * 6))
+
+    def test_keeps_diverse_normal_sentences(self) -> None:
+        # Given: real meeting sentences never let one token dominate
+        text = "그건 일차적으로는 하빈님이랑 제가 담당을 할게요. 최근에는 URL 쪽을 하빈님이 보고 있습니다."
+
+        # When
+        filtered = should_filter_segment(text)
+
+        # Then
+        self.assertFalse(filtered)
+
     def test_normalizes_rounded_srt_timestamp_carry(self) -> None:
         self.assertEqual(format_timestamp(59.9999), "00:01:00,000")
 
