@@ -154,17 +154,17 @@ export const appTemplate = `
         <section id="augment-panel" class="panel augment-panel" aria-labelledby="augment-title">
           <div class="section-heading">
             <div><span class="section-index">03 / AI 증강</span><h2 id="augment-title">전사 결과 AI 증강</h2></div>
-            <p>등록한 OpenAI 호환 API 토큰으로 전사 결과를 결정·실행·추적 가능한 회의록으로 증강합니다.</p>
+            <p>등록한 OpenAI 호환 API 토큰으로 전사 결과를 회의록으로 정리합니다. 결정사항과 실행·추적 항목을 놓치지 않습니다.</p>
           </div>
           <div id="augment-key-hint" class="augment-hint" hidden>
             <i class="ph ph-key" aria-hidden="true"></i>
             <p>AI 증강에는 OpenAI 호환 API 키가 필요합니다. <button class="text-button" type="button" data-action="open-settings">설정에서 등록</button></p>
           </div>
-          <p id="augment-waiting" class="augment-hint"><i class="ph ph-hourglass" aria-hidden="true"></i>전사가 끝나면 이 단계에서 회의록을 증강할 수 있습니다.</p>
+          <p id="augment-waiting" class="augment-hint"><i class="ph ph-hourglass" aria-hidden="true"></i>전사를 마치거나 전사문을 가져오면 이 단계에서 바로 회의록을 증강할 수 있습니다.</p>
           <div class="choice-divider"><span>또는 이미 완성된 전사문</span></div>
           <button id="transcript-selection" class="file-picker" type="button" data-action="import-transcript" data-selected="false">
             <span class="file-icon"><i class="ph ph-file-text"></i></span>
-            <span><strong>전사문 파일 가져오기</strong><small id="transcript-path">새 녹음·전사 없이 바로 AI 증강</small></span>
+            <span><strong>전사문 파일 가져오기</strong><small id="transcript-path">txt, md</small></span>
             <i class="ph ph-caret-right"></i>
           </button>
           <div id="augment-progress" class="setup-progress-card" hidden>
