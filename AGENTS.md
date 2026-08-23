@@ -148,3 +148,22 @@ bun run build
 - `bun run build` expects macOS `hdiutil`; signing and notarization remain separate.
 - Build scripts currently hardcode ARM64 and release artifact version `0.1.0`.
 - Worker protocol, Rust parser, frontend event schema, and job reducer form one change set.
+
+<!-- AGENT_HARNESS:START -->
+## agent-harness project docs
+
+This repository uses agent-harness project docs. Read existing AGENTS.md rules first, then read only the additional documents relevant to the task.
+
+- Architecture or large design changes: .agent-harness/ARCHITECTURE.md, .agent-harness/CONSTITUTION.md
+- Testing or verification changes: .agent-harness/TESTING.md
+- Endpoint/DTO/OpenAPI changes: .agent-harness/OPEN_API_SPEC.md
+- Commit or PR work: .agent-harness/COMMIT_POLICY.md
+- Code style or structure changes: .agent-harness/CONVENTIONS.md
+- Dependency or tech-stack changes: .agent-harness/TECH_STACK.md
+- Run, deploy, environment, or local development: .agent-harness/OPERATIONS.md
+- Agent start, verification, and completion workflow: .agent-harness/AGENT_WORKFLOW.md
+- Risky or recurring-failure work: .agent-harness/CAUTIONS.md
+- Structural rationale, alternatives, and decisions: .agent-harness/ADR.md
+- Session start, instruction conflicts, and principle decisions: .agent-harness/CONSTITUTION.md
+- UI, styling, or design-system changes: .agent-harness/DESIGN.md (client repositories only)
+<!-- AGENT_HARNESS:END -->
