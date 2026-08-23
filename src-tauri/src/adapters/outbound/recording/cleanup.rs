@@ -13,7 +13,7 @@ impl Drop for super::NativeRecorder {
         if let Some(recording) = recording {
             drop(recording.stream);
             let writer_result = recording.writer.cancel();
-            let remove_result = remove_if_exists(&recording.partial_path);
+            let remove_result = remove_partial(&recording.partial_path, &recording.folder);
             if let Err(error) = writer_result.and(remove_result) {
                 eprintln!("recording shutdown cleanup failed: {error}");
             }
@@ -46,10 +46,17 @@ pub fn remove_if_exists(path: &Path) -> Result<(), AppError> {
     }
 }
 
-pub fn cancel_and_remove(writer: WriterHandle, path: &Path) -> Result<(), AppError> {
+pub fn cancel_and_remove(writer: WriterHandle, path: &Path, folder: &Path) -> Result<(), AppError> {
     let writer_result = writer.cancel();
-    let remove_result = remove_if_exists(path);
+    let remove_result = remove_partial(path, folder);
     writer_result.and(remove_result)
+}
+
+/// Remove the partial recording and, when it is left empty, its meeting folder.
+pub fn remove_partial(path: &Path, folder: &Path) -> Result<(), AppError> {
+    let file = remove_if_exists(path);
+    let _ = std::fs::remove_dir(folder);
+    file
 }
 
 pub fn with_cleanup(error: AppError, cleanup: Result<(), AppError>) -> AppError {

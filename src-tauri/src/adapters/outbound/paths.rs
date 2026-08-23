@@ -2,7 +2,6 @@ use crate::application::error::AppError;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
-use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct AppPaths {
@@ -97,43 +96,92 @@ pub async fn prepare_job_directory(
         ));
     }
 
+    let output_root = prepare_output_root(output_root).await?;
+    let stem = meeting_stem(&input);
+    let job_directory = create_meeting_directory(input.parent(), &output_root, &stem).await?;
+    seed_checkpoint(&output_root, &job_directory, &stem).await?;
+    Ok((input, job_directory))
+}
+
+/// Create (or adopt) the Galpi output root and return its canonical path.
+pub async fn prepare_output_root(output_root: &Path) -> Result<PathBuf, AppError> {
     tokio::fs::create_dir_all(output_root)
         .await
         .map_err(|error| AppError::io("출력 디렉터리를 만들지 못했습니다", &error))?;
-    let output_root = tokio::fs::canonicalize(output_root)
+    tokio::fs::canonicalize(output_root)
         .await
-        .map_err(|error| AppError::io("출력 디렉터리를 확인하지 못했습니다", &error))?;
+        .map_err(|error| AppError::io("출력 디렉터리를 확인하지 못했습니다", &error))
+}
 
-    let base = input
+/// Sanitized meeting name shared by the meeting folder and every artifact in it.
+pub fn meeting_stem(input: &Path) -> String {
+    input
         .file_stem()
         .and_then(|name| name.to_str())
         .map(sanitize_name)
         .filter(|name| !name.is_empty())
-        .unwrap_or_else(|| "meeting".to_owned());
-    let job_directory = output_root.join(format!("{base}-{}", Uuid::now_v7()));
-    tokio::fs::create_dir(&job_directory)
-        .await
-        .map_err(|error| AppError::io("작업 디렉터리를 만들지 못했습니다", &error))?;
-    let job_directory = tokio::fs::canonicalize(job_directory)
+        .unwrap_or_else(|| "meeting".to_owned())
+}
+
+/// Meeting folder rule: the folder is named after the recording, so a Galpi
+/// recording that already sits in `{stem}/{stem}.wav` reuses its own folder.
+/// Any other input gets a fresh `{stem}` folder, deduplicated with ` 2`, ` 3`, …
+pub async fn create_meeting_directory(
+    input_parent: Option<&Path>,
+    output_root: &Path,
+    stem: &str,
+) -> Result<PathBuf, AppError> {
+    let recorded_folder = output_root.join(stem);
+    if input_parent == Some(recorded_folder.as_path()) {
+        return Ok(recorded_folder);
+    }
+    for attempt in 1..=100 {
+        let candidate = if attempt == 1 {
+            output_root.join(stem)
+        } else {
+            output_root.join(format!("{stem} {attempt}"))
+        };
+        match tokio::fs::create_dir(&candidate).await {
+            Ok(()) => return canonical_job_directory(&candidate, output_root).await,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(error) => {
+                return Err(AppError::io("작업 디렉터리를 만들지 못했습니다", &error));
+            }
+        }
+    }
+    Err(AppError::new(
+        "OUTPUT_PATH_ERROR",
+        "같은 이름의 회의 폴더가 너무 많아 새로 만들 수 없습니다.",
+    ))
+}
+
+async fn canonical_job_directory(
+    candidate: &Path,
+    output_root: &Path,
+) -> Result<PathBuf, AppError> {
+    let directory = tokio::fs::canonicalize(candidate)
         .await
         .map_err(|error| AppError::io("작업 디렉터리를 확인하지 못했습니다", &error))?;
-    if !job_directory.starts_with(&output_root) {
+    if !directory.starts_with(output_root) {
         return Err(AppError::new(
             "OUTPUT_PATH_ERROR",
             "작업 디렉터리가 선택한 출력 폴더를 벗어났습니다.",
         ));
     }
-    seed_checkpoint(&output_root, &job_directory, &base).await?;
-    Ok((input, job_directory))
+    Ok(directory)
+}
+
+/// Fresh folder name for a new microphone recording: `YYYY-MM-DD HHMMSS 녹음`.
+pub fn recording_folder_name() -> String {
+    format!("{} 녹음", chrono::Local::now().format("%Y-%m-%d %H%M%S"))
 }
 
 async fn seed_checkpoint(
     output_root: &Path,
     job_directory: &Path,
-    base: &str,
+    stem: &str,
 ) -> Result<(), AppError> {
-    let checkpoint_name = format!("{base}.aligned.v2.json");
-    let prefix = format!("{base}-");
+    let checkpoint_name = format!("{stem}.aligned.v2.json");
     let mut entries = tokio::fs::read_dir(output_root)
         .await
         .map_err(|error| AppError::io("기존 작업 디렉터리를 확인하지 못했습니다", &error))?;
@@ -143,9 +191,7 @@ async fn seed_checkpoint(
         .await
         .map_err(|error| AppError::io("기존 작업 항목을 읽지 못했습니다", &error))?
     {
-        if entry.path() == job_directory
-            || !entry.file_name().to_string_lossy().starts_with(&prefix)
-        {
+        if entry.path() == job_directory {
             continue;
         }
         let checkpoint = entry.path().join(&checkpoint_name);
@@ -177,14 +223,14 @@ async fn seed_checkpoint(
 fn sanitize_name(name: &str) -> String {
     name.chars()
         .map(|character| {
-            if character.is_alphanumeric() || matches!(character, '-' | '_') {
+            if character.is_alphanumeric() || matches!(character, '-' | '_' | ' ') {
                 character
             } else {
                 '-'
             }
         })
         .collect::<String>()
-        .trim_matches('-')
+        .trim_matches(|character| character == '-' || character == ' ')
         .to_owned()
 }
 

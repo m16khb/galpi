@@ -15,7 +15,10 @@ use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-use cleanup::{cancel_and_remove, microphone_error, remove_if_exists, state_lock, with_cleanup};
+use crate::adapters::outbound::paths::recording_folder_name;
+use cleanup::{
+    cancel_and_remove, microphone_error, remove_if_exists, remove_partial, state_lock, with_cleanup,
+};
 use failure::{SharedFailure, take_failure};
 struct ActiveRecording {
     id: Uuid,
@@ -25,6 +28,7 @@ struct ActiveRecording {
     failure: SharedFailure,
     partial_path: PathBuf,
     final_path: PathBuf,
+    folder: PathBuf,
     sample_rate: u32,
     channels: u16,
 }
@@ -90,8 +94,14 @@ fn start_sync(
         .map_err(|error| AppError::io("녹음 폴더를 만들지 못했습니다", &error))?;
     let root = std::fs::canonicalize(output_root)
         .map_err(|error| AppError::io("녹음 폴더를 확인하지 못했습니다", &error))?;
-    let final_path = root.join(format!("galpi-recording-{recording_id}.wav"));
-    let partial_path = root.join(format!("galpi-recording-{recording_id}.wav.part"));
+    // A recording immediately owns a meeting folder named after itself, so the
+    // finished `.wav` and every later artifact share one predictable name.
+    let folder_name = recording_folder_name();
+    let folder = root.join(&folder_name);
+    std::fs::create_dir_all(&folder)
+        .map_err(|error| AppError::io("녹음 폴더를 만들지 못했습니다", &error))?;
+    let final_path = folder.join(format!("{folder_name}.wav"));
+    let partial_path = folder.join(format!("{folder_name}.wav.part"));
 
     let host = cpal::default_host();
     let device = host.default_input_device().ok_or_else(|| {
@@ -121,7 +131,7 @@ fn start_sync(
         Err(error) => {
             return Err(with_cleanup(
                 error,
-                cancel_and_remove(writer, &partial_path),
+                cancel_and_remove(writer, &partial_path, &folder),
             ));
         }
     };
@@ -129,7 +139,7 @@ fn start_sync(
         drop(stream);
         return Err(with_cleanup(
             microphone_error(&error),
-            cancel_and_remove(writer, &partial_path),
+            cancel_and_remove(writer, &partial_path, &folder),
         ));
     }
 
@@ -146,6 +156,7 @@ fn start_sync(
         failure,
         partial_path: partial_path.clone(),
         final_path,
+        folder,
         sample_rate,
         channels,
     });
@@ -168,7 +179,7 @@ fn stop_sync(
         Err(error) => {
             return Err(with_cleanup(
                 error,
-                remove_if_exists(&recording.partial_path),
+                remove_partial(&recording.partial_path, &recording.folder),
             ));
         }
     };
@@ -177,14 +188,14 @@ fn stop_sync(
         Err(error) => {
             return Err(with_cleanup(
                 error,
-                remove_if_exists(&recording.partial_path),
+                remove_partial(&recording.partial_path, &recording.folder),
             ));
         }
     };
     if let Some((code, message)) = callback_failure {
         return Err(with_cleanup(
             AppError::new(&code, message),
-            remove_if_exists(&recording.partial_path),
+            remove_partial(&recording.partial_path, &recording.folder),
         ));
     }
     let frames = summary.samples / u64::from(recording.channels);
@@ -194,7 +205,7 @@ fn stop_sync(
                 "WAV_TOO_LARGE",
                 "녹음 길이가 지원 가능한 PCM WAV 범위를 초과했습니다.",
             ),
-            remove_if_exists(&recording.partial_path),
+            remove_partial(&recording.partial_path, &recording.folder),
         ));
     };
     let duration_seconds = f64::from(duration_frames) / f64::from(recording.sample_rate);
@@ -219,7 +230,7 @@ fn stop_sync(
 fn cancel_sync(state: &Mutex<Option<ActiveRecording>>, recording_id: Uuid) -> Result<(), AppError> {
     let recording = take_recording(state, recording_id)?;
     drop(recording.stream);
-    cancel_and_remove(recording.writer, &recording.partial_path)
+    cancel_and_remove(recording.writer, &recording.partial_path, &recording.folder)
 }
 
 fn take_recording(

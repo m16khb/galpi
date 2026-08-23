@@ -22,7 +22,7 @@ pub fn status(paths: &AppPaths) -> EnvironmentStatus {
         ffmpeg_ready: paths.engine_bin.join("ffmpeg").is_file(),
         data_directory: paths.root.to_string_lossy().into_owned(),
         default_output_directory: home_directory()
-            .join("Downloads/whisperx-out")
+            .join("Documents/Galpi")
             .to_string_lossy()
             .into_owned(),
         engine_version: ENGINE_VERSION.to_owned(),
