@@ -1,6 +1,7 @@
 import type { JobViewState } from "../application/job-machine"
 import type { RecordingViewState } from "../application/recording-machine"
 import type {
+  EnginePreset,
   EnvironmentStatus,
   ImportedTranscript,
   TranscriptionResult,
@@ -94,6 +95,17 @@ export class AppView {
     }
   }
 
+  /** Preset switching saves immediately and re-diagnoses; no Apply step. */
+  onEnginePresetChange(handler: (preset: EnginePreset) => void): void {
+    for (const input of this.root.querySelectorAll<HTMLInputElement>(
+      'input[name="engine-preset"]',
+    )) {
+      input.addEventListener("change", () => {
+        if (input.checked) handler(input.value as EnginePreset)
+      })
+    }
+  }
+
   speakerForm(): SpeakerForm {
     const checked = this.root.querySelector<HTMLInputElement>('input[name="speaker-mode"]:checked')
     return {
@@ -105,7 +117,16 @@ export class AppView {
   }
 
   setEnvironment(status: EnvironmentStatus): void {
-    this.statusRow("#engine-check", status.engineReady, `WhisperX ${status.engineVersion}`)
+    for (const input of this.root.querySelectorAll<HTMLInputElement>(
+      'input[name="engine-preset"]',
+    )) {
+      input.checked = input.value === status.enginePreset
+    }
+    this.setEngineBadge("#engine-qwen3-state", "기본", status.qwen3Ready)
+    this.setEngineBadge("#engine-whisperx-state", "이전 엔진", status.whisperxReady)
+    const engineLabel =
+      status.enginePreset === "qwen3" ? "Qwen3 엔진" : "WhisperX 엔진"
+    this.statusRow("#engine-check", status.engineReady, engineLabel)
     this.statusRow("#model-check", status.modelsReady, "전사·정렬·화자분리 모델")
     this.statusRow("#ffmpeg-check", status.ffmpegReady, "내장 ffmpeg")
     const ready = status.engineReady && status.modelsReady && status.ffmpegReady
@@ -115,7 +136,7 @@ export class AppView {
     this.element<HTMLButtonElement>("#prepare-button").textContent = ready
       ? "준비 상태 다시 확인"
       : "로컬 엔진 준비"
-    this.element("#engine-version").textContent = `WhisperX ${status.engineVersion}`
+    this.element("#engine-version").textContent = status.engineVersion
     this.applyOnboarding()
     this.refreshActions()
   }
@@ -229,10 +250,14 @@ export class AppView {
     this.element("#result-summary").textContent =
       `${result.segments}개 발화 보존 · ${result.filtered}개 환각 제거`
     this.element("#result-srt-row").hidden = false
-    this.element("#result-checkpoint-row").hidden = false
+    // Qwen3 transcriptions publish srt/txt without an alignment checkpoint.
+    const hasCheckpoint = result.checkpoint !== ""
+    this.element("#result-checkpoint-row").hidden = !hasCheckpoint
     this.path("#result-srt", result.srt)
     this.path("#result-txt", result.txt)
-    this.path("#result-checkpoint", result.checkpoint)
+    if (hasCheckpoint) {
+      this.path("#result-checkpoint", result.checkpoint)
+    }
     this.element("#result-minutes-row").hidden = true
     this.element("#augment-panel").hidden = false
     this.element("#augment-waiting").hidden = true
@@ -285,6 +310,12 @@ export class AppView {
 
   private numberValue(selector: string): number {
     return Number.parseInt(this.element<HTMLInputElement>(selector).value, 10)
+  }
+
+  /** Picker badges pair the engine role with its readiness, never color alone. */
+  private setEngineBadge(selector: string, role: string, ready: boolean): void {
+    this.element(selector).textContent = `${role} · ${ready ? "준비됨" : "준비 필요"}`
+    this.element(selector).dataset["state"] = ready ? "ready" : "pending"
   }
 
   private statusRow(selector: string, ready: boolean, label: string): void {

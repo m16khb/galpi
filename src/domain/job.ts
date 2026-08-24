@@ -1,10 +1,15 @@
 import type { GlossaryEntry } from "./glossary"
 import type { Participant } from "./participant"
 
+export type EnginePreset = "qwen3" | "whisperx"
+
 export interface EnvironmentStatus {
+  readonly enginePreset: EnginePreset
   readonly engineReady: boolean
   readonly modelsReady: boolean
   readonly ffmpegReady: boolean
+  readonly qwen3Ready: boolean
+  readonly whisperxReady: boolean
   readonly dataDirectory: string
   readonly defaultOutputDirectory: string
   readonly engineVersion: string

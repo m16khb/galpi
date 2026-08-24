@@ -7,7 +7,7 @@ import {
   reduceJobEvent,
 } from "../application/job-machine"
 import { type ArtifactKind, type BackendPort, errorDetail, errorMessage } from "../domain/backend"
-import type { ImportedTranscript, TranscriptionResult } from "../domain/job"
+import type { EnginePreset, ImportedTranscript, TranscriptionResult } from "../domain/job"
 import { buildSpeakerHint, type SpeakerHint } from "../domain/speaker"
 import type { AppView } from "./app-view"
 import { RecordingController } from "./recording-controller"
@@ -90,6 +90,7 @@ export class AppController {
     this.view.on("add-participant", () => this.view.participantSettings.addRow())
     this.view.on("add-glossary-entry", () => this.view.glossarySettings.addRow())
     this.view.on("clear-attendees", () => this.view.attendees.clear())
+    this.view.onEnginePresetChange((preset) => void this.switchEngine(preset))
     this.view.on("clear-token", () => void this.clearToken())
     this.view.on("refine", () => void this.refine())
     this.view.on("open-minutes", () => void this.openArtifact("minutes"))
@@ -107,6 +108,17 @@ export class AppController {
     this.view.on("open-checkpoint", () => void this.openArtifact("checkpoint"))
     this.view.on("reveal-output", () => void this.revealOutput())
     this.view.onSpeakerMode((mode) => this.view.setSpeakerMode(mode))
+  }
+
+  /** Saving the preset re-diagnoses so the setup panel reflects the switch. */
+  private async switchEngine(preset: EnginePreset): Promise<void> {
+    try {
+      await this.backend.saveEnginePreset(preset)
+      const environment = await this.backend.diagnose()
+      this.view.setEnvironment(environment)
+    } catch (error) {
+      this.view.showError(errorMessage(error))
+    }
   }
 
   private async prepare(): Promise<void> {

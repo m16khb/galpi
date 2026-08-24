@@ -24,12 +24,15 @@ function createView(): { view: AppView; root: HTMLElement; window: Window } {
 
 function environment(ready: boolean): EnvironmentStatus {
   return {
+    enginePreset: "qwen3",
     engineReady: ready,
     modelsReady: ready,
     ffmpegReady: ready,
+    qwen3Ready: ready,
+    whisperxReady: false,
     dataDirectory: "/tmp/galpi",
     defaultOutputDirectory: "/tmp/galpi/out",
-    engineVersion: "3.4.3",
+    engineVersion: "Qwen3-ASR-1.7B · 1",
   }
 }
 

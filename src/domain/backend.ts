@@ -1,5 +1,6 @@
 import type {
   AssistantSettings,
+  EnginePreset,
   EnvironmentStatus,
   ImportedTranscript,
   JobEvent,
@@ -19,6 +20,7 @@ export interface BackendPort {
   saveHuggingFaceToken(token: string): Promise<void>
   loadAssistantSettings(): Promise<AssistantSettings>
   saveAssistantSettings(settings: AssistantSettings): Promise<void>
+  saveEnginePreset(preset: EnginePreset): Promise<void>
   refineTranscript(jobId: string, attendees: readonly string[]): Promise<RefinementResult>
   transcribe(request: TranscriptionRequest): Promise<TranscriptionResult>
   importTranscript(request: TranscriptImportRequest): Promise<ImportedTranscript>

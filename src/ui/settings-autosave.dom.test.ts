@@ -28,9 +28,12 @@ const initialAssistant: AssistantSettings = {
 function createBackend(onSave: (settings: AssistantSettings) => void | Promise<void>): BackendPort {
   return {
     diagnose: async () => ({
+      enginePreset: "qwen3" as const,
       engineReady: true,
       modelsReady: true,
       ffmpegReady: true,
+      qwen3Ready: true,
+      whisperxReady: false,
       dataDirectory: "/tmp/galpi",
       defaultOutputDirectory: "/tmp/galpi/out",
       engineVersion: "test",
@@ -41,6 +44,7 @@ function createBackend(onSave: (settings: AssistantSettings) => void | Promise<v
     loadHuggingFaceToken: async () => null,
     saveHuggingFaceToken: async () => undefined,
     loadAssistantSettings: async () => initialAssistant,
+    saveEnginePreset: async () => undefined,
     saveAssistantSettings: async (settings) => {
       await onSave(settings)
     },

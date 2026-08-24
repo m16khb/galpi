@@ -32,9 +32,16 @@ export const appTemplate = `
             <div><span class="section-index">00 / 준비</span><h2 id="setup-title">로컬 AI 환경</h2></div>
             <p>Galpi가 앱 전용 Python과 WhisperX를 설치하고 필요한 모델을 한 번에 준비합니다.</p>
           </div>
+          <div class="field-block engine-field">
+            <div class="field-label"><span>전사 엔진</span><span id="engine-switch-note">변경하면 다음 전사부터 적용됩니다</span></div>
+            <div class="segmented-control engine-segmented" role="radiogroup" aria-label="전사 엔진 선택">
+              <label><input type="radio" name="engine-preset" value="qwen3" checked /><span>Qwen3<em id="engine-qwen3-state">기본 · 확인 중</em></span></label>
+              <label><input type="radio" name="engine-preset" value="whisperx" /><span>WhisperX<em id="engine-whisperx-state">이전 엔진 · 확인 중</em></span></label>
+            </div>
+          </div>
           <div class="setup-grid">
             <div class="status-list" aria-label="설치 상태">
-              <div id="engine-check" class="status-row" data-state="pending"><i class="ph ph-cpu"></i><span data-status-label>WhisperX 엔진</span><strong data-status-value>확인 중</strong></div>
+              <div id="engine-check" class="status-row" data-state="pending"><i class="ph ph-cpu"></i><span data-status-label>엔진</span><strong data-status-value>확인 중</strong></div>
               <div id="model-check" class="status-row" data-state="pending"><i class="ph ph-brain"></i><span data-status-label>전사 모델</span><strong data-status-value>확인 중</strong></div>
               <div id="ffmpeg-check" class="status-row" data-state="pending"><i class="ph ph-waveform"></i><span data-status-label>내장 ffmpeg</span><strong data-status-value>확인 중</strong></div>
             </div>
@@ -48,7 +55,7 @@ export const appTemplate = `
             <div class="job-header"><div><span class="section-index">앱 전용 환경 설치</span><h3>로컬 환경 준비 중</h3></div><strong id="setup-job-percent">0%</strong></div>
             <div id="setup-job-progress" class="wave-progress" role="progressbar" aria-label="로컬 환경 준비 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
             <ol class="phase-list setup-phase-list">
-              <li data-setup-phase="engine" data-state="pending">Python · WhisperX</li>
+              <li data-setup-phase="engine" data-state="pending">Python 런타임</li>
               <li data-setup-phase="models" data-state="pending">모델 · ffmpeg</li>
             </ol>
             <p id="setup-job-message" class="job-message" aria-live="polite"></p>

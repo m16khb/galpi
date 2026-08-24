@@ -1135,6 +1135,28 @@ button:disabled {
   outline: 3px solid var(--focus-ring);
 }
 
+/* Engine preset picker: two slots instead of three, each carrying a
+   readiness badge under the engine name. */
+.engine-segmented {
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 0;
+}
+
+.engine-segmented span {
+  gap: 2px;
+  padding: 6px 10px;
+}
+
+.engine-segmented em {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.engine-segmented em[data-state="ready"] {
+  color: var(--status-success);
+}
+
 .participant-picker {
   display: grid;
   gap: var(--space-3);

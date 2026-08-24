@@ -16,6 +16,7 @@ import type {
 } from "../domain/backend"
 import type {
   AssistantSettings,
+  EnginePreset,
   EnvironmentStatus,
   ImportedTranscript,
   JobEvent,
@@ -23,10 +24,15 @@ import type {
   TranscriptionResult,
 } from "../domain/job"
 
+const enginePresetSchema = z.enum(["qwen3", "whisperx"])
+
 const environmentSchema = z.object({
+  enginePreset: enginePresetSchema,
   engineReady: z.boolean(),
   modelsReady: z.boolean(),
   ffmpegReady: z.boolean(),
+  qwen3Ready: z.boolean(),
+  whisperxReady: z.boolean(),
   dataDirectory: z.string(),
   defaultOutputDirectory: z.string(),
   engineVersion: z.string(),
@@ -169,6 +175,10 @@ export class TauriBackend implements BackendPort {
 
   async saveAssistantSettings(settings: AssistantSettings): Promise<void> {
     await invoke("save_assistant_settings", { settings })
+  }
+
+  async saveEnginePreset(preset: EnginePreset): Promise<void> {
+    await invoke("save_engine_preset", { preset })
   }
 
   async refineTranscript(jobId: string, attendees: readonly string[]): Promise<RefinementResult> {
