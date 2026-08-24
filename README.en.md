@@ -21,13 +21,13 @@
 
 ## At a glance
 
-Galpi records audio inside the app or imports an existing meeting file, then runs Korean transcription and speaker diarization locally with WhisperX. Results are stored in a folder you choose. Optionally, Galpi can send the transcript to an OpenAI-compatible API and generate structured Korean meeting minutes in Markdown.
+Galpi records audio inside the app or imports an existing meeting file, then runs Korean transcription and speaker diarization locally. The transcription engine is chosen in settings: `Qwen3` (Qwen3-ASR-1.7B + Qwen3-ForcedAligner-0.6B) is the default, and the previous `WhisperX` stack (faster-whisper large-v3-turbo) remains selectable. Both presets share pyannote community-1 for diarization. Results are stored in a folder you choose. Optionally, Galpi can send the transcript to an OpenAI-compatible API and generate structured Korean meeting minutes in Markdown.
 
 | Capability | What it does |
 |---|---|
 | Direct recording | Records CoreAudio microphone input to a 16-bit PCM WAV |
 | File import | `m4a`, `mp3`, `wav`, `mp4`, `mov`, `aac`, `flac`, `ogg` |
-| Local transcription | Korean ASR with WhisperX `large-v3-turbo` |
+| Local transcription | Korean ASR on the `Qwen3` (default) or `WhisperX` preset |
 | Speaker diarization | pyannote diarization with automatic, exact, or min/max speaker-count hints |
 | Alignment | Korean sentence alignment and long-silence hallucination filtering |
 | Participant roster | Reusable names, teams, roles, aliases, and descriptions |

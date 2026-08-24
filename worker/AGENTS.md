@@ -18,8 +18,9 @@ worker/
 │   ├── core.py            # Speaker validation and hallucination regex
 │   ├── protocol.py        # Versioned, sequenced JSONL emitter
 │   ├── runtime.py         # Device selection and warning suppression
-│   ├── preparation.py     # Model warmup, ffmpeg link, manifest
-│   ├── engine.py          # Transcription pipeline and MPS fallback
+│   ├── preparation.py     # Per-engine model warmup, ffmpeg link, manifest
+│   ├── engine.py          # Transcription dispatch and WhisperX pipeline
+│   ├── qwen3.py           # Qwen3 candidate pipeline (ASR + aligner + diarize)
 │   ├── artifacts.py       # Typed segments, filtering, atomic writers
 │   ├── minutes_template.py # Normative minutes format and compact exemplar
 │   ├── minutes_prompt.py  # Typed context parsing and single-pass prompt
