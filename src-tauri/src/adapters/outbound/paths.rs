@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
 
+pub const QWEN3_ENGINE_VERSION: &str = "1";
+
 #[derive(Debug, Clone)]
 pub struct AppPaths {
     pub root: PathBuf,
@@ -13,6 +15,11 @@ pub struct AppPaths {
     pub engine_bin: PathBuf,
     pub cache: PathBuf,
     pub python_installations: PathBuf,
+    pub qwen3_root: PathBuf,
+    pub qwen3_python: PathBuf,
+    pub qwen3_engine_manifest: PathBuf,
+    pub qwen3_models_manifest: PathBuf,
+    pub qwen3_engine_bin: PathBuf,
 }
 
 impl AppPaths {
@@ -22,6 +29,9 @@ impl AppPaths {
             .app_local_data_dir()
             .map_err(|error| AppError::new("PATH_ERROR", error.to_string()))?;
         let engine = root.join("engine");
+        // The Qwen3 candidate stack lives in its own venv so the pinned
+        // WhisperX environment never has to share dependency versions with it.
+        let qwen3_root = engine.join("qwen3");
         Ok(Self {
             python: engine.join(".venv/bin/python"),
             engine_manifest: engine.join("ready-3.8.6"),
@@ -29,8 +39,13 @@ impl AppPaths {
             engine_bin: engine.join("bin"),
             cache: root.join("cache"),
             python_installations: root.join("python"),
+            qwen3_python: qwen3_root.join(".venv/bin/python"),
+            qwen3_engine_manifest: qwen3_root.join(format!("ready-qwen3-{QWEN3_ENGINE_VERSION}")),
+            qwen3_models_manifest: root.join("models/qwen3-ready.json"),
+            qwen3_engine_bin: qwen3_root.join("bin"),
             root,
             engine,
+            qwen3_root,
         })
     }
 

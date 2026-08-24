@@ -6,6 +6,7 @@ use super::ports::{
 };
 use super::use_cases::Application;
 use crate::domain::artifact::{ArtifactKind, Artifacts};
+use crate::domain::engine::EnginePreset;
 use crate::domain::job::{
     SetupRequest, SpeakerHint, TranscriptImportRequest, TranscriptionRequest,
 };
@@ -61,6 +62,10 @@ struct FakePort {
     assistant: Mutex<AssistantSettings>,
     refinements: Mutex<Vec<SeenRefinement>>,
     asr_contexts: Mutex<Vec<String>>,
+    engine_preset: Mutex<EnginePreset>,
+    seen_engines: Mutex<Vec<EnginePreset>>,
+    seen_prepare_engines: Mutex<Vec<EnginePreset>>,
+    ready_presets: Mutex<Vec<EnginePreset>>,
     behavior: TranscriptionBehavior,
 }
 
@@ -74,6 +79,10 @@ impl FakePort {
             assistant: Mutex::new(AssistantSettings::default()),
             refinements: Mutex::new(Vec::new()),
             asr_contexts: Mutex::new(Vec::new()),
+            engine_preset: Mutex::new(EnginePreset::default()),
+            seen_engines: Mutex::new(Vec::new()),
+            seen_prepare_engines: Mutex::new(Vec::new()),
+            ready_presets: Mutex::new(vec![EnginePreset::Qwen3, EnginePreset::WhisperX]),
             behavior,
         }
     }
@@ -133,11 +142,19 @@ impl RefinementPort for FakePort {
 
 #[async_trait]
 impl EnginePort for FakePort {
-    async fn diagnose(&self) -> Result<EnvironmentStatus, AppError> {
+    async fn diagnose(&self, preset: EnginePreset) -> Result<EnvironmentStatus, AppError> {
+        let ready = self
+            .ready_presets
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "ready presets lock poisoned"))?
+            .contains(&preset);
         Ok(EnvironmentStatus {
-            engine_ready: true,
-            models_ready: true,
-            ffmpeg_ready: true,
+            engine_preset: preset,
+            engine_ready: ready,
+            models_ready: ready,
+            ffmpeg_ready: ready,
+            qwen3_ready: ready && preset == EnginePreset::Qwen3,
+            whisperx_ready: ready && preset == EnginePreset::WhisperX,
             data_directory: "/tmp/galpi-test".to_owned(),
             default_output_directory: "/tmp/output".to_owned(),
             engine_version: "test".to_owned(),
@@ -149,6 +166,7 @@ impl EnginePort for FakePort {
         job_id: Uuid,
         _cancel: &mut oneshot::Receiver<()>,
         request: &SetupRequest,
+        preset: EnginePreset,
     ) -> Result<EnvironmentStatus, AppError> {
         let _ = job_id;
         *self
@@ -156,7 +174,12 @@ impl EnginePort for FakePort {
             .lock()
             .map_err(|_| AppError::new("TEST_ERROR", "prepared token lock poisoned"))? =
             request.hugging_face_token.clone();
-        self.diagnose().await
+        *self
+            .seen_prepare_engines
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "prepare engines lock poisoned"))? =
+            vec![preset];
+        self.diagnose(preset).await
     }
 }
 
@@ -192,6 +215,21 @@ impl SettingsPort for FakePort {
             settings;
         Ok(())
     }
+
+    async fn load_engine_preset(&self) -> Result<EnginePreset, AppError> {
+        self.engine_preset
+            .lock()
+            .map(|preset| *preset)
+            .map_err(|_| AppError::new("TEST_ERROR", "engine preset lock poisoned"))
+    }
+
+    async fn save_engine_preset(&self, preset: EnginePreset) -> Result<(), AppError> {
+        *self
+            .engine_preset
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "engine preset lock poisoned"))? = preset;
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -212,8 +250,13 @@ impl TranscriptionPort for FakePort {
         _input: &Path,
         output: &Path,
         _hint: &SpeakerHint,
+        engine: EnginePreset,
         asr_context: Option<&str>,
     ) -> Result<CompletedTranscription, AppError> {
+        self.seen_engines
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "engines lock poisoned"))?
+            .push(engine);
         if let Some(context) = asr_context {
             self.asr_contexts
                 .lock()
@@ -624,6 +667,59 @@ async fn imported_transcript_has_no_srt_or_checkpoint() -> Result<(), AppError> 
     };
     assert_eq!(error.code, "ARTIFACT_NOT_FOUND");
     app.open_artifact(imported.job_id, ArtifactKind::SpeakerText)?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn transcription_defaults_to_qwen3_and_follows_the_saved_preset() -> Result<(), AppError> {
+    // Given: a fresh store with no saved preset
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+
+    // When: transcribing without touching the preset
+    app.transcribe(request(SpeakerHint::Auto)).await?;
+
+    // Then: the default candidate set was used
+    {
+        let seen = port
+            .seen_engines
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "engines lock poisoned"))?;
+        assert_eq!(*seen, [EnginePreset::Qwen3]);
+    }
+
+    // When: the user switches to the legacy set
+    app.save_engine_preset(EnginePreset::WhisperX).await?;
+    app.transcribe(request(SpeakerHint::Auto)).await?;
+
+    // Then: the next transcription runs on WhisperX
+    let seen = port
+        .seen_engines
+        .lock()
+        .map_err(|_| AppError::new("TEST_ERROR", "engines lock poisoned"))?;
+    assert_eq!(*seen, [EnginePreset::Qwen3, EnginePreset::WhisperX]);
+    Ok(())
+}
+
+#[tokio::test]
+async fn prepare_prepares_the_selected_preset() -> Result<(), AppError> {
+    // Given
+    let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
+    let app = port.application();
+    app.save_engine_preset(EnginePreset::WhisperX).await?;
+
+    // When
+    app.prepare(SetupRequest {
+        hugging_face_token: None,
+    })
+    .await?;
+
+    // Then
+    let seen = port
+        .seen_prepare_engines
+        .lock()
+        .map_err(|_| AppError::new("TEST_ERROR", "prepare engines lock poisoned"))?;
+    assert_eq!(*seen, [EnginePreset::WhisperX]);
     Ok(())
 }
 

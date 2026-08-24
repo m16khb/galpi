@@ -44,6 +44,7 @@ pub fn run() {
             crate::adapters::inbound::tauri::save_hugging_face_token,
             crate::adapters::inbound::tauri::load_assistant_settings,
             crate::adapters::inbound::tauri::save_assistant_settings,
+            crate::adapters::inbound::tauri::save_engine_preset,
             crate::adapters::inbound::tauri::refine_transcript,
             crate::adapters::inbound::tauri::start_transcription,
             crate::adapters::inbound::tauri::import_transcript,

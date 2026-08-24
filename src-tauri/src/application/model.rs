@@ -1,13 +1,20 @@
 use crate::domain::artifact::Artifacts;
+use crate::domain::engine::EnginePreset;
 use serde::Serialize;
 use uuid::Uuid;
 
+// Readiness travels as flat booleans because it mirrors the wire contract
+// the frontend parses one-to-one; nesting would churn the IPC schema.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EnvironmentStatus {
+    pub engine_preset: EnginePreset,
     pub engine_ready: bool,
     pub models_ready: bool,
     pub ffmpeg_ready: bool,
+    pub qwen3_ready: bool,
+    pub whisperx_ready: bool,
     pub data_directory: String,
     pub default_output_directory: String,
     pub engine_version: String,

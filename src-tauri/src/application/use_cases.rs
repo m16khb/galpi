@@ -9,6 +9,7 @@ use crate::application::ports::{
     TranscriptImportPort, TranscriptionPort,
 };
 use crate::domain::artifact::{ArtifactKind, minutes_path};
+use crate::domain::engine::EnginePreset;
 use crate::domain::job::{
     SetupRequest, TranscriptImportRequest, TranscriptionRequest, validate_speaker_hint,
 };
@@ -54,7 +55,8 @@ impl Application {
     }
 
     pub async fn diagnose(&self) -> Result<EnvironmentStatus, AppError> {
-        self.engine.diagnose().await
+        let preset = self.settings.load_engine_preset().await?;
+        self.engine.diagnose(preset).await
     }
 
     pub async fn prepare(&self, request: SetupRequest) -> Result<SetupResult, AppError> {
@@ -65,10 +67,18 @@ impl Application {
                 hugging_face_token: self.settings.load_hugging_face_token().await?,
             }
         };
+        let preset = self.settings.load_engine_preset().await?;
         let (job_id, mut cancel) = self.jobs.claim()?;
-        let result = self.engine.prepare(job_id, &mut cancel, &request).await;
+        let result = self
+            .engine
+            .prepare(job_id, &mut cancel, &request, preset)
+            .await;
         self.jobs.finish(job_id)?;
         result.map(|status| SetupResult { job_id, status })
+    }
+
+    pub async fn save_engine_preset(&self, preset: EnginePreset) -> Result<(), AppError> {
+        self.settings.save_engine_preset(preset).await
     }
 
     pub async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError> {
@@ -188,7 +198,8 @@ impl Application {
         cancel: &mut tokio::sync::oneshot::Receiver<()>,
         request: &TranscriptionRequest,
     ) -> Result<TranscriptionResult, AppError> {
-        if !self.engine.diagnose().await?.is_ready() {
+        let engine = self.settings.load_engine_preset().await?;
+        if !self.engine.diagnose(engine).await?.is_ready() {
             return Err(AppError::new(
                 "SETUP_REQUIRED",
                 "먼저 엔진과 모델 준비를 완료해 주세요.",
@@ -209,6 +220,7 @@ impl Application {
                 &input,
                 &output,
                 &request.speaker_hint,
+                engine,
                 self.asr_context().await?.as_deref(),
             )
             .await;

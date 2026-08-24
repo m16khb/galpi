@@ -7,6 +7,7 @@ use crate::application::ports::{
     TranscriptionPort,
 };
 use crate::domain::artifact::Artifacts;
+use crate::domain::engine::EnginePreset;
 use crate::domain::job::{SetupRequest, SpeakerHint};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
@@ -29,8 +30,8 @@ impl DesktopAdapter {
 
 #[async_trait]
 impl EnginePort for DesktopAdapter {
-    async fn diagnose(&self) -> Result<EnvironmentStatus, AppError> {
-        setup::diagnose(&self.app)
+    async fn diagnose(&self, preset: EnginePreset) -> Result<EnvironmentStatus, AppError> {
+        setup::diagnose(&self.app, preset)
     }
 
     async fn prepare(
@@ -38,8 +39,17 @@ impl EnginePort for DesktopAdapter {
         job_id: Uuid,
         cancel: &mut oneshot::Receiver<()>,
         request: &SetupRequest,
+        preset: EnginePreset,
     ) -> Result<EnvironmentStatus, AppError> {
-        setup::prepare(&self.app, self.events.as_ref(), job_id, cancel, request).await
+        setup::prepare(
+            &self.app,
+            self.events.as_ref(),
+            job_id,
+            cancel,
+            request,
+            preset,
+        )
+        .await
     }
 }
 
@@ -60,6 +70,7 @@ impl TranscriptionPort for DesktopAdapter {
         input: &Path,
         output: &Path,
         hint: &SpeakerHint,
+        engine: EnginePreset,
         asr_context: Option<&str>,
     ) -> Result<CompletedTranscription, AppError> {
         let paths = AppPaths::resolve(&self.app)?;
@@ -74,6 +85,7 @@ impl TranscriptionPort for DesktopAdapter {
             input,
             output,
             hint,
+            engine,
             asr_context,
         )
         .await

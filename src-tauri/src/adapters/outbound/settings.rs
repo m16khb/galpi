@@ -1,6 +1,7 @@
 use super::paths::AppPaths;
 use crate::application::error::AppError;
 use crate::application::ports::SettingsPort;
+use crate::domain::engine::EnginePreset;
 use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -25,6 +26,7 @@ impl LocalSettingsStore {
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default, rename_all = "camelCase")]
 struct LocalSettings {
+    engine_preset: EnginePreset,
     hugging_face_token: Option<String>,
     assistant_api_key: Option<String>,
     assistant_model: Option<String>,
@@ -37,7 +39,10 @@ struct LocalSettings {
 
 impl LocalSettings {
     fn is_empty(&self) -> bool {
-        self.hugging_face_token.is_none()
+        // The default preset is what an absent file already means, so storing
+        // only the default does not justify keeping the file around.
+        self.engine_preset == EnginePreset::default()
+            && self.hugging_face_token.is_none()
             && self.assistant_api_key.is_none()
             && self.assistant_model.is_none()
             && self.assistant_base_url.is_none()
@@ -57,6 +62,16 @@ impl SettingsPort for LocalSettingsStore {
     async fn save_hugging_face_token(&self, token: Option<String>) -> Result<(), AppError> {
         let mut settings = read_settings(&self.path).await?;
         settings.hugging_face_token = token;
+        store_settings(&self.path, &settings).await
+    }
+
+    async fn load_engine_preset(&self) -> Result<EnginePreset, AppError> {
+        Ok(read_settings(&self.path).await?.engine_preset)
+    }
+
+    async fn save_engine_preset(&self, preset: EnginePreset) -> Result<(), AppError> {
+        let mut settings = read_settings(&self.path).await?;
+        settings.engine_preset = preset;
         store_settings(&self.path, &settings).await
     }
 

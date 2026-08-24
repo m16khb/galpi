@@ -3,6 +3,7 @@ use crate::application::model::{
     CompletedTranscription, EnvironmentStatus, RecordingFailure, RecordingResult, RecordingStatus,
 };
 use crate::domain::artifact::Artifacts;
+use crate::domain::engine::EnginePreset;
 use crate::domain::job::{SetupRequest, SpeakerHint};
 use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
 use crate::domain::worker::WorkerEvent;
@@ -13,16 +14,20 @@ use uuid::Uuid;
 
 #[async_trait]
 pub trait EnginePort: Send + Sync {
-    async fn diagnose(&self) -> Result<EnvironmentStatus, AppError>;
+    async fn diagnose(&self, preset: EnginePreset) -> Result<EnvironmentStatus, AppError>;
 
     async fn prepare(
         &self,
         job_id: Uuid,
         cancel: &mut oneshot::Receiver<()>,
         request: &SetupRequest,
+        preset: EnginePreset,
     ) -> Result<EnvironmentStatus, AppError>;
 }
 
+// The transcribe signature mirrors the worker call; allow carries through
+// the async_trait expansion only on the trait itself.
+#[allow(clippy::too_many_arguments)]
 #[async_trait]
 pub trait TranscriptionPort: Send + Sync {
     async fn prepare_job(
@@ -38,6 +43,7 @@ pub trait TranscriptionPort: Send + Sync {
         input: &Path,
         output: &Path,
         hint: &SpeakerHint,
+        engine: EnginePreset,
         asr_context: Option<&str>,
     ) -> Result<CompletedTranscription, AppError>;
 }
@@ -82,6 +88,8 @@ pub trait SettingsPort: Send + Sync {
     async fn save_hugging_face_token(&self, token: Option<String>) -> Result<(), AppError>;
     async fn load_assistant(&self) -> Result<AssistantSettings, AppError>;
     async fn save_assistant(&self, settings: AssistantSettings) -> Result<(), AppError>;
+    async fn load_engine_preset(&self) -> Result<EnginePreset, AppError>;
+    async fn save_engine_preset(&self, preset: EnginePreset) -> Result<(), AppError>;
 }
 
 /// One transcript refinement request handed to the assistant worker.

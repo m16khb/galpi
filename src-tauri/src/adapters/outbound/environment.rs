@@ -1,32 +1,71 @@
-use super::paths::AppPaths;
+use super::paths::{AppPaths, QWEN3_ENGINE_VERSION};
 use crate::application::error::AppError;
 use crate::application::model::EnvironmentStatus;
+use crate::domain::engine::EnginePreset;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use tauri::AppHandle;
 
 pub const ENGINE_VERSION: &str = "3.8.6";
+pub const QWEN3_MODEL_ID: &str = "Qwen/Qwen3-ASR-1.7B";
+pub const QWEN3_ALIGNER_ID: &str = "Qwen/Qwen3-ForcedAligner-0.6B";
+const PYANNOTE_MODEL_DIR: &str = "models--pyannote--speaker-diarization-community-1";
 
-pub fn diagnose(app: &AppHandle) -> Result<EnvironmentStatus, AppError> {
+pub fn diagnose(app: &AppHandle, preset: EnginePreset) -> Result<EnvironmentStatus, AppError> {
     let paths = AppPaths::resolve(app)?;
-    Ok(status(&paths))
+    Ok(status(&paths, preset))
 }
 
-pub fn status(paths: &AppPaths) -> EnvironmentStatus {
+pub fn status(paths: &AppPaths, preset: EnginePreset) -> EnvironmentStatus {
+    let whisperx_engine = whisperx_engine_ready(paths);
+    let whisperx_models = whisperx_models_ready(paths);
+    let qwen3_engine = qwen3_engine_ready(paths);
+    let qwen3_models = qwen3_models_ready(paths);
+    let (engine_ready, models_ready, ffmpeg_ready, engine_version) = match preset {
+        EnginePreset::Qwen3 => (
+            qwen3_engine,
+            qwen3_models,
+            paths.qwen3_engine_bin.join("ffmpeg").is_file(),
+            format!("Qwen3-ASR-1.7B · {QWEN3_ENGINE_VERSION}"),
+        ),
+        EnginePreset::WhisperX => (
+            whisperx_engine,
+            whisperx_models,
+            paths.engine_bin.join("ffmpeg").is_file(),
+            format!("WhisperX {ENGINE_VERSION}"),
+        ),
+    };
     EnvironmentStatus {
-        engine_ready: paths.python.is_file()
-            && std::fs::read_to_string(&paths.engine_manifest)
-                .is_ok_and(|version| version == ENGINE_VERSION),
-        models_ready: model_manifest_ready(paths),
-        ffmpeg_ready: paths.engine_bin.join("ffmpeg").is_file(),
+        engine_preset: preset,
+        engine_ready,
+        models_ready,
+        ffmpeg_ready,
+        qwen3_ready: qwen3_engine
+            && qwen3_models
+            && paths.qwen3_engine_bin.join("ffmpeg").is_file(),
+        whisperx_ready: whisperx_engine
+            && whisperx_models
+            && paths.engine_bin.join("ffmpeg").is_file(),
         data_directory: paths.root.to_string_lossy().into_owned(),
         default_output_directory: home_directory()
             .join("Documents/Galpi")
             .to_string_lossy()
             .into_owned(),
-        engine_version: ENGINE_VERSION.to_owned(),
+        engine_version,
     }
+}
+
+fn whisperx_engine_ready(paths: &AppPaths) -> bool {
+    paths.python.is_file()
+        && std::fs::read_to_string(&paths.engine_manifest)
+            .is_ok_and(|version| version == ENGINE_VERSION)
+}
+
+fn qwen3_engine_ready(paths: &AppPaths) -> bool {
+    paths.qwen3_python.is_file()
+        && std::fs::read_to_string(&paths.qwen3_engine_manifest)
+            .is_ok_and(|version| version == QWEN3_ENGINE_VERSION)
 }
 
 pub fn process_environment(
@@ -100,7 +139,7 @@ pub fn assistant_environment(
     env
 }
 
-fn model_manifest_ready(paths: &AppPaths) -> bool {
+fn whisperx_models_ready(paths: &AppPaths) -> bool {
     let manifest = std::fs::read_to_string(&paths.models_manifest)
         .ok()
         .and_then(|contents| serde_json::from_str::<serde_json::Value>(&contents).ok());
@@ -113,10 +152,36 @@ fn model_manifest_ready(paths: &AppPaths) -> bool {
         && [
             "models--mobiuslabsgmbh--faster-whisper-large-v3-turbo",
             "models--kresnik--wav2vec2-large-xlsr-korean",
-            "models--pyannote--speaker-diarization-community-1",
+            PYANNOTE_MODEL_DIR,
         ]
         .iter()
         .all(|model| hub.join(model).is_dir())
+}
+
+fn qwen3_models_ready(paths: &AppPaths) -> bool {
+    let manifest = std::fs::read_to_string(&paths.qwen3_models_manifest)
+        .ok()
+        .and_then(|contents| serde_json::from_str::<serde_json::Value>(&contents).ok());
+    let manifest_valid = manifest.is_some_and(|value| {
+        value.get("protocol").and_then(serde_json::Value::as_u64) == Some(1)
+            && value.get("qwen3").and_then(serde_json::Value::as_str) == Some(QWEN3_ENGINE_VERSION)
+    });
+    let hub = paths.cache.join("huggingface/hub");
+    // Diarization stays on pyannote community-1 in both presets, so the
+    // shared model must be present for either engine to run meetings.
+    manifest_valid
+        && [
+            cache_dir_name(QWEN3_MODEL_ID),
+            cache_dir_name(QWEN3_ALIGNER_ID),
+            PYANNOTE_MODEL_DIR.to_owned(),
+        ]
+        .iter()
+        .all(|model| hub.join(model).is_dir())
+}
+
+/// Hugging Face cache directories use `models--Org--Name` from the repo id.
+fn cache_dir_name(repo_id: &str) -> String {
+    format!("models--{}", repo_id.replace('/', "--"))
 }
 
 fn home_directory() -> PathBuf {

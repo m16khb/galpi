@@ -6,6 +6,7 @@ use crate::application::model::{
 use crate::application::ports::{JobEvents, RecordingEvents};
 use crate::application::use_cases::Application;
 use crate::domain::artifact::ArtifactKind;
+use crate::domain::engine::EnginePreset;
 use crate::domain::job::{SetupRequest, TranscriptImportRequest, TranscriptionRequest};
 use crate::domain::roster::AssistantSettings;
 use crate::domain::worker::WorkerEvent;
@@ -58,6 +59,13 @@ pub async fn save_assistant_settings(
     application.save_assistant_settings(settings).await
 }
 
+#[tauri::command]
+pub async fn save_engine_preset(
+    application: State<'_, Application>,
+    preset: EnginePreset,
+) -> Result<(), AppError> {
+    application.save_engine_preset(preset).await
+}
 #[tauri::command]
 pub async fn refine_transcript(
     application: State<'_, Application>,

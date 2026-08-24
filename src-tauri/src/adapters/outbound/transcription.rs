@@ -6,6 +6,7 @@ use crate::application::error::AppError;
 use crate::application::model::CompletedTranscription;
 use crate::application::ports::JobEvents;
 use crate::domain::artifact::Artifacts;
+use crate::domain::engine::EnginePreset;
 use crate::domain::job::SpeakerHint;
 use crate::domain::worker::WorkerEvent;
 use std::path::{Path, PathBuf};
@@ -19,6 +20,7 @@ pub struct Runtime<'a> {
     pub paths: &'a AppPaths,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn run(
     runtime: Runtime<'_>,
     job_id: Uuid,
@@ -26,6 +28,7 @@ pub async fn run(
     input: &Path,
     output: &Path,
     hint: &SpeakerHint,
+    engine: EnginePreset,
     asr_context: Option<&str>,
 ) -> Result<CompletedTranscription, AppError> {
     let context = match asr_context {
@@ -39,6 +42,7 @@ pub async fn run(
         input,
         output,
         hint,
+        engine,
         context.as_deref(),
     )
     .await;
@@ -48,6 +52,7 @@ pub async fn run(
     result
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_worker(
     runtime: &Runtime<'_>,
     job_id: Uuid,
@@ -55,9 +60,16 @@ async fn run_worker(
     input: &Path,
     output: &Path,
     hint: &SpeakerHint,
+    engine: EnginePreset,
     asr_context: Option<&Path>,
 ) -> Result<CompletedTranscription, AppError> {
     let root = worker_root(runtime.app)?;
+    // The Qwen3 candidate stack runs from its own venv so the pinned
+    // WhisperX environment keeps its dependency versions untouched.
+    let python = match engine {
+        EnginePreset::Qwen3 => runtime.paths.qwen3_python.clone(),
+        EnginePreset::WhisperX => runtime.paths.python.clone(),
+    };
     let mut args = vec![
         "-m".into(),
         "galpi_worker".into(),
@@ -66,6 +78,8 @@ async fn run_worker(
         input.as_os_str().to_owned(),
         "--output".into(),
         output.as_os_str().to_owned(),
+        "--engine".into(),
+        engine.as_str().into(),
     ];
     if let Some(context) = asr_context {
         args.push("--asr-context".into());
@@ -88,10 +102,19 @@ async fn run_worker(
         runtime.events,
         job_id,
         ProcessSpec {
-            program: runtime.paths.python.clone(),
+            program: python,
             current_dir: root.clone(),
             args,
-            env: process_environment(runtime.paths, &root, None),
+            env: {
+                // Transcription only runs after the readiness gate, so the
+                // Qwen3 stack can load exclusively from the prepared cache.
+                let mut env = process_environment(runtime.paths, &root, None);
+                if matches!(engine, EnginePreset::Qwen3) {
+                    env.insert("HF_HUB_OFFLINE".into(), "1".into());
+                    env.insert("TRANSFORMERS_OFFLINE".into(), "1".into());
+                }
+                env
+            },
             worker_protocol: true,
         },
         cancel,
@@ -107,7 +130,13 @@ async fn run_worker(
         }) => (
             PathBuf::from(srt),
             PathBuf::from(txt),
-            PathBuf::from(checkpoint),
+            // The Qwen3 pipeline publishes srt/txt only, so its completion
+            // carries an empty checkpoint string meaning "no checkpoint".
+            if checkpoint.is_empty() {
+                None
+            } else {
+                Some(PathBuf::from(checkpoint))
+            },
             segments,
             filtered,
         ),
@@ -118,7 +147,7 @@ async fn run_worker(
             ));
         }
     };
-    let artifacts = validate_artifacts(output, &srt, &txt, &checkpoint).await?;
+    let artifacts = validate_artifacts(output, &srt, &txt, checkpoint.as_deref()).await?;
     Ok(CompletedTranscription {
         artifacts,
         segments,
@@ -130,18 +159,21 @@ async fn validate_artifacts(
     job_directory: &Path,
     srt: &Path,
     txt: &Path,
-    checkpoint: &Path,
+    checkpoint: Option<&Path>,
 ) -> Result<Artifacts, AppError> {
     let root = tokio::fs::canonicalize(job_directory)
         .await
         .map_err(|error| AppError::io("작업 디렉터리를 확인하지 못했습니다", &error))?;
     let srt = canonical_artifact(&root, srt).await?;
     let txt = canonical_artifact(&root, txt).await?;
-    let checkpoint = canonical_artifact(&root, checkpoint).await?;
+    let checkpoint = match checkpoint {
+        Some(path) => Some(canonical_artifact(&root, path).await?),
+        None => None,
+    };
     Ok(Artifacts {
         srt: Some(srt),
         txt,
-        checkpoint: Some(checkpoint),
+        checkpoint,
         minutes: None,
         output_directory: root,
     })
