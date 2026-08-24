@@ -123,7 +123,7 @@ bun run dev
 4. 전사를 완료한 뒤 `AI 증강 실행`을 누릅니다.
 
 > [!WARNING]
-> 음성 녹음과 WhisperX 전사는 로컬에서 처리됩니다. `AI 증강 실행`을 누르면 전사문, 이번 회의에서 선택한 참석자, 단어집, 사전 정보가 설정한 외부 API로 전송됩니다. 민감한 회의에서는 사용 중인 API 제공자의 보안·보존 정책을 먼저 확인하세요.
+> 음성 녹음과 전사(Qwen3·WhisperX 모두)는 로컬에서 처리됩니다. `AI 증강 실행`을 누르면 전사문, 이번 회의에서 선택한 참석자, 단어집, 사전 정보가 설정한 외부 API로 전송됩니다. 민감한 회의에서는 사용 중인 API 제공자의 보안·보존 정책을 먼저 확인하세요.
 
 ## 산출물
 
@@ -144,13 +144,13 @@ bun run dev
     └── 팀미팅_회의록.md
 ```
 
-같은 이름의 회의가 이미 있으면 `팀미팅 2`처럼 번호를 붙입니다. 정렬 체크포인트(`.aligned.v2.json`)가 있으면 같은 오디오를 다시 전사할 때 전사·정렬 단계를 건너뜁니다.
+같은 이름의 회의가 이미 있으면 `팀미팅 2`처럼 번호를 붙입니다. 정렬 체크포인트(`.aligned.v2.json`)는 **WhisperX 프리셋에서만** 만들어지며, 있으면 같은 오디오를 다시 전사할 때 전사·정렬 단계를 건너뜁니다. Qwen3 프리셋은 srt·txt만 만들고 체크포인트를 남기지 않습니다.
 
 | 파일 | 용도 |
 |---|---|
 | `.srt` | 자막과 타임코드 |
 | `_화자별.txt` | 화자 단위 읽기 쉬운 전사문 |
-| `.aligned.v2.json` | 문장 정렬 체크포인트와 재처리 기반 |
+| `.aligned.v2.json` | 문장 정렬 체크포인트와 재처리 기반(WhisperX 전용) |
 | `_회의록.md` | 결정, 담당, 기한, 논의 내용을 정리한 문서 |
 
 완료 화면에서 파일을 열거나 Finder에서 출력 폴더를 확인할 수 있습니다.
@@ -158,7 +158,7 @@ bun run dev
 ## 로컬 데이터와 개인정보
 
 - 음성과 전사 산출물은 사용자가 선택한 로컬 폴더에 저장됩니다.
-- WhisperX 모델은 Galpi의 앱 전용 Hugging Face 캐시에 저장됩니다.
+- 전사·정렬·화자분리 모델(Qwen3, WhisperX, pyannote)은 Galpi의 앱 전용 Hugging Face 캐시에 저장됩니다.
 - Hugging Face 토큰과 AI API 설정은 Application Support 아래 설정 파일에 `0600` 권한으로 저장됩니다.
 - 현재 자격 증명은 macOS Keychain으로 암호화하지 않습니다.
 - AI 회의록을 실행하지 않으면 전사문은 외부 LLM API로 전송되지 않습니다.
@@ -177,14 +177,14 @@ Rust application
     └── supervised Python worker
             │ versioned JSONL
             ▼
-       WhisperX / pyannote / assistant
+       Qwen3·WhisperX / pyannote / assistant
 ```
 
 | 경로 | 역할 |
 |---|---|
 | `src/` | 도메인 계약(작업·화자·백엔드 포트)과 검증, 상태 머신, Zod 경계, DOM UI |
 | `src-tauri/` | Tauri 명령, Rust use case·도메인 값 객체, 녹음·프로세스 어댑터 |
-| `worker/` | WhisperX 전사, 정렬, 화자분리, 회의록 가공 |
+| `worker/` | Qwen3·WhisperX 프리셋 전사, 정렬, 화자분리, 회의록 가공 |
 | `scripts/` | 아키텍처 검사, sidecar staging, DMG 패키징 |
 | `DESIGN.md` | UI, 접근성, 컴포넌트 상태의 규범 |
 | `docs/ARCHITECTURE.md` | 레이어 구조와 포트 소유권의 규범 |
@@ -233,6 +233,8 @@ src-tauri/target/release/bundle/dmg/Galpi_0.1.0_aarch64.dmg
 | 증상 | 확인할 내용 |
 |---|---|
 | `cargo tauri` 명령을 찾을 수 없음 | `cargo install tauri-cli --version 2.11.4 --locked` |
+| 로컬 엔진 준비가 중간에 실패함 | 같은 버튼을 다시 누르면 이어서 재시도합니다(실패한 부분 설치는 자동으로 정리됩니다). 네트워크 상태도 확인하세요 |
+| Qwen3 준비 시 내려받을 파일이 큼 | Qwen3 프리셋은 전사·정렬 모델 합계 약 6.6GB를 내려받습니다 |
 | 모델 다운로드가 401/403으로 실패 | 모델 이용 조건 동의와 Fine-grained Read 토큰 확인 |
 | 마이크 녹음이 시작되지 않음 | 시스템 설정에서 Galpi 마이크 권한 확인 |
 | 상대방 음성이 녹음되지 않음 | 현재 시스템 오디오 캡처는 지원하지 않음 |

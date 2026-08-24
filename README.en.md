@@ -123,7 +123,7 @@ Setup:
 4. Finish transcription, then select `AI 증강 실행`.
 
 > [!WARNING]
-> Audio recording and WhisperX transcription stay on the Mac. When you select `AI 증강 실행`, the transcript, participants selected for this meeting, glossary, and background context are sent to the configured external API. Review the provider's security and retention policy before using this feature with sensitive meetings.
+> Audio recording and transcription (both the Qwen3 and WhisperX presets) stay on the Mac. When you select `AI 증강 실행`, the transcript, participants selected for this meeting, glossary, and background context are sent to the configured external API. Review the provider's security and retention policy before using this feature with sensitive meetings.
 
 ## Outputs
 
@@ -144,13 +144,13 @@ The default location is `~/Documents/Galpi` (changeable from the output folder p
     └── 팀미팅_회의록.md
 ```
 
-Name collisions get a numeric suffix such as `팀미팅 2`. When an alignment checkpoint (`.aligned.v2.json`) exists, re-transcribing the same audio skips the transcription and alignment stages.
+Name collisions get a numeric suffix such as `팀미팅 2`. The alignment checkpoint (`.aligned.v2.json`) is produced by the **WhisperX preset only**; when it exists, re-transcribing the same audio skips the transcription and alignment stages. The Qwen3 preset publishes srt/txt and leaves no checkpoint.
 
 | File | Purpose |
 |---|---|
 | `.srt` | Subtitles with timestamps |
 | `_화자별.txt` | Readable speaker-oriented transcript |
-| `.aligned.v2.json` | Alignment checkpoint and reprocessing input |
+| `.aligned.v2.json` | Alignment checkpoint and reprocessing input (WhisperX only) |
 | `_회의록.md` | Decisions, owners, deadlines, and discussion notes (`회의록` means meeting minutes) |
 
 The completion screen can open each artifact or reveal its output folder in Finder.
@@ -158,7 +158,7 @@ The completion screen can open each artifact or reveal its output folder in Find
 ## Local data and privacy
 
 - Audio and transcription artifacts are stored in the local folder you choose.
-- WhisperX models are stored in Galpi's app-specific Hugging Face cache.
+- Transcription, alignment, and diarization models (Qwen3, WhisperX, pyannote) are stored in Galpi's app-specific Hugging Face cache.
 - Hugging Face and assistant credentials are stored in an Application Support settings file with `0600` permissions.
 - Credentials are not currently encrypted with macOS Keychain.
 - Transcripts are not sent to an external LLM API unless AI minutes are run.
@@ -177,14 +177,14 @@ Rust application
     └── supervised Python worker
             │ versioned JSONL
             ▼
-       WhisperX / pyannote / assistant
+       Qwen3·WhisperX / pyannote / assistant
 ```
 
 | Path | Responsibility |
 |---|---|
 | `src/` | Domain contracts (job, speaker, backend port) with validation, state machines, Zod boundaries, DOM UI |
 | `src-tauri/` | Tauri commands, Rust use cases and domain value objects, recording and process adapters |
-| `worker/` | WhisperX transcription, alignment, diarization, and minutes refinement |
+| `worker/` | Qwen3/WhisperX preset transcription, alignment, diarization, minutes refinement |
 | `scripts/` | Architecture checks, sidecar staging, and DMG packaging |
 | `DESIGN.md` | Normative UI, accessibility, and component-state contract |
 | `docs/ARCHITECTURE.md` | Normative layering and port ownership |
@@ -233,6 +233,8 @@ The build creates the `.app` first, then packages the DMG with `hdiutil`. Distri
 | Symptom | What to check |
 |---|---|
 | `cargo tauri` is not found | Run `cargo install tauri-cli --version 2.11.4 --locked` |
+| Local engine preparation fails midway | Press the same button again to retry (a partial install is cleared automatically); also check the network |
+| The Qwen3 preset download is large | The Qwen3 preset downloads about 6.6 GB of ASR and aligner models in total |
 | Model download returns 401/403 | Accept the model terms and verify the Fine-grained Read token |
 | Microphone recording does not start | Check Galpi microphone access in System Settings |
 | Other participants are not recorded | System-audio capture is not supported yet |
