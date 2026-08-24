@@ -1,0 +1,8 @@
+# Qwen3 candidate transcription stack. Isolated from the pinned WhisperX
+# environment so the two presets never share dependency versions.
+# qwen-asr is young: pin exact versions once the first verified install lands.
+qwen-asr>=0.1
+torch==2.8.0
+torchaudio==2.8.0
+pyannote.audio==4.0.7
+imageio-ffmpeg==0.6.0

@@ -20,11 +20,13 @@ def build_parser() -> argparse.ArgumentParser:
     prepare = commands.add_parser("prepare")
     prepare.add_argument("--manifest", type=Path, required=True)
     prepare.add_argument("--engine-bin", type=Path, required=True)
+    prepare.add_argument("--engine", choices=["whisperx", "qwen3"], default="whisperx")
 
     run = commands.add_parser("transcribe")
     run.add_argument("--input", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
     run.add_argument("--asr-context", type=Path)
+    run.add_argument("--engine", choices=["whisperx", "qwen3"], default="whisperx")
     speaker_group = run.add_mutually_exclusive_group()
     speaker_group.add_argument("--num-speakers", type=int)
     speaker_group.add_argument(
@@ -47,7 +49,9 @@ def main() -> int:
     try:
         with redirect_stdout(sys.stderr):
             if args.command == "prepare":
-                prepare_models(args.manifest, args.engine_bin, events)
+                prepare_models(
+                    args.manifest, args.engine_bin, events, engine=args.engine
+                )
                 return 0
 
             if args.command == "refine":
@@ -71,7 +75,14 @@ def main() -> int:
                     minimum=args.speaker_range[0],
                     maximum=args.speaker_range[1],
                 )
-            transcribe(args.input, args.output, hint, events, args.asr_context)
+            transcribe(
+                args.input,
+                args.output,
+                hint,
+                events,
+                asr_context_path=args.asr_context,
+                engine=args.engine,
+            )
         return 0
     except ValueError as error:
         events.fail("INVALID_INPUT", str(error))

@@ -32,6 +32,24 @@ def transcribe(
     speaker_hint: SpeakerHint,
     events: EventWriter,
     asr_context_path: Path | None = None,
+    engine: str = "whisperx",
+) -> None:
+    """Transcribe with the selected engine preset."""
+
+    if engine == "qwen3":
+        from .qwen3 import transcribe_qwen3
+
+        transcribe_qwen3(audio_path, output_dir, speaker_hint, events, asr_context_path)
+        return
+    transcribe_whisperx(audio_path, output_dir, speaker_hint, events, asr_context_path)
+
+
+def transcribe_whisperx(
+    audio_path: Path,
+    output_dir: Path,
+    speaker_hint: SpeakerHint,
+    events: EventWriter,
+    asr_context_path: Path | None = None,
 ) -> None:
     """Transcribe, align, diarize, filter, and publish artifacts."""
 
