@@ -8,6 +8,7 @@ remain testable without the ML stack.
 
 from __future__ import annotations
 
+import gc
 import json
 import re
 import subprocess
@@ -31,6 +32,16 @@ from .runtime import configure_warnings, select_torch_device
 # group grows past roughly one breath of speech.
 SENTENCE_ENDINGS = ".!?…"
 MAX_SENTENCE_SECONDS = 12.0
+# qwen-asr exposes no progress callback, so Galpi chunks long meetings itself
+# and reports per-chunk progress. The upstream 180s chunks can exceed even a
+# 1024-token Korean generation budget; Galpi instead cuts near one-minute
+# silences and hard-limits continuous speech to 75s. That keeps each request
+# within the upstream 512-token default while bounding pathological repetition.
+CHUNK_TARGET_SECONDS = 60.0
+CHUNK_MAX_SECONDS = 75.0
+MAX_NEW_TOKENS = 512
+SILENCE_NOISE_FLOOR = "-35dB"
+SILENCE_MIN_DURATION = 0.6
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?…])\s+")
 # Aligner chunks carry bare words without spaces or terminal punctuation,
 # so those text characters are skipped when mapping text onto chunks.
@@ -105,18 +116,46 @@ def transcribe_qwen3(
         )
         from qwen_asr import Qwen3ASRModel
 
+        # AutoModel.from_pretrained defaults to CPU float32, which decodes a
+        # 1.7B model far slower than realtime. The recognizer and the aligner
+        # both load onto the selected device in the model's native bfloat16.
+        dtype = torch.float32 if device == "cpu" else torch.bfloat16
         model = Qwen3ASRModel.from_pretrained(
             QWEN3_ASR_MODEL_ID,
             forced_aligner=QWEN3_ALIGNER_MODEL_ID,
+            forced_aligner_kwargs={"device_map": device, "dtype": dtype},
+            max_new_tokens=MAX_NEW_TOKENS,
+            device_map=device,
+            dtype=dtype,
         )
         context = build_bias_context(asr_context_path)
-        result = model.transcribe(
-            audio=str(working_audio),
-            language="Korean",
-            context=context,
-            return_time_stamps=True,
-        )[0]
+        duration = audio_duration(working_audio)
+        silence_midpoints = detect_silences(working_audio)
+        chunks = plan_audio_chunks(duration, silence_midpoints)
+        segments: list[Segment] = []
+        for index, (start, end) in enumerate(chunks):
+            chunk_path = Path(work_dir) / f"chunk-{index:04d}.wav"
+            extract_range(working_audio, chunk_path, start, end)
+            result = model.transcribe(
+                audio=str(chunk_path),
+                language="Korean",
+                context=context,
+                return_time_stamps=True,
+            )[0]
+            entries = offset_entries(
+                [entry_to_timestamp(entry) for entry in result.time_stamps],
+                start,
+            )
+            segments.extend(build_segments(result.text, entries))
+            events.emit(
+                "phase",
+                phase="transcribing",
+                percent=10.0 + 80.0 * (index + 1) / len(chunks),
+                message=f"전사 중… 구간 {index + 1}/{len(chunks)}",
+            )
         del model
+        gc.collect()
+        release_mps_cache()
 
         events.emit(
             "phase",
@@ -130,8 +169,6 @@ def transcribe_qwen3(
             percent=100.0,
             message="Qwen3 정렬기로 문장 시간을 확정했습니다.",
         )
-        entries = [entry_to_timestamp(entry) for entry in result.time_stamps]
-        segments = build_segments(result.text, entries)
 
         events.emit(
             "phase",
@@ -147,8 +184,6 @@ def transcribe_qwen3(
             percent=100.0,
             message="화자분리가 완료되었습니다.",
         )
-
-        duration = audio_duration(working_audio)
 
     kept, filtered = filter_segments(assigned, duration)
 
@@ -214,6 +249,153 @@ def decode_to_wav(source: Path, destination: Path) -> None:
         raise RuntimeError(
             f"ffmpeg failed to decode {source.name} (exit {completed.returncode})"
         )
+
+
+def plan_audio_chunks(
+    duration: float,
+    silence_midpoints: list[float],
+    target: float = CHUNK_TARGET_SECONDS,
+    maximum: float = CHUNK_MAX_SECONDS,
+) -> list[tuple[float, float]]:
+    """Plan near-target chunks, preferring silence midpoints as cut points.
+
+    Cutting at silence keeps words intact; a stretch with no usable silence
+    falls back to a hard cut at the maximum length.
+    """
+
+    if duration <= 0:
+        return []
+    chunks: list[tuple[float, float]] = []
+    start = 0.0
+    while start < duration - 0.01:
+        if duration - start <= maximum:
+            # The remaining tail fits one chunk.
+            chunks.append((start, duration))
+            break
+        window_start = start + target - (maximum - target)
+        hard_end = start + maximum
+        candidates = [
+            midpoint
+            for midpoint in silence_midpoints
+            if window_start <= midpoint <= hard_end
+        ]
+        end = max(candidates) if candidates else hard_end
+        chunks.append((start, end))
+        start = end
+    return chunks
+
+
+def parse_silencedetect(stderr_text: str) -> list[float]:
+    """Extract silence midpoints from ffmpeg silencedetect output."""
+
+    start: float | None = None
+    midpoints: list[float] = []
+    for line in stderr_text.splitlines():
+        marker = line[line.find("silence_start:") :]
+        if marker.startswith("silence_start:"):
+            try:
+                start = float(marker[len("silence_start:") :].strip().split()[0])
+            except (ValueError, IndexError):
+                start = None
+            continue
+        marker = line[line.find("silence_end:") :]
+        if marker.startswith("silence_end:") and start is not None:
+            try:
+                end = float(marker[len("silence_end:") :].strip().split()[0])
+            except (ValueError, IndexError):
+                start = None
+                continue
+            midpoints.append((start + end) / 2)
+            start = None
+    return midpoints
+
+
+def detect_silences(audio: Path) -> list[float]:
+    """Find silence midpoints via ffmpeg silencedetect."""
+
+    ffmpeg = cast(
+        ImageioFfmpeg,
+        cast(object, import_module("imageio_ffmpeg")),
+    ).get_ffmpeg_exe()
+    completed = subprocess.run(
+        [
+            ffmpeg,
+            "-i",
+            str(audio),
+            "-af",
+            f"silencedetect=noise={SILENCE_NOISE_FLOOR}:d={SILENCE_MIN_DURATION}",
+            "-f",
+            "null",
+            "-",
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        check=False,
+        text=True,
+    )
+    return parse_silencedetect(completed.stderr)
+
+
+def extract_range(source: Path, destination: Path, start: float, end: float) -> None:
+    """Copy [start, end) seconds of the decoded WAV into a chunk file."""
+
+    ffmpeg = cast(
+        ImageioFfmpeg,
+        cast(object, import_module("imageio_ffmpeg")),
+    ).get_ffmpeg_exe()
+    completed = subprocess.run(
+        [
+            ffmpeg,
+            "-y",
+            "-ss",
+            f"{start:.3f}",
+            "-to",
+            f"{end:.3f}",
+            "-i",
+            str(source),
+            "-ar",
+            "16000",
+            "-ac",
+            "1",
+            str(destination),
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if completed.returncode != 0 or not destination.is_file():
+        raise RuntimeError(
+            f"ffmpeg failed to extract [{start:.1f}, {end:.1f})s "
+            f"(exit {completed.returncode})"
+        )
+
+
+def offset_entries(
+    entries: list[TimestampEntry],
+    offset: float,
+) -> list[TimestampEntry]:
+    """Shift chunk-local timestamps onto the full-meeting timeline."""
+
+    return [
+        TimestampEntry(
+            text=entry["text"],
+            start=entry["start"] + offset,
+            end=entry["end"] + offset,
+        )
+        for entry in entries
+    ]
+
+
+def release_mps_cache() -> None:
+    """Return MPS memory to the system before diarization loads."""
+
+    try:
+        import torch
+
+        if torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+    except (AttributeError, ImportError, RuntimeError):
+        pass
 
 
 def build_bias_context(asr_context_path: Path | None) -> str:

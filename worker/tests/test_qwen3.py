@@ -5,6 +5,7 @@ from pathlib import Path
 
 from ..galpi_worker.__main__ import build_parser
 from ..galpi_worker.qwen3 import (
+    MAX_NEW_TOKENS,
     SpeakerTurn,
     TimestampEntry,
     assign_speakers_to_segments,
@@ -12,6 +13,9 @@ from ..galpi_worker.qwen3 import (
     build_segments,
     entry_to_timestamp,
     ffmpeg_decode_args,
+    offset_entries,
+    parse_silencedetect,
+    plan_audio_chunks,
 )
 
 
@@ -25,6 +29,9 @@ class AlignerEntry:
 
 
 class Qwen3PipelineTests(unittest.TestCase):
+    def test_generation_budget_bounds_long_audio_repetition(self) -> None:
+        self.assertEqual(MAX_NEW_TOKENS, 512)
+
     def test_normalizes_attribute_entries_into_timestamps(self) -> None:
         entry = entry_to_timestamp(AlignerEntry("안녕하세요", 1.0, 2.5))
         self.assertEqual(entry, {"text": "안녕하세요", "start": 1.0, "end": 2.5})
@@ -117,6 +124,62 @@ class Qwen3PipelineTests(unittest.TestCase):
         self.assertIn("도메인 용어: 화자분리, 갈피", context)
         self.assertIn("참석자 이름: 하빈", context)
         self.assertIn("별칭: 프로님", context)
+
+    def test_plan_chunks_cut_at_silence_and_tail(self) -> None:
+        # Given: 300s audio with silences near the one-minute marks
+        midpoints = [58.0, 121.0, 179.0, 242.0]
+
+        chunks = plan_audio_chunks(300.0, midpoints)
+
+        # Then: cuts land on the latest in-window silence; tail fits one piece
+        self.assertEqual(chunks[0], (0.0, 58.0))
+        self.assertEqual(chunks[1], (58.0, 121.0))
+        self.assertEqual(chunks[-1], (242.0, 300.0))
+        import itertools
+
+        for (_, end), (next_start, _) in itertools.pairwise(chunks):
+            self.assertEqual(end, next_start)
+        for start, end in chunks:
+            self.assertLessEqual(end - start, 75.0)
+
+    def test_plan_chunks_hard_cut_without_silence(self) -> None:
+        # Given: continuous audio with no detectable silence
+        chunks = plan_audio_chunks(170.0, [])
+
+        # Then: cuts fall back to the maximum length
+        self.assertEqual(chunks[0][1] - chunks[0][0], 75.0)
+        self.assertEqual(chunks[-1], (150.0, 170.0))
+
+    def test_plan_chunks_keep_short_audio_whole(self) -> None:
+        self.assertEqual(plan_audio_chunks(60.0, [30.0]), [(0.0, 60.0)])
+        self.assertEqual(plan_audio_chunks(0.0, []), [])
+
+    def test_parse_silencedetect_extracts_midpoints(self) -> None:
+        # Given
+        text = (
+            "[silencedetect @ 0x1] silence_start: 12.300\n"
+            "[silencedetect @ 0x1] silence_end: 13.1 | silence_duration: 0.8\n"
+            "[silencedetect @ 0x1] silence_start: not-a-number\n"
+            "[silencedetect @ 0x1] silence_end: 50.0\n"
+        )
+
+        midpoints = parse_silencedetect(text)
+
+        # Then: pairs resolve to midpoints; unparseable starts are dropped
+        self.assertEqual(midpoints, [12.7])
+
+    def test_offset_entries_shift_chunk_times(self) -> None:
+        # Given
+        entries = [
+            TimestampEntry(text="안녕", start=0.0, end=1.0),
+        ]
+
+        # When
+        shifted = offset_entries(entries, 295.0)
+
+        # Then
+        self.assertEqual(shifted[0]["start"], 295.0)
+        self.assertEqual(shifted[0]["end"], 296.0)
 
     def test_ffmpeg_decode_args_normalize_any_container(self) -> None:
         # Given / When
