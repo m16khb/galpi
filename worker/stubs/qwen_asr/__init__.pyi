@@ -1,6 +1,7 @@
-"""Local types for the untyped qwen-asr dependency."""
+"""Local types for the untyped qwen-asr dependency (verified against 0.0.6)."""
 
 from collections.abc import Sequence
+from typing import Any
 
 class TimestampEntry:
     @property
@@ -10,7 +11,7 @@ class TimestampEntry:
     @property
     def end_time(self) -> float: ...
 
-class TranscriptionResult:
+class ASRTranscription:
     @property
     def language(self) -> str: ...
     @property
@@ -19,21 +20,22 @@ class TranscriptionResult:
     def time_stamps(self) -> Sequence[TimestampEntry]: ...
 
 class Qwen3ASRModel:
+    @classmethod
+    def from_pretrained(
+        cls,
+        pretrained_model_name_or_path: str,
+        forced_aligner: str | None = ...,
+        forced_aligner_kwargs: dict[str, Any] | None = ...,
+        max_inference_batch_size: int = ...,
+        max_new_tokens: int | None = ...,
+        **kwargs: Any,
+    ) -> Qwen3ASRModel: ...
     def transcribe(
         self,
-        *,
         audio: str,
+        context: str = ...,
         language: str | None = ...,
-        context: str | None = ...,
         return_time_stamps: bool = ...,
-    ) -> Sequence[TranscriptionResult]: ...
+    ) -> Sequence[ASRTranscription]: ...
 
-def from_pretrained(
-    model: str,
-    *,
-    dtype: object,
-    device_map: str,
-    forced_aligner: str | None = ...,
-    max_inference_batch_size: int = ...,
-    max_new_tokens: int = ...,
-) -> Qwen3ASRModel: ...
+def parse_asr_output(content: str) -> tuple[str, str]: ...
