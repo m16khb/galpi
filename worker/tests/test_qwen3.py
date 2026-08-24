@@ -9,8 +9,9 @@ from ..galpi_worker.qwen3 import (
     TimestampEntry,
     assign_speakers_to_segments,
     build_bias_context,
+    build_segments,
     entry_to_timestamp,
-    merge_timestamp_entries,
+    ffmpeg_decode_args,
 )
 
 
@@ -32,36 +33,47 @@ class Qwen3PipelineTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             entry_to_timestamp({"text": "mapping shape is not supported"})
 
-    def test_merges_chunks_into_sentence_segments(self) -> None:
+    def test_maps_sentences_from_model_text_onto_chunk_times(self) -> None:
+        # Given: the model text with spacing/punctuation plus bare word chunks
+        text = "그건 일차적으로는 하빈님이랑 제가 담당할게요. 감사합니다."
         entries = [
-            TimestampEntry(text="그건 일차적으로는", start=0.0, end=2.0),
-            TimestampEntry(text="하빈님이랑 제가 담당할게요.", start=2.0, end=4.0),
+            TimestampEntry(text="그건", start=0.0, end=0.5),
+            TimestampEntry(text="일차적으로는", start=0.5, end=1.2),
+            TimestampEntry(text="하빈님이랑", start=1.2, end=2.4),
+            TimestampEntry(text="제가", start=2.4, end=3.2),
+            TimestampEntry(text="담당할게요", start=3.2, end=4.0),
             TimestampEntry(text="감사합니다", start=5.0, end=6.0),
         ]
 
-        segments = merge_timestamp_entries(entries)
+        segments = build_segments(text, entries)
 
+        # Then: sentences keep the model text verbatim; chunks only time them
         self.assertEqual(len(segments), 2)
         self.assertEqual(
             segments[0]["text"], "그건 일차적으로는 하빈님이랑 제가 담당할게요."
         )
         self.assertEqual(segments[0]["start"], 0.0)
         self.assertEqual(segments[0]["end"], 4.0)
-        self.assertEqual(segments[1]["text"], "감사합니다")
+        self.assertEqual(segments[1]["text"], "감사합니다.")
+        self.assertEqual(segments[1]["start"], 5.0)
 
-    def test_splits_runs_longer_than_one_breath(self) -> None:
+    def test_sentence_split_needs_a_following_boundary(self) -> None:
+        # Given: punctuation without a following space stays inside the sentence
+        text = "3.14를 말하고 있습니다. 끝."
         entries = [
-            TimestampEntry(text="쉼표 없이 길게 이어지는 발화가", start=0.0, end=7.0),
-            TimestampEntry(
-                text="계속되면 문장이 아니어도 끊어 자막을 지킨다", start=7.0, end=13.5
-            ),
+            TimestampEntry(text="3", start=0.0, end=0.4),
+            TimestampEntry(text="14를", start=0.4, end=0.8),
+            TimestampEntry(text="말하고", start=0.8, end=1.4),
+            TimestampEntry(text="있습니다", start=1.4, end=2.0),
+            TimestampEntry(text="끝", start=2.2, end=2.6),
         ]
 
-        segments = merge_timestamp_entries(entries)
+        segments = build_segments(text, entries)
 
+        # Then
         self.assertEqual(len(segments), 2)
-        self.assertEqual(segments[0]["end"], 7.0)
-        self.assertEqual(segments[1]["start"], 7.0)
+        self.assertEqual(segments[0]["text"], "3.14를 말하고 있습니다.")
+        self.assertEqual(segments[1]["text"], "끝.")
 
     def test_assigns_the_dominant_speaker_per_segment(self) -> None:
         from ..galpi_worker.artifacts import Segment
@@ -105,6 +117,16 @@ class Qwen3PipelineTests(unittest.TestCase):
         self.assertIn("도메인 용어: 화자분리, 갈피", context)
         self.assertIn("참석자 이름: 하빈", context)
         self.assertIn("별칭: 프로님", context)
+
+    def test_ffmpeg_decode_args_normalize_any_container(self) -> None:
+        # Given / When
+        args = ffmpeg_decode_args(Path("in.m4a"), Path("out.wav"))
+
+        # Then: overwrite, resample to 16 kHz mono, WAV output
+        self.assertEqual(
+            args,
+            ["-y", "-i", "in.m4a", "-ar", "16000", "-ac", "1", "out.wav"],
+        )
 
     def test_empty_context_when_no_file(self) -> None:
         self.assertEqual(build_bias_context(None), "")

@@ -9,6 +9,10 @@ remain testable without the ML stack.
 from __future__ import annotations
 
 import json
+import re
+import subprocess
+import tempfile
+from importlib import import_module
 from pathlib import Path
 from typing import Protocol, TypedDict, cast
 
@@ -27,6 +31,10 @@ from .runtime import configure_warnings, select_torch_device
 # group grows past roughly one breath of speech.
 SENTENCE_ENDINGS = ".!?…"
 MAX_SENTENCE_SECONDS = 12.0
+SENTENCE_SPLIT = re.compile(r"(?<=[.!?…])\s+")
+# Aligner chunks carry bare words without spaces or terminal punctuation,
+# so those text characters are skipped when mapping text onto chunks.
+SKIPPED_TEXT_CHARS = ".,!?…"
 
 
 class TimestampEntry(TypedDict):
@@ -76,67 +84,74 @@ def transcribe_qwen3(
     import torch
 
     device = select_torch_device(mps_available=torch.backends.mps.is_available())
+    # The Qwen3 stack decodes audio through libsndfile, which rejects
+    # compressed containers (m4a/AAC, mov, ...). Every input goes through the
+    # bundled ffmpeg into 16 kHz mono WAV first, like the WhisperX path.
     events.emit(
         "phase",
         phase="transcribing",
         percent=5.0,
-        message=f"한국어 음성을 Qwen3로 전사합니다. ({device.upper()})",
+        message="오디오를 ffmpeg로 디코딩합니다.",
     )
-    from qwen_asr import from_pretrained
+    with tempfile.TemporaryDirectory(prefix="galpi-qwen3-") as work_dir:
+        working_audio = Path(work_dir) / "audio.wav"
+        decode_to_wav(audio_path, working_audio)
 
-    model = from_pretrained(
-        QWEN3_ASR_MODEL_ID,
-        dtype=torch.float32,
-        device_map=device,
-        forced_aligner=QWEN3_ALIGNER_MODEL_ID,
-    )
-    context = build_bias_context(asr_context_path)
-    try:
+        events.emit(
+            "phase",
+            phase="transcribing",
+            percent=10.0,
+            message=f"한국어 음성을 Qwen3로 전사합니다. ({device.upper()})",
+        )
+        from qwen_asr import Qwen3ASRModel
+
+        model = Qwen3ASRModel.from_pretrained(
+            QWEN3_ASR_MODEL_ID,
+            forced_aligner=QWEN3_ALIGNER_MODEL_ID,
+        )
+        context = build_bias_context(asr_context_path)
         result = model.transcribe(
-            audio=str(audio_path),
+            audio=str(working_audio),
             language="Korean",
-            context=context if context else None,
+            context=context,
             return_time_stamps=True,
         )[0]
-    except TypeError:
-        # qwen-asr builds without context biasing still transcribe; dropping
-        # the hint beats failing the whole meeting.
-        result = model.transcribe(
-            audio=str(audio_path),
-            language="Korean",
-            return_time_stamps=True,
-        )[0]
-    del model
+        del model
 
-    events.emit(
-        "phase",
-        phase="transcribing",
-        percent=100.0,
-        message="전사가 완료되었습니다.",
-    )
-    events.emit(
-        "phase",
-        phase="aligning",
-        percent=100.0,
-        message="Qwen3 정렬기로 문장 시간을 확정했습니다.",
-    )
-    entries = [entry_to_timestamp(entry) for entry in result.time_stamps]
-    segments = merge_timestamp_entries(entries)
+        events.emit(
+            "phase",
+            phase="transcribing",
+            percent=100.0,
+            message="전사가 완료되었습니다.",
+        )
+        events.emit(
+            "phase",
+            phase="aligning",
+            percent=100.0,
+            message="Qwen3 정렬기로 문장 시간을 확정했습니다.",
+        )
+        entries = [entry_to_timestamp(entry) for entry in result.time_stamps]
+        segments = build_segments(result.text, entries)
 
-    events.emit(
-        "phase",
-        phase="diarizing",
-        percent=10.0,
-        message=f"{device.upper()}에서 화자를 분리합니다.",
-    )
-    turns = diarize(audio_path, speaker_hint, device, events)
-    assigned = assign_speakers_to_segments(segments, turns)
-    events.emit(
-        "phase", phase="diarizing", percent=100.0, message="화자분리가 완료되었습니다."
-    )
+        events.emit(
+            "phase",
+            phase="diarizing",
+            percent=10.0,
+            message=f"{device.upper()}에서 화자를 분리합니다.",
+        )
+        turns = diarize(working_audio, speaker_hint, device, events)
+        assigned = assign_speakers_to_segments(segments, turns)
+        events.emit(
+            "phase",
+            phase="diarizing",
+            percent=100.0,
+            message="화자분리가 완료되었습니다.",
+        )
 
-    duration = audio_duration(audio_path)
+        duration = audio_duration(working_audio)
+
     kept, filtered = filter_segments(assigned, duration)
+
     events.emit(
         "phase",
         phase="writing",
@@ -160,6 +175,45 @@ def transcribe_qwen3(
         segments=len(kept),
         filtered=len(filtered),
     )
+
+
+class ImageioFfmpeg(Protocol):
+    @staticmethod
+    def get_ffmpeg_exe() -> str: ...
+
+
+def ffmpeg_decode_args(source: Path, destination: Path) -> list[str]:
+    """ffmpeg invocation that normalizes any container to 16 kHz mono WAV."""
+
+    return [
+        "-y",
+        "-i",
+        str(source),
+        "-ar",
+        "16000",
+        "-ac",
+        "1",
+        str(destination),
+    ]
+
+
+def decode_to_wav(source: Path, destination: Path) -> None:
+    """Decode any supported container through the bundled ffmpeg binary."""
+
+    ffmpeg = cast(
+        ImageioFfmpeg,
+        cast(object, import_module("imageio_ffmpeg")),
+    ).get_ffmpeg_exe()
+    completed = subprocess.run(
+        [ffmpeg, *ffmpeg_decode_args(source, destination)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if completed.returncode != 0 or not destination.is_file():
+        raise RuntimeError(
+            f"ffmpeg failed to decode {source.name} (exit {completed.returncode})"
+        )
 
 
 def build_bias_context(asr_context_path: Path | None) -> str:
@@ -194,45 +248,62 @@ def entry_to_timestamp(entry: object) -> TimestampEntry:
     )
 
 
-def merge_timestamp_entries(
+def build_segments(
+    transcription_text: str,
     entries: list[TimestampEntry],
 ) -> list[Segment]:
-    """Merge aligner chunks into subtitle-sized sentence segments."""
+    """Split the model text into sentences timed by aligner chunks.
 
+    The full `text` carries proper spacing and punctuation while the aligner
+    chunks are bare words, so sentences keep their original form and chunk
+    boundaries only decide where each sentence starts and ends in time.
+    """
+
+    sentences = [
+        sentence
+        for sentence in SENTENCE_SPLIT.split(transcription_text.strip())
+        if sentence.strip()
+    ]
     segments: list[Segment] = []
-    current_text = ""
-    current_start: float | None = None
-    current_end = 0.0
-
-    def flush() -> None:
-        nonlocal current_text, current_start, current_end
-        if current_start is not None and current_text:
-            segments.append(
-                Segment(start=current_start, end=current_end, text=current_text)
-            )
-        current_text = ""
-        current_start = None
-
-    for entry in entries:
-        text = entry["text"].strip()
-        if not text:
+    chunk_index = 0
+    chunk_offset = 0
+    for sentence in sentences:
+        target = matchable_chars(sentence)
+        if not target:
             continue
-        # Aligner chunk boundaries fall on word or phrase edges, so joining
-        # with a space keeps Korean words separated inside a merged sentence.
-        would_run_long = (
-            current_start is not None
-            and entry["end"] - current_start >= MAX_SENTENCE_SECONDS
-        )
-        if would_run_long:
-            flush()
-        if current_start is None:
-            current_start = entry["start"]
-        current_text = f"{current_text} {text}".strip()
-        current_end = entry["end"]
-        if text[-1] in SENTENCE_ENDINGS:
-            flush()
-    flush()
+        start: float | None = None
+        end = 0.0
+        consumed = 0
+        while consumed < len(target) and chunk_index < len(entries):
+            entry = entries[chunk_index]
+            chunk = matchable_chars(entry["text"])
+            available = len(chunk) - chunk_offset
+            if available <= 0:
+                chunk_index += 1
+                chunk_offset = 0
+                continue
+            if start is None:
+                start = entry["start"]
+            take = min(available, len(target) - consumed)
+            consumed += take
+            chunk_offset += take
+            end = entry["end"]
+            if chunk_offset >= len(chunk):
+                chunk_index += 1
+                chunk_offset = 0
+        if start is not None and consumed > 0:
+            segments.append(Segment(start=start, end=end, text=sentence.strip()))
     return segments
+
+
+def matchable_chars(text: str) -> list[str]:
+    """Characters that aligner chunks can also carry (no spaces/punctuation)."""
+
+    return [
+        character
+        for character in text
+        if not character.isspace() and character not in SKIPPED_TEXT_CHARS
+    ]
 
 
 def assign_speakers_to_segments(
@@ -274,6 +345,9 @@ def diarize(
     import torch
     from pyannote.audio import Pipeline
 
+    waveform, sample_rate = load_waveform(audio_path)
+    audio_input = {"waveform": waveform, "sample_rate": sample_rate}
+
     def load(load_device: str) -> Pipeline:
         pipeline = Pipeline.from_pretrained(PYANNOTE_MODEL_ID)
         if load_device != "cpu":
@@ -296,15 +370,36 @@ def diarize(
             options["min_speakers"] = hint.minimum
         if hint.maximum is not None:
             options["max_speakers"] = hint.maximum
-    diarization = pipeline(str(audio_path), **options)
+    diarization_output = pipeline(audio_input, **options)
+    # community-1 returns a DiarizeOutput dataclass; the *exclusive* variant
+    # drops overlapping speech, which maps cleaner onto ASR segments.
+    annotation = diarization_output.exclusive_speaker_diarization
     return [
         SpeakerTurn(
             start=turn.start,
             end=turn.end,
             speaker=str(speaker),
         )
-        for turn, speaker in diarization.itertracks(yield_label=True)
+        for turn, _track, speaker in annotation.itertracks(yield_label=True)
     ]
+
+
+def load_waveform(audio_path: Path) -> tuple[object, int]:
+    """Read mono 16 kHz samples for pyannote's waveform-dict input.
+
+    The qwen3 venv has no torchcodec, so pyannote cannot decode file paths
+    there; handing it the decoded tensor sidesteps the backend entirely.
+    """
+
+    import torchaudio
+
+    waveform, sample_rate = torchaudio.load(str(audio_path))
+    if waveform.shape[0] > 1:
+        waveform = waveform.mean(dim=0, keepdim=True)
+    if sample_rate != 16000:
+        waveform = torchaudio.functional.resample(waveform, sample_rate, 16000)
+        sample_rate = 16000
+    return waveform, sample_rate
 
 
 def audio_duration(audio_path: Path) -> float:

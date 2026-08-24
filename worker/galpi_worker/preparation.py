@@ -173,7 +173,7 @@ def prepare_qwen3_models(manifest: Path, events: EventWriter) -> None:
     # once so the first real transcription does not pay the download cost.
     from pyannote.audio import Pipeline
 
-    pipeline = Pipeline.from_pretrained(PYANNOTE_MODEL_ID, use_auth_token=token)
+    pipeline = Pipeline.from_pretrained(PYANNOTE_MODEL_ID, token=token)
     if device != "cpu":
         pipeline.to(torch.device(device))
     del pipeline
