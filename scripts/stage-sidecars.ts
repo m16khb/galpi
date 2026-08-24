@@ -61,7 +61,10 @@ async function stageWorker(): Promise<void> {
     force: true,
     filter: (source) => !source.includes("__pycache__") && !source.endsWith(".pyc"),
   })
-  await cp(join(WORKER_SOURCE, "requirements.txt"), join(WORKER_DESTINATION, "requirements.txt"))
+  const requirements = ["requirements.txt", "requirements-qwen3.txt"]
+  for (const file of requirements) {
+    await cp(join(WORKER_SOURCE, file), join(WORKER_DESTINATION, file))
+  }
 }
 
 await stageUv()

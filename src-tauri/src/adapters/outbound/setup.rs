@@ -215,6 +215,9 @@ async fn install_whisperx_engine(
         &uv,
         vec![
             "venv".into(),
+            // A failed first attempt leaves a partial venv behind; replacing
+            // it keeps retries idempotent instead of tripping uv's refusal.
+            "--clear".into(),
             "--python".into(),
             "3.12".into(),
             paths.engine.join(".venv").into_os_string(),
@@ -291,6 +294,7 @@ async fn install_qwen3_engine(
         &uv,
         vec![
             "venv".into(),
+            "--clear".into(),
             "--python".into(),
             "3.12".into(),
             paths.qwen3_root.join(".venv").into_os_string(),
