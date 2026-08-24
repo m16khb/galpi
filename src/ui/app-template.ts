@@ -30,14 +30,7 @@ export const appTemplate = `
         <section id="setup-panel" class="panel setup-panel" aria-labelledby="setup-title">
           <div class="section-heading">
             <div><span class="section-index">00 / 준비</span><h2 id="setup-title">로컬 AI 환경</h2></div>
-            <p>Galpi가 앱 전용 Python과 WhisperX를 설치하고 필요한 모델을 한 번에 준비합니다.</p>
-          </div>
-          <div class="field-block engine-field">
-            <div class="field-label"><span>전사 엔진</span><span id="engine-switch-note">변경하면 다음 전사부터 적용됩니다</span></div>
-            <div class="segmented-control engine-segmented" role="radiogroup" aria-label="전사 엔진 선택">
-              <label><input type="radio" name="engine-preset" value="qwen3" checked /><span>Qwen3<em id="engine-qwen3-state">기본 · 확인 중</em></span></label>
-              <label><input type="radio" name="engine-preset" value="whisperx" /><span>WhisperX<em id="engine-whisperx-state">이전 엔진 · 확인 중</em></span></label>
-            </div>
+            <p>Galpi가 앱 전용 Python 런타임과 선택한 전사 엔진을 설치하고 필요한 모델을 한 번에 준비합니다. 엔진은 설정의 <strong>전사 엔진</strong>에서 바꿀 수 있습니다.</p>
           </div>
           <div class="setup-grid">
             <div class="status-list" aria-label="설치 상태">
@@ -202,6 +195,16 @@ export const appTemplate = `
           <button class="settings-close-button" type="button" data-action="close-settings" aria-label="설정 닫기"><i class="ph ph-x"></i></button>
         </header>
         <div class="settings-body">
+        <section class="settings-section" aria-labelledby="engine-settings-title">
+          <div class="settings-section-heading">
+            <div><strong id="engine-settings-title">전사 엔진</strong><span id="engine-settings-state">Qwen3</span></div>
+            <p>다음 전사부터 적용됩니다. 준비되지 않은 엔진을 고르면 닫힌 준비 패널에서 로컬 엔진 준비를 먼저 실행해야 합니다.</p>
+          </div>
+          <div class="segmented-control engine-segmented" role="radiogroup" aria-label="전사 엔진 선택">
+            <label><input type="radio" name="engine-preset" value="qwen3" checked /><span>Qwen3<em id="engine-qwen3-state">기본 · 확인 중</em></span></label>
+            <label><input type="radio" name="engine-preset" value="whisperx" /><span>WhisperX<em id="engine-whisperx-state">이전 엔진 · 확인 중</em></span></label>
+          </div>
+        </section>
         <section class="settings-section" aria-labelledby="token-settings-title">
           <div class="settings-section-heading">
             <div><strong id="token-settings-title">Hugging Face 토큰</strong><span>선택</span></div>

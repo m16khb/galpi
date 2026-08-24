@@ -140,6 +140,12 @@ All spacing derives from 4px.
 - **Accessibility**: labels are never placeholders; error and helper IDs connect with `aria-describedby`.
 - **Layout**: stack primitive; related controls use a wrapping cluster.
 
+### Engine Preset Picker
+
+- **Structure**: the settings dialog hosts a `전사 엔진` section with a two-slot segmented picker (`Qwen3 기본`, `WhisperX 이전 엔진`); each slot carries a readiness badge (`준비됨`/`준비 필요`) and the section header shows the active preset. The picker lives in settings — never in the setup panel — because the setup panel hides itself once the selected engine is ready, which would swallow the control.
+- **States**: switching saves immediately and re-diagnoses; an unready selection re-opens the setup panel path via `로컬 엔진 준비`. Badges pair text with color.
+- **Behavior**: the change applies from the next transcription; a running job is unaffected.
+
 ### Settings Autosave
 
 - **Behavior**: text fields persist when the user commits the edit (blur or Enter); selects and row removals persist immediately. There is no global save button.

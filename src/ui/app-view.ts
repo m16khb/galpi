@@ -124,6 +124,8 @@ export class AppView {
     }
     this.setEngineBadge("#engine-qwen3-state", "기본", status.qwen3Ready)
     this.setEngineBadge("#engine-whisperx-state", "이전 엔진", status.whisperxReady)
+    this.element("#engine-settings-state").textContent =
+      status.enginePreset === "qwen3" ? "Qwen3" : "WhisperX"
     const engineLabel =
       status.enginePreset === "qwen3" ? "Qwen3 엔진" : "WhisperX 엔진"
     this.statusRow("#engine-check", status.engineReady, engineLabel)

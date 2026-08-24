@@ -112,17 +112,23 @@ describe("AppController engine preset", () => {
     const unavailable = () => Promise.reject(new Error("unused"))
     const state: { preset: string | null } = { preset: null }
     const backend = {
-      diagnose: async () => ({
-        enginePreset: (state.preset ?? "qwen3") as "qwen3" | "whisperx",
-        engineReady: false,
-        modelsReady: false,
-        ffmpegReady: false,
-        qwen3Ready: state.preset === null,
-        whisperxReady: state.preset === "whisperx",
-        dataDirectory: "/tmp/galpi",
-        defaultOutputDirectory: "/tmp/Documents/Galpi",
-        engineVersion: "test",
-      }),
+      diagnose: async () => {
+        const preset = (state.preset ?? "qwen3") as "qwen3" | "whisperx"
+        // In this fake only the legacy whisperx stack is installed: qwen3 is
+        // the unready default, whisperx becomes ready once selected.
+        const ready = preset === "whisperx"
+        return {
+          enginePreset: preset,
+          engineReady: ready,
+          modelsReady: ready,
+          ffmpegReady: ready,
+          qwen3Ready: false,
+          whisperxReady: true,
+          dataDirectory: "/tmp/galpi",
+          defaultOutputDirectory: "/tmp/Documents/Galpi",
+          engineVersion: "test",
+        }
+      },
       prepare: unavailable,
       loadHuggingFaceToken: async () => null,
       saveHuggingFaceToken: unavailable,
@@ -158,10 +164,16 @@ describe("AppController engine preset", () => {
     const controller = new AppController(backend as unknown as BackendPort, new AppView(root))
     await controller.start()
 
-    // When: the user switches to the legacy engine
+    // When: the user opens settings and switches to the legacy engine
+    ;(root.querySelector('[data-action="open-settings"]') as HTMLElement).click()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
     const whisperx = root.querySelector(
       'input[name="engine-preset"][value="whisperx"]',
     ) as HTMLInputElement
+    // The picker must live in the always-reachable settings dialog, not the
+    // setup panel that hides once the selected engine is ready.
+    expect(whisperx.closest("#settings-dialog")).not.toBe(null)
     whisperx.click()
     await new Promise((resolve) => setTimeout(resolve, 0))
     await new Promise((resolve) => setTimeout(resolve, 0))
@@ -170,6 +182,13 @@ describe("AppController engine preset", () => {
     expect(state.preset).toBe("whisperx")
     expect((root.querySelector("#engine-check") as HTMLElement).textContent).toContain(
       "WhisperX 엔진",
+    )
+    // Regression: whisperx is ready here, so the setup panel hides itself —
+    // the picker must survive that, still reachable inside the settings dialog.
+    expect((root.querySelector("#setup-panel") as HTMLElement).hidden).toBe(true)
+    expect(whisperx.closest("#settings-dialog")).not.toBe(null)
+    expect((root.querySelector("#engine-settings-state") as HTMLElement).textContent).toBe(
+      "WhisperX",
     )
     controller.stop()
   })
