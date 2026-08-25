@@ -4,6 +4,7 @@ import gc
 import json
 import os
 import shutil
+from collections.abc import Callable
 from importlib import import_module
 from importlib.metadata import version
 from pathlib import Path
@@ -15,6 +16,19 @@ from .runtime import configure_warnings, select_torch_device
 PYANNOTE_MODEL_ID = "pyannote/speaker-diarization-community-1"
 QWEN3_ASR_MODEL_ID = "Qwen/Qwen3-ASR-1.7B"
 QWEN3_ALIGNER_MODEL_ID = "Qwen/Qwen3-ForcedAligner-0.6B"
+QWEN3_MLX_MODEL_DIR_NAME = "qwen3-asr-1.7b-8bit"
+QWEN3_MLX_QUANT_BITS = 8
+QWEN3_MLX_QUANT_GROUP_SIZE = 64
+# Tokenizer/config files the converted MLX model directory must carry so
+# Session(model=<dir>) loads without touching the network.
+QWEN3_MLX_SIDECAR_FILES = (
+    "config.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "vocab.json",
+    "merges.txt",
+    "special_tokens_map.json",
+)
 
 
 class ImageioFfmpeg(Protocol):
@@ -145,7 +159,7 @@ def prepare_whisperx_models(manifest: Path, events: EventWriter) -> None:
 
 
 def prepare_qwen3_models(manifest: Path, events: EventWriter) -> None:
-    """Download the Qwen3 candidate stack into the app's HF cache."""
+    """Download the Qwen3 stack and convert MLX weights into the cache."""
 
     import torch
     from huggingface_hub import snapshot_download
@@ -159,13 +173,21 @@ def prepare_qwen3_models(manifest: Path, events: EventWriter) -> None:
         percent=10.0,
         message="Qwen3 전사·정렬 모델을 내려받습니다.",
     )
-    snapshot_download(QWEN3_ASR_MODEL_ID, token=token)
+    asr_snapshot = Path(snapshot_download(QWEN3_ASR_MODEL_ID, token=token))
     snapshot_download(QWEN3_ALIGNER_MODEL_ID, token=token)
 
     events.emit(
         "phase",
         phase="models",
-        percent=60.0,
+        percent=45.0,
+        message="MLX 8비트 가중치로 변환합니다.",
+    )
+    convert_mlx_asr_weights(asr_snapshot, events)
+
+    events.emit(
+        "phase",
+        phase="models",
+        percent=70.0,
         message="화자분리 모델을 내려받습니다.",
     )
     # pyannote's community model is gated: the token from settings travels
@@ -181,12 +203,15 @@ def prepare_qwen3_models(manifest: Path, events: EventWriter) -> None:
 
     payload: dict[str, object] = {
         "protocol": 1,
-        "qwen3": "1",
+        "qwen3": "2",
+        "mlx_qwen3_asr": version("mlx-qwen3-asr"),
+        "mlx": version("mlx"),
         "torch": version("torch"),
         "pyannote_audio": version("pyannote.audio"),
         "asr_model": QWEN3_ASR_MODEL_ID,
         "alignment_model": QWEN3_ALIGNER_MODEL_ID,
         "diarization_model": PYANNOTE_MODEL_ID,
+        "mlx_quantization": f"{QWEN3_MLX_QUANT_BITS}bit-g{QWEN3_MLX_QUANT_GROUP_SIZE}",
         "device": device,
     }
     write_manifest(manifest, payload)
@@ -194,6 +219,73 @@ def prepare_qwen3_models(manifest: Path, events: EventWriter) -> None:
         "phase", phase="models", percent=100.0, message="모델 준비가 완료되었습니다."
     )
     events.emit("prepared", engine_version=QWEN3_ASR_MODEL_ID)
+
+
+def convert_mlx_asr_weights(asr_snapshot: Path, events: EventWriter) -> None:
+    """Convert the HF ASR snapshot into quantized MLX weights (one-time).
+
+    The transcription path loads ``cache/mlx/qwen3-asr-1.7b-8bit`` through
+    ``Session(model=<dir>)``; conversion builds a sibling temporary
+    directory and moves it into place so a crash never leaves a half-built
+    model the readiness gate would mistake for a complete one.
+    """
+
+    hf_home = os.environ.get("HF_HOME")
+    cache_root = Path(hf_home).parent if hf_home else Path.home() / ".cache"
+    destination = cache_root / "mlx" / QWEN3_MLX_MODEL_DIR_NAME
+    if destination.joinpath("weights.safetensors").is_file():
+        return
+
+    import mlx.core as mx
+    import mlx.utils as mlx_utils
+    from mlx_qwen3_asr.convert import quantize_model
+    from mlx_qwen3_asr.load_models import load_model
+
+    # mlx.utils.tree_flatten is annotated with bare Callables upstream and
+    # mx.save_safetensors with a bare file alias, which strict mode reads as
+    # partially unknown; the conversion shapes are fixed.
+    tree_flatten = cast(
+        "Callable[[object], list[tuple[str, object]]]", mlx_utils.tree_flatten
+    )
+    save_safetensors = cast(
+        "Callable[[str, dict[str, mx.array]], None]", mx.save_safetensors
+    )
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    staging = destination.with_name(destination.name + ".partial")
+    if staging.exists():
+        shutil.rmtree(staging)
+    staging.mkdir(parents=True)
+
+    # The public loader resolves the local snapshot, remaps the weights, and
+    # casts to float16 in one step; quantization then rewrites the linear
+    # layers in place.
+    model, _config = load_model(str(asr_snapshot))
+    quantize_model(
+        model,
+        bits=QWEN3_MLX_QUANT_BITS,
+        group_size=QWEN3_MLX_QUANT_GROUP_SIZE,
+    )
+    flat_weights = dict(tree_flatten(cast("object", model.parameters())))
+    save_safetensors(
+        str(staging / "weights.safetensors"),
+        cast("dict[str, mx.array]", flat_weights),
+    )
+    for name in QWEN3_MLX_SIDECAR_FILES:
+        source = asr_snapshot / name
+        if source.is_file():
+            shutil.copy2(source, staging / name)
+    (staging / "quantization_config.json").write_text(
+        json.dumps(
+            {
+                "bits": QWEN3_MLX_QUANT_BITS,
+                "group_size": QWEN3_MLX_QUANT_GROUP_SIZE,
+            }
+        ),
+        encoding="utf-8",
+    )
+    events.log(f"MLX 8비트 가중치 변환 완료: {destination}")
+    os.replace(staging, destination)
 
 
 def write_manifest(manifest: Path, payload: dict[str, object]) -> None:

@@ -11,34 +11,37 @@ from ..galpi_worker.qwen3 import (
     assign_speakers_to_segments,
     build_bias_context,
     build_segments,
-    entry_to_timestamp,
     ffmpeg_decode_args,
     offset_entries,
     parse_silencedetect,
     plan_audio_chunks,
+    word_entries,
 )
-
-
-class AlignerEntry:
-    """Attribute-shaped stand-in for a qwen-asr timestamp entry."""
-
-    def __init__(self, text: str, start_time: float, end_time: float) -> None:
-        self.text = text
-        self.start_time = start_time
-        self.end_time = end_time
 
 
 class Qwen3PipelineTests(unittest.TestCase):
     def test_generation_budget_bounds_long_audio_repetition(self) -> None:
         self.assertEqual(MAX_NEW_TOKENS, 512)
 
-    def test_normalizes_attribute_entries_into_timestamps(self) -> None:
-        entry = entry_to_timestamp(AlignerEntry("안녕하세요", 1.0, 2.5))
-        self.assertEqual(entry, {"text": "안녕하세요", "start": 1.0, "end": 2.5})
+    def test_normalizes_mlx_word_dicts_into_timestamps(self) -> None:
+        words = [
+            {"text": "안녕하세요", "start": 0.0, "end": 1.2},
+            {"text": "반갑습니다", "start": 1.2, "end": 2.5},
+        ]
 
-    def test_rejects_unexpected_entry_shapes(self) -> None:
-        with self.assertRaises(TypeError):
-            entry_to_timestamp({"text": "mapping shape is not supported"})
+        entries = word_entries(words)
+
+        self.assertEqual(
+            entries,
+            [
+                {"text": "안녕하세요", "start": 0.0, "end": 1.2},
+                {"text": "반갑습니다", "start": 1.2, "end": 2.5},
+            ],
+        )
+
+    def test_word_entries_tolerate_missing_timestamps(self) -> None:
+        self.assertEqual(word_entries(None), [])
+        self.assertEqual(word_entries([]), [])
 
     def test_maps_sentences_from_model_text_onto_chunk_times(self) -> None:
         # Given: the model text with spacing/punctuation plus bare word chunks

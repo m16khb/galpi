@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
 
-pub const QWEN3_ENGINE_VERSION: &str = "1";
+pub const QWEN3_ENGINE_VERSION: &str = "2";
 
 #[derive(Debug, Clone)]
 pub struct AppPaths {

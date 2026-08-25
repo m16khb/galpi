@@ -11,6 +11,7 @@ pub const ENGINE_VERSION: &str = "3.8.6";
 pub const QWEN3_MODEL_ID: &str = "Qwen/Qwen3-ASR-1.7B";
 pub const QWEN3_ALIGNER_ID: &str = "Qwen/Qwen3-ForcedAligner-0.6B";
 const PYANNOTE_MODEL_DIR: &str = "models--pyannote--speaker-diarization-community-1";
+const QWEN3_MLX_WEIGHTS: &str = "mlx/qwen3-asr-1.7b-8bit/weights.safetensors";
 
 pub fn diagnose(app: &AppHandle, preset: EnginePreset) -> Result<EnvironmentStatus, AppError> {
     let paths = AppPaths::resolve(app)?;
@@ -177,6 +178,7 @@ fn qwen3_models_ready(paths: &AppPaths) -> bool {
         ]
         .iter()
         .all(|model| hub.join(model).is_dir())
+        && paths.cache.join(QWEN3_MLX_WEIGHTS).is_file()
 }
 
 /// Hugging Face cache directories use `models--Org--Name` from the repo id.

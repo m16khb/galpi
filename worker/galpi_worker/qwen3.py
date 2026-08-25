@@ -1,18 +1,21 @@
 """Qwen3 candidate transcription pipeline owned by Galpi.
 
-Runs Qwen3-ASR-1.7B for Korean recognition with the Qwen3-ForcedAligner
-producing timestamps in the same pass, then diarizes on the shared pyannote
-community-1 model. Heavy imports stay inside functions so the pure helpers
-remain testable without the ML stack.
+Runs Qwen3-ASR-1.7B through the MLX runtime (Metal GPU, 8-bit weights)
+with the native MLX forced aligner producing word timestamps in the same
+pass, then diarizes on the shared pyannote community-1 model. Heavy imports
+stay inside functions so the pure helpers remain testable without the ML
+stack.
 """
 
 from __future__ import annotations
 
 import gc
 import json
+import os
 import re
 import subprocess
 import tempfile
+from collections.abc import Callable
 from importlib import import_module
 from pathlib import Path
 from typing import Protocol, TypedDict, cast
@@ -21,8 +24,7 @@ from .artifacts import Segment, filter_segments, write_outputs_atomic
 from .core import SpeakerHint, parse_asr_context, validate_speaker_hint
 from .preparation import (
     PYANNOTE_MODEL_ID,
-    QWEN3_ALIGNER_MODEL_ID,
-    QWEN3_ASR_MODEL_ID,
+    QWEN3_MLX_MODEL_DIR_NAME,
 )
 from .protocol import EventWriter
 from .runtime import configure_warnings, select_torch_device
@@ -56,17 +58,12 @@ class TimestampEntry(TypedDict):
     end: float
 
 
-class AlignerEntry(Protocol):
-    """Attribute shape the qwen-asr aligner publishes for one chunk."""
+class MlxWord(TypedDict):
+    """One MLX forced-aligner word dict entry."""
 
-    @property
-    def text(self) -> str: ...
-
-    @property
-    def start_time(self) -> float: ...
-
-    @property
-    def end_time(self) -> float: ...
+    text: str
+    start: float
+    end: float
 
 
 class SpeakerTurn(TypedDict):
@@ -92,9 +89,6 @@ def transcribe_qwen3(
     output_dir.mkdir(parents=True, exist_ok=True)
     configure_warnings()
 
-    import torch
-
-    device = select_torch_device(mps_available=torch.backends.mps.is_available())
     # The Qwen3 stack decodes audio through libsndfile, which rejects
     # compressed containers (m4a/AAC, mov, ...). Every input goes through the
     # bundled ffmpeg into 16 kHz mono WAV first, like the WhisperX path.
@@ -112,22 +106,16 @@ def transcribe_qwen3(
             "phase",
             phase="transcribing",
             percent=10.0,
-            message=f"한국어 음성을 Qwen3로 전사합니다. ({device.upper()})",
+            message="한국어 음성을 Qwen3(MLX)로 전사합니다. (Metal GPU)",
         )
-        from qwen_asr import Qwen3ASRModel
+        from mlx_qwen3_asr import Session
 
-        # AutoModel.from_pretrained defaults to CPU float32, which decodes a
-        # 1.7B model far slower than realtime. The recognizer and the aligner
-        # both load onto the selected device in the model's native bfloat16.
-        dtype = torch.float32 if device == "cpu" else torch.bfloat16
-        model = Qwen3ASRModel.from_pretrained(
-            QWEN3_ASR_MODEL_ID,
-            forced_aligner=QWEN3_ALIGNER_MODEL_ID,
-            forced_aligner_kwargs={"device_map": device, "dtype": dtype},
-            max_new_tokens=MAX_NEW_TOKENS,
-            device_map=device,
-            dtype=dtype,
-        )
+        # The readiness gate guarantees the converted 8-bit weights exist in
+        # the app cache; a missing directory means prepare was skipped.
+        asr_dir = mlx_asr_model_dir()
+        if not asr_dir.joinpath("weights.safetensors").is_file():
+            raise RuntimeError(f"MLX Qwen3 모델이 준비되지 않았습니다: {asr_dir}")
+        session = Session(model=str(asr_dir))
         context = build_bias_context(asr_context_path)
         duration = audio_duration(working_audio)
         silence_midpoints = detect_silences(working_audio)
@@ -136,16 +124,17 @@ def transcribe_qwen3(
         for index, (start, end) in enumerate(chunks):
             chunk_path = Path(work_dir) / f"chunk-{index:04d}.wav"
             extract_range(working_audio, chunk_path, start, end)
-            result = model.transcribe(
-                audio=str(chunk_path),
+            result = session.transcribe(
+                str(chunk_path),
                 language="Korean",
                 context=context,
-                return_time_stamps=True,
-            )[0]
-            entries = offset_entries(
-                [entry_to_timestamp(entry) for entry in result.time_stamps],
-                start,
+                return_timestamps=True,
+                max_new_tokens=MAX_NEW_TOKENS,
             )
+            # TranscriptionResult.segments is annotated with bare dicts
+            # upstream; word_entries normalizes the shape.
+            raw_segments = result.segments  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            entries = offset_entries(word_entries(cast("object", raw_segments)), start)
             segments.extend(build_segments(result.text, entries))
             events.emit(
                 "phase",
@@ -153,7 +142,7 @@ def transcribe_qwen3(
                 percent=10.0 + 80.0 * (index + 1) / len(chunks),
                 message=f"전사 중… 구간 {index + 1}/{len(chunks)}",
             )
-        del model
+        del session
         gc.collect()
         release_mps_cache()
 
@@ -174,8 +163,11 @@ def transcribe_qwen3(
             "phase",
             phase="diarizing",
             percent=10.0,
-            message=f"{device.upper()}에서 화자를 분리합니다.",
+            message="화자를 분리합니다.",
         )
+        import torch
+
+        device = select_torch_device(mps_available=torch.backends.mps.is_available())
         turns = diarize(working_audio, speaker_hint, device, events)
         assigned = assign_speakers_to_segments(segments, turns)
         events.emit(
@@ -386,9 +378,43 @@ def offset_entries(
     ]
 
 
-def release_mps_cache() -> None:
-    """Return MPS memory to the system before diarization loads."""
+def mlx_asr_model_dir() -> Path:
+    """Resolve the converted 8-bit MLX ASR weights inside the app cache."""
 
+    hf_home = os.environ.get("HF_HOME")
+    cache_root = Path(hf_home).parent if hf_home else Path.home() / ".cache"
+    return cache_root / "mlx" / QWEN3_MLX_MODEL_DIR_NAME
+
+
+def word_entries(raw_words: object) -> list[TimestampEntry]:
+    """Normalize MLX aligner word dicts into timestamp entries.
+
+    The MLX aligner publishes plain dicts with text/start/end keys; None
+    means the chunk produced no timestamps at all.
+    """
+
+    if not isinstance(raw_words, list):
+        return []
+    words = cast("list[MlxWord]", raw_words)
+    return [
+        TimestampEntry(
+            text=str(word["text"]),
+            start=float(word["start"]),
+            end=float(word["end"]),
+        )
+        for word in words
+    ]
+
+
+def release_mps_cache() -> None:
+    """Return accelerator memory to the system before diarization loads."""
+
+    try:
+        import mlx.core as mx
+
+        mx.metal.clear_cache()
+    except (AttributeError, ImportError, RuntimeError):
+        pass
     try:
         import torch
 
@@ -414,20 +440,6 @@ def build_bias_context(asr_context_path: Path | None) -> str:
     if aliases:
         parts.append("별칭: " + ", ".join(aliases))
     return "\n".join(parts)
-
-
-def entry_to_timestamp(entry: object) -> TimestampEntry:
-    """Normalize one aligner chunk from its documented attribute shape."""
-
-    for attribute in ("text", "start_time", "end_time"):
-        if not hasattr(entry, attribute):
-            raise TypeError(f"unexpected aligner entry shape: {type(entry)!r}")
-    typed = cast(AlignerEntry, entry)
-    return TimestampEntry(
-        text=typed.text,
-        start=typed.start_time,
-        end=typed.end_time,
-    )
 
 
 def build_segments(
@@ -569,25 +581,36 @@ def diarize(
 def load_waveform(audio_path: Path) -> tuple[object, int]:
     """Read mono 16 kHz samples for pyannote's waveform-dict input.
 
-    The qwen3 venv has no torchcodec, so pyannote cannot decode file paths
-    there; handing it the decoded tensor sidesteps the backend entirely.
+    The decoded working audio is always 16 kHz mono PCM produced by the
+    bundled ffmpeg, so the stdlib ``wave`` module reads it without the
+    torchaudio backend roulette (torchcodec builds break across torch
+    versions and libsndfile rejects compressed containers anyway).
     """
 
-    import torchaudio
+    import wave as wave_module
 
-    waveform, sample_rate = torchaudio.load(str(audio_path))
-    if waveform.shape[0] > 1:
-        waveform = waveform.mean(dim=0, keepdim=True)
-    if sample_rate != 16000:
-        waveform = torchaudio.functional.resample(waveform, sample_rate, 16000)
-        sample_rate = 16000
-    return waveform, sample_rate
+    import numpy as np
+    import torch
+
+    with wave_module.open(str(audio_path), "rb") as handle:
+        sample_rate = handle.getframerate()
+        channels = handle.getnchannels()
+        width = handle.getsampwidth()
+        raw = handle.readframes(handle.getnframes())
+    if width != 2:
+        raise RuntimeError(f"expected 16-bit PCM wav, got {width * 8}-bit")
+    samples = np.frombuffer(raw, dtype="<i2").astype(np.float32) / 32768.0
+    if channels > 1:
+        samples = samples.reshape(-1, channels).mean(axis=1)
+    # torch.from_numpy is annotated with a bare ndarray upstream.
+    from_numpy = cast("Callable[[object], torch.Tensor]", torch.from_numpy)
+    return from_numpy(cast("object", samples)).unsqueeze(0), sample_rate
 
 
 def audio_duration(audio_path: Path) -> float:
     """Read the audio length in seconds without loading samples."""
 
-    import torchaudio
+    import wave as wave_module
 
-    info = torchaudio.info(str(audio_path))
-    return float(info.num_frames) / float(info.sample_rate)
+    with wave_module.open(str(audio_path), "rb") as handle:
+        return handle.getnframes() / float(handle.getframerate())
