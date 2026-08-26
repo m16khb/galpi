@@ -1,3 +1,5 @@
+import { emptyToNull } from "./text"
+
 export interface Participant {
   readonly id: string
   readonly name: string
@@ -49,9 +51,4 @@ export function retainSelection(
   return participants
     .filter((participant) => selected.has(participant.id))
     .map((participant) => participant.id)
-}
-
-function emptyToNull(value: string | null): string | null {
-  const trimmed = value?.trim() ?? ""
-  return trimmed.length > 0 ? trimmed : null
 }

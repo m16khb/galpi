@@ -1,0 +1,111 @@
+/* Phosphor icons, subset by hand.
+ *
+ * The upstream stylesheet declares more than 1,500 glyph classes and pulls in
+ * four font formats. Only WOFF2 is needed for the WebView this app ships in,
+ * and only the 27 icons below are actually used, so the rest is weight the
+ * bundle would carry to no purpose. Adding an icon means adding its class here
+ * with the codepoint from `@phosphor-icons/web/src/regular/style.css`.
+ */
+@font-face {
+  font-family: "Phosphor";
+  src: url("../node_modules/@phosphor-icons/web/src/regular/Phosphor.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+.ph {
+  /* The trailing generic never renders glyphs; it is there so the stack has a
+     defined fallback if the icon font fails to load. */
+  font-family: "Phosphor", monospace;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  line-height: 1;
+  text-transform: none;
+  speak: never;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ph-arrow-up-right::before {
+  content: "\e092";
+}
+.ph-brain::before {
+  content: "\e74e";
+}
+.ph-caret-right::before {
+  content: "\e13a";
+}
+.ph-check::before {
+  content: "\e182";
+}
+.ph-cpu::before {
+  content: "\e610";
+}
+.ph-database::before {
+  content: "\e1de";
+}
+.ph-download-simple::before {
+  content: "\e20c";
+}
+.ph-eye::before {
+  content: "\e220";
+}
+.ph-eye-slash::before {
+  content: "\e224";
+}
+.ph-file-text::before {
+  content: "\e23a";
+}
+.ph-folder-open::before {
+  content: "\e256";
+}
+.ph-gear::before {
+  content: "\e270";
+}
+.ph-hourglass::before {
+  content: "\e2b2";
+}
+.ph-info::before {
+  content: "\e2ce";
+}
+.ph-key::before {
+  content: "\e2d6";
+}
+.ph-microphone::before {
+  content: "\e326";
+}
+.ph-music-notes::before {
+  content: "\e340";
+}
+.ph-note-pencil::before {
+  content: "\e34c";
+}
+.ph-play::before {
+  content: "\e3d0";
+}
+.ph-plus::before {
+  content: "\e3d4";
+}
+.ph-shield-check::before {
+  content: "\e40c";
+}
+.ph-sparkle::before {
+  content: "\e6a2";
+}
+.ph-stop::before {
+  content: "\e46c";
+}
+.ph-subtitles::before {
+  content: "\e1a8";
+}
+.ph-users-three::before {
+  content: "\e68e";
+}
+.ph-waveform::before {
+  content: "\e802";
+}
+.ph-x::before {
+  content: "\e4f6";
+}

@@ -15,13 +15,17 @@ import type { SpeakerHint } from "./speaker"
  */
 export interface BackendPort {
   diagnose(): Promise<EnvironmentStatus>
-  prepare(): Promise<SetupResult>
+  prepare(jobId: string): Promise<SetupResult>
   loadHuggingFaceToken(): Promise<string | null>
   saveHuggingFaceToken(token: string): Promise<void>
   loadAssistantSettings(): Promise<AssistantSettings>
   saveAssistantSettings(settings: AssistantSettings): Promise<void>
   saveEnginePreset(preset: EnginePreset): Promise<void>
-  refineTranscript(jobId: string, attendees: readonly string[]): Promise<RefinementResult>
+  refineTranscript(
+    jobId: string,
+    target: string,
+    attendees: readonly string[],
+  ): Promise<RefinementResult>
   transcribe(request: TranscriptionRequest): Promise<TranscriptionResult>
   importTranscript(request: TranscriptImportRequest): Promise<ImportedTranscript>
   cancel(jobId: string): Promise<void>

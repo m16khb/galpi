@@ -1,3 +1,4 @@
+import { required } from "./dom"
 export function bindTokenGuide(root: HTMLElement): void {
   const trigger = required<HTMLButtonElement>(root, "#token-guide-trigger")
   const popover = required<HTMLElement>(root, "#token-guide-popover")
@@ -44,10 +45,4 @@ export function bindTokenGuide(root: HTMLElement): void {
     if (event.key === "Escape") close()
   })
   required(root, ".workspace-body").addEventListener("scroll", close)
-}
-
-function required<T extends Element>(root: HTMLElement, selector: string): T {
-  const element = root.querySelector<T>(selector)
-  if (element === null) throw new Error(`필수 토큰 안내 요소를 찾지 못했습니다: ${selector}`)
-  return element
 }

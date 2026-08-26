@@ -1,3 +1,4 @@
+import { version } from "../../package.json"
 import appIconUrl from "../../assets/app-icon.svg"
 
 export const appTemplate = `
@@ -19,8 +20,8 @@ export const appTemplate = `
       <header class="topbar">
         <div><span class="eyebrow">LOCAL AUDIO WORKSPACE</span><h1>회의에서 중요한 갈피를 찾으세요.</h1></div>
         <div class="topbar-actions">
-          <div class="engine-chip"><span id="setup-state" data-state="pending">확인 중</span><small id="engine-version">WhisperX</small></div>
-          <button class="settings-button" type="button" data-action="open-settings" aria-label="설정 열기"><i class="ph ph-gear"></i></button>
+          <div class="engine-chip"><span id="setup-state" data-state="pending">확인 중</span><small id="engine-version">확인 중</small></div>
+          <button class="settings-button" type="button" data-action="open-settings" aria-label="설정 열기"><i class="ph ph-gear" aria-hidden="true"></i></button>
         </div>
       </header>
 
@@ -34,14 +35,14 @@ export const appTemplate = `
           </div>
           <div class="setup-grid">
             <div class="status-list" aria-label="설치 상태">
-              <div id="engine-check" class="status-row" data-state="pending"><i class="ph ph-cpu"></i><span data-status-label>엔진</span><strong data-status-value>확인 중</strong></div>
-              <div id="model-check" class="status-row" data-state="pending"><i class="ph ph-brain"></i><span data-status-label>전사 모델</span><strong data-status-value>확인 중</strong></div>
-              <div id="ffmpeg-check" class="status-row" data-state="pending"><i class="ph ph-waveform"></i><span data-status-label>내장 ffmpeg</span><strong data-status-value>확인 중</strong></div>
+              <div id="engine-check" class="status-row" data-state="pending"><i class="ph ph-cpu" aria-hidden="true"></i><span data-status-label>엔진</span><strong data-status-value>확인 중</strong></div>
+              <div id="model-check" class="status-row" data-state="pending"><i class="ph ph-brain" aria-hidden="true"></i><span data-status-label>전사 모델</span><strong data-status-value>확인 중</strong></div>
+              <div id="ffmpeg-check" class="status-row" data-state="pending"><i class="ph ph-waveform" aria-hidden="true"></i><span data-status-label>내장 ffmpeg</span><strong data-status-value>확인 중</strong></div>
             </div>
             <div class="token-field token-summary">
               <div class="token-summary-header"><strong>Hugging Face 토큰</strong><span id="token-configured-state">확인 중</span></div>
               <p>화자분리 모델 접근 토큰은 우측 상단 설정에서 저장하고 다시 확인할 수 있습니다.</p>
-              <button class="text-button" type="button" data-action="open-settings">토큰 설정 열기 <i class="ph ph-gear"></i></button>
+              <button class="text-button" type="button" data-action="open-settings">토큰 설정 열기 <i class="ph ph-gear" aria-hidden="true"></i></button>
             </div>
           </div>
           <div id="setup-progress-panel" class="setup-progress-card" hidden>
@@ -59,7 +60,7 @@ export const appTemplate = `
             </div>
           </div>
           <div class="panel-actions">
-            <button id="prepare-button" class="primary-button" type="button" data-action="prepare"><i class="ph ph-download-simple"></i><span>로컬 엔진 준비</span></button>
+            <button id="prepare-button" class="primary-button" type="button" data-action="prepare"><i class="ph ph-download-simple" aria-hidden="true"></i><span>로컬 엔진 준비</span></button>
             <span class="action-note">첫 실행은 약 3GB의 모델을 내려받을 수 있습니다.</span>
           </div>
         </section>
@@ -73,23 +74,23 @@ export const appTemplate = `
             <div class="primary-task">
               <div id="recorder" class="recorder" data-state="idle">
                 <button id="record-button" class="record-button" type="button" data-action="record">
-                  <span><i class="ph ph-microphone"></i></span>
+                  <span><i class="ph ph-microphone" aria-hidden="true"></i></span>
                   <div><strong>마이크로 바로 녹음</strong><small>CoreAudio · 16-bit PCM WAV</small></div>
                 </button>
                 <div id="recording-active" class="recording-active" hidden>
                   <span class="recording-dot" aria-hidden="true"></span>
                   <div><strong id="recording-label">녹음 중</strong><small id="recording-path">마이크 입력을 저장하고 있습니다.</small></div>
-                  <time id="recording-time">00:00</time>
-                  <button id="stop-recording-button" class="record-stop" type="button" data-action="stop-recording"><i class="ph ph-stop"></i> 정지</button>
+                  <time id="recording-time" datetime="PT0S">00:00</time>
+                  <button id="stop-recording-button" class="record-stop" type="button" data-action="stop-recording"><i class="ph ph-stop" aria-hidden="true"></i> 정지</button>
                   <button id="cancel-recording-button" class="record-discard" type="button" data-action="cancel-recording">버리기</button>
                 </div>
-                <p id="recording-status" class="recording-status" aria-live="polite">마이크로 바로 녹음하거나 기존 파일을 선택하세요.</p>
+                <p id="recording-status" class="recording-status" aria-live="polite">마이크로 바로 녹음할 수 있습니다.</p>
               </div>
               <div class="choice-divider"><span>또는 기존 파일</span></div>
               <button id="audio-selection" class="file-picker" type="button" data-action="choose-audio" data-selected="false">
-                <span class="file-icon"><i class="ph ph-music-notes"></i></span>
+                <span class="file-icon"><i class="ph ph-music-notes" aria-hidden="true"></i></span>
                 <span><strong>오디오 파일 선택</strong><small id="audio-path">m4a, mp3, wav, mp4, mov, flac</small></span>
-                <i class="ph ph-caret-right"></i>
+                <i class="ph ph-caret-right" aria-hidden="true"></i>
               </button>
               <div class="field-block">
                 <div class="field-label"><span>출력 폴더</span><button id="output-button" type="button" data-action="choose-output">변경</button></div>
@@ -134,7 +135,7 @@ export const appTemplate = `
             </div>
           </div>
           <div class="panel-actions">
-            <button id="start-button" class="primary-button" type="button" data-action="transcribe" disabled><i class="ph ph-play"></i><span>전사 시작</span></button>
+            <button id="start-button" class="primary-button" type="button" data-action="transcribe" disabled><i class="ph ph-play" aria-hidden="true"></i><span>전사 시작</span></button>
             <span class="action-note">체크포인트가 있으면 전사·정렬을 재사용합니다.</span>
           </div>
         </section>
@@ -142,12 +143,12 @@ export const appTemplate = `
         <section id="results-panel" class="panel results-panel" hidden aria-labelledby="results-title">
           <div class="section-heading"><div><span id="results-index" class="section-index">02 / 전사 결과</span><h2 id="results-title">전사 결과</h2></div><p id="result-summary"></p></div>
           <div class="artifact-list">
-            <div id="result-srt-row" class="artifact-row"><i class="ph ph-subtitles"></i><div><strong>자막 파일</strong><code id="result-srt"></code></div><button type="button" data-action="open-srt">열기</button></div>
-            <div class="artifact-row"><i class="ph ph-users-three"></i><div><strong>화자별 텍스트</strong><code id="result-txt"></code></div><button type="button" data-action="open-txt">열기</button></div>
-            <div id="result-checkpoint-row" class="artifact-row"><i class="ph ph-database"></i><div><strong>정렬 체크포인트</strong><code id="result-checkpoint"></code></div><button type="button" data-action="open-checkpoint">열기</button></div>
+            <div id="result-srt-row" class="artifact-row"><i class="ph ph-subtitles" aria-hidden="true"></i><div><strong>자막 파일</strong><code id="result-srt"></code></div><button type="button" data-action="open-srt" aria-label="자막 파일 열기">열기</button></div>
+            <div class="artifact-row"><i class="ph ph-users-three" aria-hidden="true"></i><div><strong>화자별 텍스트</strong><code id="result-txt"></code></div><button type="button" data-action="open-txt" aria-label="화자별 텍스트 열기">열기</button></div>
+            <div id="result-checkpoint-row" class="artifact-row"><i class="ph ph-database" aria-hidden="true"></i><div><strong>정렬 체크포인트</strong><code id="result-checkpoint"></code></div><button type="button" data-action="open-checkpoint" aria-label="정렬 체크포인트 열기">열기</button></div>
           </div>
           <div class="panel-actions">
-            <button class="secondary-button" type="button" data-action="reveal-output"><i class="ph ph-folder-open"></i>Finder에서 보기</button>
+            <button class="secondary-button" type="button" data-action="reveal-output"><i class="ph ph-folder-open" aria-hidden="true"></i>Finder에서 보기</button>
           </div>
         </section>
 
@@ -163,9 +164,9 @@ export const appTemplate = `
           <p id="augment-waiting" class="augment-hint"><i class="ph ph-hourglass" aria-hidden="true"></i>전사를 마치거나 전사문을 가져오면 이 단계에서 바로 회의록을 증강할 수 있습니다.</p>
           <div class="choice-divider"><span>또는 이미 완성된 전사문</span></div>
           <button id="transcript-selection" class="file-picker" type="button" data-action="import-transcript" data-selected="false">
-            <span class="file-icon"><i class="ph ph-file-text"></i></span>
+            <span class="file-icon"><i class="ph ph-file-text" aria-hidden="true"></i></span>
             <span><strong>전사문 파일 가져오기</strong><small id="transcript-path">txt, md</small></span>
-            <i class="ph ph-caret-right"></i>
+            <i class="ph ph-caret-right" aria-hidden="true"></i>
           </button>
           <div id="augment-progress" class="setup-progress-card" hidden>
             <div class="job-header"><div><span class="section-index">AI 증강 진행 중</span><h3>회의록을 작성하고 있습니다</h3></div><strong id="augment-job-percent">0%</strong></div>
@@ -177,22 +178,22 @@ export const appTemplate = `
             </div>
           </div>
           <div class="artifact-list">
-            <div id="result-minutes-row" class="artifact-row" hidden><i class="ph ph-note-pencil"></i><div><strong>증강 회의록</strong><code id="result-minutes"></code></div><button type="button" data-action="open-minutes">열기</button></div>
+            <div id="result-minutes-row" class="artifact-row" hidden><i class="ph ph-note-pencil" aria-hidden="true"></i><div><strong>증강 회의록</strong><code id="result-minutes"></code></div><button type="button" data-action="open-minutes" aria-label="증강 회의록 열기">열기</button></div>
           </div>
           <div class="panel-actions">
-            <button id="refine-button" class="primary-button" type="button" data-action="refine" disabled><i class="ph ph-sparkle"></i><span>AI 증강 실행</span></button>
+            <button id="refine-button" class="primary-button" type="button" data-action="refine" disabled><i class="ph ph-sparkle" aria-hidden="true"></i><span>AI 증강 실행</span></button>
             <span class="action-note">사전 정보 · 참석자 명부 · 단어집이 함께 적용됩니다.</span>
           </div>
         </section>
       </div>
-      <footer class="app-footer"><span>Galpi 0.1</span><span>전사는 로컬에서, AI 증강은 선택한 API 제공자에서 실행됩니다.</span></footer>
+      <footer class="app-footer"><span>Galpi ${version}</span><span>전사는 로컬에서, AI 증강은 선택한 API 제공자에서 실행됩니다.</span></footer>
     </main>
 
     <div id="settings-dialog" class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
       <div class="settings-sheet">
         <header class="settings-header">
           <div><span class="eyebrow">APP SETTINGS</span><h2 id="settings-title">설정</h2><p id="settings-message" class="settings-message" role="status" aria-live="polite" data-state="ready">변경사항은 자동으로 저장됩니다.</p></div>
-          <button class="settings-close-button" type="button" data-action="close-settings" aria-label="설정 닫기"><i class="ph ph-x"></i></button>
+          <button class="settings-close-button" type="button" data-action="close-settings" aria-label="설정 닫기"><i class="ph ph-x" aria-hidden="true"></i></button>
         </header>
         <div class="settings-body">
         <section class="settings-section" aria-labelledby="engine-settings-title">
@@ -213,13 +214,13 @@ export const appTemplate = `
           <label class="sr-only" for="settings-hf-token">Hugging Face 토큰</label>
           <div class="secret-field">
             <input id="settings-hf-token" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="hf_..." aria-describedby="settings-token-help" data-visible="false" readonly />
-            <button id="toggle-token-visibility" class="secret-visibility-button" type="button" data-action="toggle-token-visibility" aria-label="토큰 표시"><i class="ph ph-eye"></i></button>
+            <button id="toggle-token-visibility" class="secret-visibility-button" type="button" data-action="toggle-token-visibility" aria-label="Hugging Face 토큰 표시"><i class="ph ph-eye" aria-hidden="true"></i></button>
           </div>
           <p id="settings-token-help">저장한 값은 이 Mac의 Galpi 앱 설정에 유지되며 모델 준비 때 자동으로 사용됩니다.</p>
           <div class="token-guide-anchor">
-            <button id="token-guide-trigger" class="token-guide-trigger" type="button" aria-expanded="false" aria-controls="token-guide-popover">필요 권한과 발급 방법 <i class="ph ph-info"></i></button>
+            <button id="token-guide-trigger" class="token-guide-trigger" type="button" aria-expanded="false" aria-controls="token-guide-popover">필요 권한과 발급 방법 <i class="ph ph-info" aria-hidden="true"></i></button>
             <div id="token-guide-popover" class="token-guide-popover" role="dialog" aria-label="Hugging Face 토큰 발급 안내" hidden>
-              <div class="token-guide-header"><strong>토큰 발급 안내</strong><button id="token-guide-close" type="button" aria-label="닫기"><i class="ph ph-x"></i></button></div>
+              <div class="token-guide-header"><strong>토큰 발급 안내</strong><button id="token-guide-close" type="button" aria-label="닫기"><i class="ph ph-x" aria-hidden="true"></i></button></div>
               <p><strong>권장 권한:</strong> Fine-grained 토큰의 읽기(Read) 전용 권한만 사용하세요. 쓰기·추론 API 권한은 필요하지 않습니다.</p>
               <ol>
                 <li>Hugging Face 계정에 로그인합니다.</li>
@@ -231,7 +232,7 @@ export const appTemplate = `
               <p>접근 승인이 끝났거나 모델이 이미 이 Mac에 준비되어 있으면 토큰을 비워 두어도 됩니다.</p>
             </div>
           </div>
-          <button class="text-button" type="button" data-action="model-access">모델 이용 조건 페이지 열기 <i class="ph ph-arrow-up-right"></i></button>
+          <button class="text-button" type="button" data-action="model-access">모델 이용 조건 페이지 열기 <i class="ph ph-arrow-up-right" aria-hidden="true"></i></button>
         </section>
         <section class="settings-section" aria-labelledby="participants-settings-title">
           <div class="settings-section-heading">
@@ -240,7 +241,7 @@ export const appTemplate = `
           </div>
           <div id="participant-rows" class="participant-rows"></div>
           <p id="participant-rows-empty" class="participant-empty">아직 등록한 참석자가 없습니다.</p>
-          <button class="text-button" type="button" data-action="add-participant"><i class="ph ph-plus"></i> 참석자 추가</button>
+          <button class="text-button" type="button" data-action="add-participant"><i class="ph ph-plus" aria-hidden="true"></i> 참석자 추가</button>
         </section>
         <section class="settings-section" aria-labelledby="glossary-settings-title">
           <div class="settings-section-heading">
@@ -249,19 +250,19 @@ export const appTemplate = `
           </div>
           <div id="glossary-rows" class="glossary-rows"></div>
           <p id="glossary-rows-empty" class="participant-empty">아직 등록한 용어가 없습니다.</p>
-          <button class="text-button" type="button" data-action="add-glossary-entry"><i class="ph ph-plus"></i> 용어 추가</button>
+          <button class="text-button" type="button" data-action="add-glossary-entry"><i class="ph ph-plus" aria-hidden="true"></i> 용어 추가</button>
         </section>
         <section class="settings-section" aria-labelledby="assistant-settings-title">
           <div class="settings-section-heading">
-            <div><strong id="assistant-settings-title">회의록 가공</strong><span id="assistant-configured-state">토큰 없음</span></div>
+            <div><strong id="assistant-settings-title">AI 증강</strong><span id="assistant-configured-state">API 키 없음</span></div>
             <p>OpenAI 호환 API 토큰으로 전사본을 회의록으로 가공합니다. 이 단계에서만 전사본이 증강 제공자로 전송됩니다.</p>
           </div>
-          <label class="sr-only" for="settings-assistant-key">증강 API 토큰</label>
+          <label class="sr-only" for="settings-assistant-key">AI 증강 API 키</label>
           <div class="secret-field">
-            <input id="settings-assistant-key" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="API Key" aria-describedby="settings-assistant-help" data-visible="false" readonly />
-            <button id="toggle-assistant-visibility" class="secret-visibility-button" type="button" data-action="toggle-assistant-visibility" aria-label="토큰 표시"><i class="ph ph-eye"></i></button>
+            <input id="settings-assistant-key" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="API 키" aria-describedby="settings-assistant-help" data-visible="false" readonly />
+            <button id="toggle-assistant-visibility" class="secret-visibility-button" type="button" data-action="toggle-assistant-visibility" aria-label="API 키 표시"><i class="ph ph-eye" aria-hidden="true"></i></button>
           </div>
-          <p id="settings-assistant-help">사용 중인 OpenAI 호환 서비스(z.ai 코딩 플랜, OpenRouter 등)에서 발급한 API Key를 사용합니다.</p>
+          <p id="settings-assistant-help">사용 중인 OpenAI 호환 서비스(z.ai 코딩 플랜, OpenRouter 등)에서 발급한 API 키를 사용합니다.</p>
           <label class="settings-field-label" for="settings-assistant-model">가공 모델</label>
           <input id="settings-assistant-model" class="settings-input" type="text" list="assistant-model-suggestions" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="glm-5.3" aria-describedby="settings-model-help" />
           <datalist id="assistant-model-suggestions">

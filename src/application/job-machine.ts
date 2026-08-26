@@ -9,7 +9,6 @@ export interface JobViewState {
   readonly percent: number
   readonly message: string
   readonly logs: readonly string[]
-  readonly result: TranscriptionResult | null
   readonly error: string | null
 }
 
@@ -20,12 +19,12 @@ export const initialJobState: JobViewState = {
   percent: 0,
   message: "",
   logs: [],
-  result: null,
   error: null,
 }
 
 export function reduceJobEvent(state: JobViewState, event: JobEvent): JobViewState {
   if (state.jobId !== null && event.jobId !== state.jobId) return state
+  if (event.type === "phase" && isSettled(state.status)) return state
   switch (event.type) {
     case "phase":
       return {
@@ -38,12 +37,10 @@ export function reduceJobEvent(state: JobViewState, event: JobEvent): JobViewSta
         message: event.message,
         error: null,
       }
-    case "log":
-      return {
-        ...state,
-        jobId: event.jobId,
-        logs: [...state.logs, `[${event.stream}] ${event.message}`].slice(-200),
-      }
+    case "log": {
+      const lines = event.message.split("\n").map((line) => `[${event.stream}] ${line}`)
+      return { ...state, jobId: event.jobId, logs: [...state.logs, ...lines].slice(-200) }
+    }
     case "completed":
       return {
         ...state,
@@ -82,6 +79,10 @@ export function reduceJobEvent(state: JobViewState, event: JobEvent): JobViewSta
   }
 }
 
+function isSettled(status: JobStatus): boolean {
+  return status === "completed" || status === "failed" || status === "cancelled"
+}
+
 export function beginJob(message: string, jobId: string | null = null): JobViewState {
   return {
     ...initialJobState,
@@ -99,15 +100,20 @@ export function completeJob(state: JobViewState, result: TranscriptionResult): J
     phase: "writing",
     percent: 100,
     message: "전사가 완료되었습니다.",
-    result,
     error: null,
   }
 }
 
-export function failJob(state: JobViewState, message: string): JobViewState {
+export function cancelJob(state: JobViewState, message: string): JobViewState {
   // Cancellation is a user decision, not a failure: announce it once, politely.
-  if (message.includes("취소")) {
-    return { ...state, status: "cancelled", message, error: null }
+  return { ...state, status: "cancelled", message, error: null }
+}
+
+export function failJob(state: JobViewState, message: string): JobViewState {
+  if (state.status === "cancelled") {
+    // The job was already cancelled here; whatever the backend raised as the
+    // process died is the consequence, not a new failure to report.
+    return state
   }
   // The polite slot stays on a stable status line; the specific cause is
   // announced exactly once through the alert slot (no duplicate readings).

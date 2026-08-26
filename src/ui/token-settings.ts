@@ -1,3 +1,4 @@
+import { required } from "./dom"
 const MASKED_TOKEN = "••••••••••••"
 
 export function nextTokenVisibility(visible: boolean): boolean {
@@ -25,7 +26,9 @@ export class TokenSettingsView {
     // APG dialog pattern: remember the invoker so close() can return the
     // keyboard user to where they were instead of dropping to <body>.
     this.previouslyFocused = this.root.ownerDocument.activeElement as HTMLElement | null
-    this.element("#settings-dialog").hidden = false
+    const dialog = this.element("#settings-dialog")
+    dialog.hidden = false
+    this.setBackgroundInert(true)
     this.showMessage("")
     // APG dialog pattern: move focus into the dialog on open so keyboard and
     // screen-reader users land inside the modal, not on the invoker behind it.
@@ -36,9 +39,23 @@ export class TokenSettingsView {
 
   close(): void {
     this.element("#settings-dialog").hidden = true
+    this.setBackgroundInert(false)
     const restore = this.previouslyFocused
     this.previouslyFocused = null
     if (restore?.isConnected) restore.focus()
+  }
+
+  /// Take the page behind the modal out of the tab order while it is open.
+  ///
+  /// `aria-modal` tells a screen reader the rest of the page is unavailable but
+  /// does nothing for Tab, so without this a keyboard user walks straight out
+  /// of the dialog and into the controls behind it.
+  private setBackgroundInert(inert: boolean): void {
+    const dialog = this.element("#settings-dialog")
+    const siblings = dialog.parentElement?.querySelectorAll<HTMLElement>(":scope > *") ?? []
+    for (const sibling of siblings) {
+      if (sibling !== dialog) sibling.inert = inert
+    }
   }
 
   token(): string {
@@ -54,6 +71,11 @@ export class TokenSettingsView {
     input.dataset["visible"] = "false"
     this.renderVisibility(false)
     this.setConfigured(token !== null)
+  }
+
+  /// The token the backend last confirmed, or null when none is stored.
+  persisted(): string | null {
+    return this.persistedToken
   }
 
   clearToken(): void {
@@ -91,7 +113,10 @@ export class TokenSettingsView {
 
   private renderVisibility(visible: boolean): void {
     const button = this.element<HTMLButtonElement>("#toggle-token-visibility")
-    button.setAttribute("aria-label", visible ? "토큰 숨기기" : "토큰 표시")
+    button.setAttribute(
+      "aria-label",
+      visible ? "Hugging Face 토큰 숨기기" : "Hugging Face 토큰 표시",
+    )
     button.querySelector<HTMLElement>("i")?.setAttribute(
       "class",
       visible ? "ph ph-eye-slash" : "ph ph-eye",
@@ -99,8 +124,6 @@ export class TokenSettingsView {
   }
 
   private element<T extends HTMLElement = HTMLElement>(selector: string): T {
-    const element = this.root.querySelector<T>(selector)
-    if (element === null) throw new Error(`필수 화면 요소가 없습니다: ${selector}`)
-    return element
+    return required<T>(this.root, selector)
   }
 }

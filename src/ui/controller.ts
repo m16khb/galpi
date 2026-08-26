@@ -1,6 +1,7 @@
 import {
   beginJob,
   completeJob,
+  cancelJob,
   failJob,
   initialJobState,
   type JobViewState,
@@ -122,9 +123,13 @@ export class AppController {
   }
 
   private async prepare(): Promise<void> {
-    this.begin("setup", "로컬 엔진과 모델을 준비합니다.")
+    // The window mints the id so the very first worker event already belongs to
+    // this job; a job that adopts the id of whatever arrives first can inherit
+    // the trailing events of a job the user just cancelled.
+    const jobId = crypto.randomUUID()
+    this.begin("setup", "로컬 엔진과 모델을 준비합니다.", jobId)
     try {
-      const result = await this.backend.prepare()
+      const result = await this.backend.prepare(jobId)
       this.view.setEnvironment(result.status)
       this.job = {
         ...this.job,
@@ -172,7 +177,9 @@ export class AppController {
     settings.showMessage("변경사항을 자동 저장하는 중입니다.", "saving")
     try {
       await this.backend.saveHuggingFaceToken(token)
-      settings.setToken(token.length > 0 ? token : null)
+      if (settings.persisted() !== (token.length > 0 ? token : null)) {
+        settings.setToken(token.length > 0 ? token : null)
+      }
       const saved = {
         ...assistant.settings(),
         participants: this.view.participantSettings.roster(),
@@ -236,6 +243,7 @@ export class AppController {
       if (selected !== null) {
         this.audioPath = selected
         this.view.setAudio(selected)
+        this.view.clearError()
       }
     } catch (error) {
       this.view.showError(errorMessage(error))
@@ -326,7 +334,7 @@ export class AppController {
     }
     try {
       await this.backend.cancel(this.job.jobId)
-      this.job = failJob(this.job, "작업 취소를 요청했습니다.")
+      this.job = cancelJob(this.job, "작업 취소를 요청했습니다.")
       this.view.renderJob(this.job)
     } catch (error) {
       this.view.showError(errorMessage(error))
@@ -339,9 +347,11 @@ export class AppController {
       this.view.showError("먼저 전사를 완료해 주세요.")
       return
     }
-    this.begin("refinement", "저장한 사전 정보로 회의록을 만듭니다.")
+    const jobId = crypto.randomUUID()
+    this.begin("refinement", "저장한 사전 정보로 회의록을 만듭니다.", jobId)
     try {
       const refined = await this.backend.refineTranscript(
+        jobId,
         result.jobId,
         this.view.attendees.selectedIds(),
       )
@@ -387,6 +397,7 @@ export class AppController {
     message: string,
     jobId: string | null = null,
   ): void {
+    this.view.clearError()
     this.job = beginJob(message, jobId)
     this.view.renderJob(this.job)
     this.view.setBusy(kind)

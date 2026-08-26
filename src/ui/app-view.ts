@@ -27,6 +27,12 @@ export class AppView {
   private engineReady = false
   private jobBusy = false
   private jobKind: BusyKind = null
+  /// Selector lookups for the static template, resolved once each.
+  private readonly elements = new Map<string, HTMLElement>()
+  /// What the log and phase slots were last rendered from. A worker under load
+  /// emits progress far faster than either of them actually changes.
+  private renderedLogs: readonly string[] | null = null
+  private renderedPhase: string | null = null
   private recordingActive = false
   private hasResult = false
   private minutesReady = false
@@ -239,14 +245,21 @@ export class AppView {
     this.renderProgress("#job-progress", state.percent)
     this.renderProgress("#setup-job-progress", state.percent)
     this.renderProgress("#augment-job-progress", state.percent)
-    for (const item of this.root.querySelectorAll<HTMLElement>("[data-phase]")) {
-      item.dataset["state"] = phaseState(item.dataset["phase"] ?? "", state.phase)
+    if (this.renderedPhase !== state.phase) {
+      this.renderedPhase = state.phase
+      for (const item of this.root.querySelectorAll<HTMLElement>("[data-phase]")) {
+        item.dataset["state"] = phaseState(item.dataset["phase"] ?? "", state.phase)
+      }
+      for (const item of this.root.querySelectorAll<HTMLElement>("[data-setup-phase]")) {
+        item.dataset["state"] = phaseState(item.dataset["setupPhase"] ?? "", state.phase)
+      }
     }
-    for (const item of this.root.querySelectorAll<HTMLElement>("[data-setup-phase]")) {
-      item.dataset["state"] = phaseState(item.dataset["setupPhase"] ?? "", state.phase)
+    if (this.renderedLogs !== state.logs) {
+      this.renderedLogs = state.logs
+      const text = state.logs.join("\n")
+      this.element("#log-output").textContent = text
+      this.element("#setup-log-output").textContent = text
     }
-    this.element("#log-output").textContent = state.logs.join("\n")
-    this.element("#setup-log-output").textContent = state.logs.join("\n")
     this.element("#error-message").textContent = state.error ?? ""
     this.element("#error-message").hidden = state.error === null
     this.element("#setup-error-message").textContent = state.error ?? ""
@@ -260,8 +273,7 @@ export class AppView {
     this.element("#result-summary").textContent =
       `${result.segments}개 발화 보존 · ${result.filtered}개 환각 제거`
     this.element("#result-srt-row").hidden = false
-    // Qwen3 transcriptions publish srt/txt without an alignment checkpoint.
-    const hasCheckpoint = result.checkpoint !== ""
+    const hasCheckpoint = result.checkpoint !== null
     this.element("#result-checkpoint-row").hidden = !hasCheckpoint
     this.path("#result-srt", result.srt)
     this.path("#result-txt", result.txt)
@@ -305,6 +317,12 @@ export class AppView {
     this.refreshStages()
   }
 
+  clearError(): void {
+    const banner = this.element("#app-error")
+    banner.textContent = ""
+    banner.hidden = true
+  }
+
   showError(message: string): void {
     // Transient action errors land in the persistent app banner: the in-panel
     // error slots live inside progress cards that are hidden while idle.
@@ -314,10 +332,13 @@ export class AppView {
   }
 
   element<T extends HTMLElement = HTMLElement>(selector: string): T {
+    const cached = this.elements.get(selector)
+    if (cached !== undefined) return cached as T
     const element = this.root.querySelector<T>(selector)
     if (element === null) {
       throw new Error(`필수 UI 요소를 찾지 못했습니다: ${selector}`)
     }
+    this.elements.set(selector, element)
     return element
   }
 

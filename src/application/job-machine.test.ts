@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { beginJob, failJob, initialJobState, reduceJobEvent } from "./job-machine"
+import { beginJob, cancelJob, failJob, initialJobState, reduceJobEvent } from "./job-machine"
 
 describe("reduceJobEvent", () => {
   test("completes the job when refined meeting minutes are written", () => {
@@ -109,11 +109,26 @@ describe("failJob", () => {
   test("treats cancellation as a polite notice without an alert", () => {
     const running = beginJob("회의를 전사하고 있습니다.", "job-1")
 
-    const cancelled = failJob(running, "작업 취소를 요청했습니다.")
+    const cancelled = cancelJob(running, "작업 취소를 요청했습니다.")
 
     expect(cancelled.status).toBe("cancelled")
     expect(cancelled.message).toBe("작업 취소를 요청했습니다.")
     expect(cancelled.error).toBeNull()
+  })
+
+  test("keeps a cancelled job cancelled when the dying process reports an error", () => {
+    // Given: the user cancelled, and the worker then died as it was told to
+    const cancelled = cancelJob(
+      beginJob("회의를 전사하고 있습니다.", "job-1"),
+      "작업 취소를 요청했습니다.",
+    )
+
+    // When: the backend surfaces whatever error that termination produced
+    const state = failJob(cancelled, "프로세스가 예기치 않게 종료되었습니다.")
+
+    // Then: the outcome is still the user's decision, not a failure
+    expect(state.status).toBe("cancelled")
+    expect(state.error).toBeNull()
   })
 
   test("error events announce the cause once through the alert slot", () => {

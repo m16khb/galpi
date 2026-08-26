@@ -1,3 +1,5 @@
+import { emptyToNull } from "./text"
+
 export interface GlossaryEntry {
   readonly id: string
   readonly term: string
@@ -13,9 +15,4 @@ export function usableGlossary(entries: readonly GlossaryEntry[]): GlossaryEntry
       description: emptyToNull(entry.description),
     }))
     .filter((entry) => entry.term.length > 0)
-}
-
-function emptyToNull(value: string | null): string | null {
-  const trimmed = value?.trim() ?? ""
-  return trimmed.length > 0 ? trimmed : null
 }

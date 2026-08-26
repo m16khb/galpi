@@ -4,6 +4,7 @@ import {
   parseAliases,
   usableParticipants,
 } from "../domain/participant"
+import { required } from "./dom"
 
 const ROWS_SELECTOR = "#participant-rows"
 
@@ -134,8 +135,6 @@ export class ParticipantSettingsView {
   }
 
   private element<T extends HTMLElement = HTMLElement>(selector: string): T {
-    const element = this.root.querySelector<T>(selector)
-    if (element === null) throw new Error(`필수 화면 요소가 없습니다: ${selector}`)
-    return element
+    return required<T>(this.root, selector)
   }
 }

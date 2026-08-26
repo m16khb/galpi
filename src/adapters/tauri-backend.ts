@@ -42,7 +42,7 @@ const transcriptionResultSchema = z.object({
   jobId: z.string(),
   srt: z.string(),
   txt: z.string(),
-  checkpoint: z.string(),
+  checkpoint: z.string().nullable(),
   outputDirectory: z.string(),
   segments: z.number().int().nonnegative(),
   filtered: z.number().int().nonnegative(),
@@ -154,10 +154,10 @@ export class TauriBackend implements BackendPort {
     return environmentSchema.parse(await invoke<unknown>("diagnose_environment"))
   }
 
-  async prepare(): Promise<SetupResult> {
+  async prepare(jobId: string): Promise<SetupResult> {
     return setupResultSchema.parse(
       await invoke<unknown>("prepare_environment", {
-        request: { huggingFaceToken: null },
+        request: { jobId, huggingFaceToken: null },
       }),
     )
   }
@@ -182,9 +182,13 @@ export class TauriBackend implements BackendPort {
     await invoke("save_engine_preset", { preset })
   }
 
-  async refineTranscript(jobId: string, attendees: readonly string[]): Promise<RefinementResult> {
+  async refineTranscript(
+    jobId: string,
+    target: string,
+    attendees: readonly string[],
+  ): Promise<RefinementResult> {
     return refinementResultSchema.parse(
-      await invoke<unknown>("refine_transcript", { jobId, attendees }),
+      await invoke<unknown>("refine_transcript", { jobId, target, attendees }),
     )
   }
 
@@ -264,16 +268,37 @@ export class TauriBackend implements BackendPort {
 
   async listenToJobs(handler: (event: JobEvent) => void): Promise<() => void> {
     return listen<unknown>("job-event", ({ payload }) => {
-      const raw = rawJobEventSchema.parse(payload)
-      const event: JobEvent =
-        raw.type === "prepared"
-          ? {
-              jobId: raw.jobId,
-              type: raw.type,
-              engineVersion: raw.engine_version,
-            }
-          : raw
-      handler(event)
+      handler(toJobEvent(payload))
     })
   }
+}
+
+/**
+ * Translate one raw job payload from the host into a domain event.
+ *
+ * A payload this build does not recognize becomes a log line rather than a
+ * thrown error: the listener runs inside Tauri's own callback, where a throw
+ * is swallowed and the event simply disappears with nothing on screen to say
+ * so. Surfacing it in the job log keeps a host/window version mismatch visible.
+ */
+export function toJobEvent(payload: unknown): JobEvent {
+  const parsed = rawJobEventSchema.safeParse(payload)
+  if (!parsed.success) {
+    return {
+      jobId: payloadJobId(payload),
+      type: "log",
+      stream: "frontend",
+      message: `알 수 없는 작업 이벤트를 받았습니다: ${JSON.stringify(payload)}`,
+    }
+  }
+  const raw = parsed.data
+  return raw.type === "prepared"
+    ? { jobId: raw.jobId, type: raw.type, engineVersion: raw.engine_version }
+    : raw
+}
+
+function payloadJobId(payload: unknown): string {
+  if (typeof payload !== "object" || payload === null) return ""
+  const jobId = (payload as { jobId?: unknown }).jobId
+  return typeof jobId === "string" ? jobId : ""
 }

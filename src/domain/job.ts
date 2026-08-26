@@ -19,7 +19,7 @@ export interface TranscriptionResult {
   readonly jobId: string
   readonly srt: string
   readonly txt: string
-  readonly checkpoint: string
+  readonly checkpoint: string | null
   readonly outputDirectory: string
   readonly segments: number
   readonly filtered: number

@@ -1,5 +1,6 @@
 import type { AssistantSettings } from "../domain/job"
 import { nextTokenVisibility, tokenDisplayValue } from "./token-settings"
+import { required } from "./dom"
 
 const KEY_SELECTOR = "#settings-assistant-key"
 const MODEL_SELECTOR = "#settings-assistant-model"
@@ -68,7 +69,7 @@ export class AssistantSettingsView {
 
   setConfigured(configured: boolean): void {
     const state = this.element("#assistant-configured-state")
-    state.textContent = configured ? "토큰 저장됨" : "토큰 없음"
+    state.textContent = configured ? "API 키 저장됨" : "API 키 없음"
     state.dataset["state"] = configured ? "ready" : "pending"
   }
 
@@ -83,15 +84,13 @@ export class AssistantSettingsView {
 
   private renderVisibility(visible: boolean): void {
     const button = this.element<HTMLButtonElement>("#toggle-assistant-visibility")
-    button.setAttribute("aria-label", visible ? "토큰 숨기기" : "토큰 표시")
+    button.setAttribute("aria-label", visible ? "API 키 숨기기" : "API 키 표시")
     button
       .querySelector<HTMLElement>("i")
       ?.setAttribute("class", visible ? "ph ph-eye-slash" : "ph ph-eye")
   }
 
   private element<T extends HTMLElement = HTMLElement>(selector: string): T {
-    const element = this.root.querySelector<T>(selector)
-    if (element === null) throw new Error(`필수 화면 요소가 없습니다: ${selector}`)
-    return element
+    return required<T>(this.root, selector)
   }
 }
