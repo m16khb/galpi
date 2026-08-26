@@ -14,6 +14,7 @@ from .artifacts import (
     write_outputs_atomic,
 )
 from .core import (
+    InvalidInput,
     SpeakerHint,
     build_asr_hotwords,
     parse_asr_context,
@@ -24,6 +25,29 @@ from .runtime import configure_warnings, select_torch_device
 
 if TYPE_CHECKING:
     from whisperx.diarize import DiarizationPipeline, DiarizationSegments
+
+
+WHISPERX_ENGINE_TAG = "whisperx"
+
+
+def checkpoint_reusable(checkpoint_path: Path) -> bool:
+    """Accept only a checkpoint this engine could have written.
+
+    Both engines publish `<name>.aligned.v2.json`, so a run that switched
+    presets would otherwise read word timings produced by the other stack.
+    Files written before the tag existed carry no engine and stay readable.
+    """
+
+    if not checkpoint_path.is_file():
+        return False
+    try:
+        payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(payload, dict):
+        return False
+    engine = cast("dict[str, object]", payload).get("engine")
+    return engine in (None, WHISPERX_ENGINE_TAG)
 
 
 def transcribe(
@@ -55,7 +79,7 @@ def transcribe_whisperx(
 
     validate_speaker_hint(speaker_hint)
     if not audio_path.is_file():
-        raise ValueError(f"audio file not found: {audio_path}")
+        raise InvalidInput(f"audio file not found: {audio_path}")
     output_dir.mkdir(parents=True, exist_ok=True)
     configure_warnings()
 
@@ -68,7 +92,7 @@ def transcribe_whisperx(
     checkpoint_path = output_dir / f"{base_name}.aligned.v2.json"
     audio = whisperx.load_audio(str(audio_path))
 
-    if checkpoint_path.exists():
+    if checkpoint_reusable(checkpoint_path):
         events.emit(
             "phase",
             phase="transcribing",
@@ -149,6 +173,7 @@ def transcribe_whisperx(
             )
         del align_model
         gc.collect()
+        result["engine"] = WHISPERX_ENGINE_TAG
         write_json_atomic(checkpoint_path, result)
         events.emit(
             "phase",

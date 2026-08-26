@@ -2,16 +2,22 @@
 
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from .assistant_stream import (
     REFINE_STREAM_START_PERCENT,
     request_minutes,
 )
+from .core import InvalidInput
 from .minutes_pipeline import (
+    MAP_MAX_WORKERS,
+    MAP_PROGRESS_CEILING,
+    MAP_PROGRESS_START,
     REDUCE_PROGRESS_CEILING,
     REDUCE_PROGRESS_START,
     MinutesContext,
+    TranscriptChunk,
     build_map_messages,
     build_reduce_messages,
     map_progress_band,
@@ -39,6 +45,85 @@ def write_text_atomic(path: Path, document: str) -> None:
     temporary.replace(path)
 
 
+def extract_chunk_notes(
+    chunks: list[TranscriptChunk],
+    context: MinutesContext,
+    model: str,
+    api_key: str,
+    events: EventWriter,
+) -> list[str]:
+    """Extract facts from every chunk, several requests at a time.
+
+    The chunks are independent by construction, so they go out concurrently and
+    the notes come back in transcript order. Progress reports completed chunks
+    instead of streamed characters: with several requests in flight a character
+    count would jump backwards as one chunk's stream overtook another's.
+    """
+
+    if len(chunks) == 1:
+        chunk = chunks[0]
+        start, ceiling = map_progress_band(chunk)
+        activity = "긴 회의 핵심 사실 추출 (1/1)"
+        events.emit(
+            "phase",
+            phase="refining",
+            percent=round(start, 1),
+            message=f"{model} 모델로 {activity} 중입니다.",
+        )
+        return [
+            request_minutes(
+                build_map_messages(chunk, context),
+                model,
+                api_key,
+                events,
+                max(1000, int(len(chunk.text) * 0.25)),
+                progress_start=start,
+                progress_ceiling=ceiling,
+                activity=activity,
+            )
+        ]
+
+    span = MAP_PROGRESS_CEILING - MAP_PROGRESS_START
+    completed = 0
+    events.emit(
+        "phase",
+        phase="refining",
+        percent=MAP_PROGRESS_START,
+        message=f"{model} 모델로 긴 회의 핵심 사실 추출 중입니다. 0/{len(chunks)} 구간",
+    )
+
+    def extract(chunk: TranscriptChunk, quiet: EventWriter) -> str:
+        # Each worker streams into a quiet writer; the caller owns the reporting.
+        return request_minutes(
+            build_map_messages(chunk, context),
+            model,
+            api_key,
+            quiet,
+            max(1000, int(len(chunk.text) * 0.25)),
+        )
+
+    notes_by_number: dict[int, str] = {}
+    with (
+        open(os.devnull, "w", encoding="utf-8") as sink,
+        ThreadPoolExecutor(max_workers=MAP_MAX_WORKERS) as pool,
+    ):
+        quiet = EventWriter(stream=sink)
+        futures = {pool.submit(extract, chunk, quiet): chunk for chunk in chunks}
+        for future in as_completed(futures):
+            notes_by_number[futures[future].number] = future.result()
+            completed += 1
+            events.emit(
+                "phase",
+                phase="refining",
+                percent=round(MAP_PROGRESS_START + span * completed / len(chunks), 1),
+                message=(
+                    f"{model} 모델로 긴 회의 핵심 사실 추출 중입니다. "
+                    f"{completed}/{len(chunks)} 구간"
+                ),
+            )
+    return [notes_by_number[chunk.number] for chunk in chunks]
+
+
 def refine(
     transcript_path: Path,
     output_path: Path,
@@ -47,12 +132,18 @@ def refine(
     glossary_path: Path | None,
     model: str,
     events: EventWriter,
+    meeting_date: str | None = None,
 ) -> None:
-    """Refine a speaker-labeled transcript into Korean meeting minutes."""
+    """Refine a speaker-labeled transcript into Korean meeting minutes.
+
+    `meeting_date` is the day the meeting was recorded, which the host reads
+    from the audio file. Without it the transcript's own timestamp stands in,
+    and that is the day the transcript was written, not the day people met.
+    """
 
     api_key = os.environ.get(API_KEY_VARIABLE, "").strip()
     if not api_key:
-        raise ValueError("assistant API key is not configured")
+        raise InvalidInput("assistant API key is not configured")
     events.emit(
         "phase", phase="refining", percent=10.0, message="전사본을 읽는 중입니다."
     )
@@ -72,7 +163,7 @@ def refine(
         if glossary_path is not None and glossary_path.is_file()
         else []
     )
-    meeting_date = transcript_date(transcript_path)
+    meeting_date = meeting_date or transcript_date(transcript_path)
     context = MinutesContext(
         background=background.strip() or NO_BACKGROUND,
         participants=render_participants(participants),
@@ -102,28 +193,7 @@ def refine(
         )
     else:
         chunks = split_transcript(transcript)
-        notes: list[str] = []
-        for chunk in chunks:
-            progress_start, progress_ceiling = map_progress_band(chunk)
-            activity = f"긴 회의 핵심 사실 추출 ({chunk.number}/{chunk.total})"
-            events.emit(
-                "phase",
-                phase="refining",
-                percent=round(progress_start, 1),
-                message=f"{model} 모델로 {activity} 중입니다.",
-            )
-            notes.append(
-                request_minutes(
-                    build_map_messages(chunk, context),
-                    model,
-                    api_key,
-                    events,
-                    max(1000, int(len(chunk.text) * 0.25)),
-                    progress_start=progress_start,
-                    progress_ceiling=progress_ceiling,
-                    activity=activity,
-                )
-            )
+        notes = extract_chunk_notes(chunks, context, model, api_key, events)
         events.emit(
             "phase",
             phase="refining",

@@ -129,6 +129,7 @@ def consume_assistant_stream(
     """
 
     parts: list[str] = []
+    written = 0
     finish_reason: str | None = None
     reasoning_chars = 0
     emitted_chars = 0
@@ -145,7 +146,7 @@ def consume_assistant_stream(
             reasoning_chars += len(chunk.reasoning)
         if chunk.content is not None:
             parts.append(chunk.content)
-        written = sum(len(part) for part in parts)
+            written += len(chunk.content)
         now = time.monotonic()
         due_by_chars = (
             written - emitted_chars >= PROGRESS_EMIT_INTERVAL_CHARS

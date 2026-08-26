@@ -4,14 +4,16 @@ import gc
 import json
 import os
 import shutil
+import threading
+import time
 from collections.abc import Callable
-from importlib import import_module
+from concurrent.futures import ThreadPoolExecutor
 from importlib.metadata import version
 from pathlib import Path
-from typing import Protocol, cast
+from typing import cast
 
 from .protocol import EventWriter
-from .runtime import configure_warnings, select_torch_device
+from .runtime import configure_warnings, ffmpeg_executable, select_torch_device
 
 PYANNOTE_MODEL_ID = "pyannote/speaker-diarization-community-1"
 QWEN3_ASR_MODEL_ID = "Qwen/Qwen3-ASR-1.7B"
@@ -29,11 +31,75 @@ QWEN3_MLX_SIDECAR_FILES = (
     "merges.txt",
     "special_tokens_map.json",
 )
+# Two model repositories download at once. More would compete for the same
+# link without arriving sooner, and each one holds its files in memory while
+# it writes them.
+DOWNLOAD_WORKERS = 2
+DOWNLOAD_PERCENT_START = 10.0
+DOWNLOAD_PERCENT_END = 40.0
+# Bytes arrive far faster than a person can read; one update a second is
+# enough to show movement without flooding the event stream.
+DOWNLOAD_REPORT_INTERVAL_SECONDS = 1.0
 
 
-class ImageioFfmpeg(Protocol):
-    @staticmethod
-    def get_ffmpeg_exe() -> str: ...
+class DownloadReporter:
+    """Turn Hugging Face's progress bars into Galpi phase events.
+
+    `snapshot_download` writes many files at once and reports each through its
+    own bar. Summing them gives one honest number for a multi-gigabyte fetch,
+    which is what the setup screen needs: without it the bar sits at its
+    starting value for the entire download and the app looks stalled.
+    """
+
+    def __init__(self, events: EventWriter, start: float, end: float) -> None:
+        self._events = events
+        self._start = start
+        self._end = end
+        self._lock = threading.Lock()
+        self._downloaded = 0
+        self._total = 0
+        self._reported_at = 0.0
+
+    def tqdm_class(self) -> type[object]:
+        from tqdm.auto import tqdm as base_tqdm
+
+        reporter = self
+
+        class ReportingTqdm(base_tqdm):  # pyright: ignore[reportMissingTypeArgument]
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                super().__init__(*args, **kwargs)  # pyright: ignore[reportUnknownMemberType]
+                reporter.add_total(int(getattr(self, "total", 0) or 0))
+
+            def update(self, n: float | None = 1) -> bool | None:
+                reporter.add_progress(int(n or 0))
+                return super().update(n)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+
+        return ReportingTqdm
+
+    def add_total(self, total: int) -> None:
+        with self._lock:
+            self._total += total
+
+    def add_progress(self, amount: int) -> None:
+        with self._lock:
+            self._downloaded += amount
+            now = time.monotonic()
+            if now - self._reported_at < DOWNLOAD_REPORT_INTERVAL_SECONDS:
+                return
+            self._reported_at = now
+            downloaded, total = self._downloaded, self._total
+        if total <= 0:
+            return
+        share = min(1.0, downloaded / total)
+        self._events.emit(
+            "phase",
+            phase="models",
+            percent=round(self._start + (self._end - self._start) * share, 1),
+            message=(
+                f"모델을 내려받는 중입니다. "
+                f"{downloaded / 1_000_000_000:.1f}/{total / 1_000_000_000:.1f} GB"
+            ),
+        )
 
 
 def prepare_models(
@@ -54,11 +120,7 @@ def prepare_models(
 
 def link_ffmpeg(engine_bin: Path) -> None:
     engine_bin.mkdir(parents=True, exist_ok=True)
-    imageio_ffmpeg = cast(
-        ImageioFfmpeg,
-        cast(object, import_module("imageio_ffmpeg")),
-    )
-    ffmpeg_target = Path(imageio_ffmpeg.get_ffmpeg_exe())
+    ffmpeg_target = Path(ffmpeg_executable())
     ffmpeg_link = engine_bin / "ffmpeg"
     if ffmpeg_link.exists() or ffmpeg_link.is_symlink():
         ffmpeg_link.unlink()
@@ -173,8 +235,36 @@ def prepare_qwen3_models(manifest: Path, events: EventWriter) -> None:
         percent=10.0,
         message="Qwen3 전사·정렬 모델을 내려받습니다.",
     )
-    asr_snapshot = Path(snapshot_download(QWEN3_ASR_MODEL_ID, token=token))
-    snapshot_download(QWEN3_ALIGNER_MODEL_ID, token=token)
+    # The ASR model, the aligner, and the diarizer are independent downloads of
+    # several gigabytes; fetching them one after another leaves the network
+    # idle between files and the progress bar parked at one number.
+    asr_snapshot: Path | None = None
+    with ThreadPoolExecutor(max_workers=DOWNLOAD_WORKERS) as pool:
+        reporter = DownloadReporter(
+            events, DOWNLOAD_PERCENT_START, DOWNLOAD_PERCENT_END
+        )
+        snapshots = {
+            model_id: pool.submit(
+                snapshot_download,
+                model_id,
+                token=token,
+                tqdm_class=reporter.tqdm_class(),
+            )
+            for model_id in (QWEN3_ASR_MODEL_ID, QWEN3_ALIGNER_MODEL_ID)
+        }
+        for completed, (model_id, future) in enumerate(snapshots.items(), start=1):
+            result = future.result()
+            if model_id == QWEN3_ASR_MODEL_ID:
+                asr_snapshot = Path(result)
+            events.emit(
+                "phase",
+                phase="models",
+                percent=DOWNLOAD_PERCENT_START
+                + (DOWNLOAD_PERCENT_END - DOWNLOAD_PERCENT_START)
+                * completed
+                / len(snapshots),
+                message=f"모델을 내려받았습니다. {completed}/{len(snapshots)}",
+            )
 
     events.emit(
         "phase",
@@ -182,6 +272,8 @@ def prepare_qwen3_models(manifest: Path, events: EventWriter) -> None:
         percent=45.0,
         message="MLX 8비트 가중치로 변환합니다.",
     )
+    if asr_snapshot is None:
+        raise RuntimeError("Qwen3 ASR 스냅샷을 내려받지 못했습니다.")
     convert_mlx_asr_weights(asr_snapshot, events)
 
     events.emit(
@@ -201,6 +293,14 @@ def prepare_qwen3_models(manifest: Path, events: EventWriter) -> None:
     del pipeline
     gc.collect()
 
+    events.emit(
+        "phase",
+        phase="models",
+        percent=90.0,
+        message="전사 엔진을 한 번 실행해 확인합니다.",
+    )
+    verify_qwen3_session(events)
+
     payload: dict[str, object] = {
         "protocol": 1,
         "qwen3": "2",
@@ -219,6 +319,41 @@ def prepare_qwen3_models(manifest: Path, events: EventWriter) -> None:
         "phase", phase="models", percent=100.0, message="모델 준비가 완료되었습니다."
     )
     events.emit("prepared", engine_version=QWEN3_ASR_MODEL_ID)
+
+
+def verify_qwen3_session(events: EventWriter) -> None:
+    """Load the converted weights once and transcribe a second of silence.
+
+    Preparation used to end at "the files are on disk", so a bad conversion or
+    a missing runtime dependency only surfaced when the user started a real
+    meeting. Running the engine here moves that failure into the step whose
+    job is to report it.
+    """
+
+    import numpy as np
+    from mlx_qwen3_asr import Session
+
+    from .qwen3 import mlx_asr_model_dir
+
+    asr_dir = mlx_asr_model_dir()
+    # Without this the runtime reads the missing directory as a Hugging Face
+    # repository id and fails with a validation error about repo names, which
+    # tells the user nothing about what actually went wrong.
+    if not asr_dir.joinpath("weights.safetensors").is_file():
+        raise RuntimeError(f"MLX 가중치 변환 결과를 찾지 못했습니다: {asr_dir}")
+    session = Session(model=str(asr_dir))
+    try:
+        session.transcribe(
+            np.zeros(16_000, dtype=np.float32),
+            language="Korean",
+            return_timestamps=True,
+        )
+    except Exception as error:
+        raise RuntimeError(f"Qwen3 엔진 확인에 실패했습니다: {error}") from error
+    finally:
+        del session
+        gc.collect()
+    events.log("Qwen3 엔진 확인을 마쳤습니다.")
 
 
 def convert_mlx_asr_weights(asr_snapshot: Path, events: EventWriter) -> None:

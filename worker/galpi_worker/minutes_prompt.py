@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
+from .core import InvalidInput
 from .minutes_pipeline import ChatMessage
 from .minutes_template import SYSTEM_PROMPT
 
@@ -52,7 +53,7 @@ def parse_participants(payload: object) -> list[Participant]:
         fields = cast(dict[str, object], entry)
         name = fields.get("name")
         if not isinstance(name, str) or not name.strip():
-            raise ValueError("participant entry had no name")
+            raise InvalidInput("participant entry had no name")
         team = optional_text(fields.get("team"))
         role = optional_text(fields.get("role"))
         description = optional_text(fields.get("description"))
@@ -90,7 +91,7 @@ def parse_glossary(payload: object) -> list[GlossaryEntry]:
         fields = cast(dict[str, object], entry)
         term = fields.get("term")
         if not isinstance(term, str) or not term.strip():
-            raise ValueError("glossary entry had no term")
+            raise InvalidInput("glossary entry had no term")
         entries.append(
             GlossaryEntry(
                 term=term.strip(), description=optional_text(fields.get("description"))
@@ -150,7 +151,7 @@ def build_messages(
     """Build the chat messages for one refinement request."""
 
     if not transcript.strip():
-        raise ValueError("transcript is empty")
+        raise InvalidInput("transcript is empty")
     context = background.strip() or NO_BACKGROUND
     date_line = (
         f"회의 추정일: {meeting_date} (녹음 파일 기준). 전사본에 이와 다른 명시적 날짜 근거가 없으면 이 값을 그대로 사용하세요.\n\n"

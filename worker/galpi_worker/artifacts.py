@@ -19,6 +19,9 @@ class Segment(TypedDict):
 
 class Transcription(TypedDict):
     segments: list[Segment]
+    # Names the engine that produced the checkpoint. Absent on files written
+    # before the tag existed, which the WhisperX path still accepts.
+    engine: NotRequired[str]
 
 
 def filter_segments(

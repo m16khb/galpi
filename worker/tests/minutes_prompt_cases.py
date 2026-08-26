@@ -219,6 +219,42 @@ class MapReduceTests(unittest.TestCase):
         # Then: no mid-turn cut is introduced
         self.assertEqual(chunks, [TranscriptChunk(number=1, total=1, text=turn)])
 
+    def test_every_chunk_after_the_first_carries_the_previous_tail(self) -> None:
+        # Given: a transcript long enough to need three chunks
+        transcript = "\n".join(
+            f"[SPEAKER_0{index % 2}] (00:0{index}) 발화 내용 {index}입니다."
+            for index in range(9)
+        )
+
+        # When
+        chunks = split_transcript(transcript, max_chars=70)
+
+        # Then: the first chunk opens the meeting, the rest carry context
+        self.assertGreater(len(chunks), 1)
+        self.assertEqual(chunks[0].preamble, "")
+        for previous, chunk in pairwise(chunks):
+            self.assertTrue(chunk.preamble)
+            self.assertTrue(previous.text.endswith(chunk.preamble))
+
+    def test_map_messages_mark_the_preamble_as_context_only(self) -> None:
+        # Given
+        chunk = TranscriptChunk(
+            number=2, total=3, text="chunk-input-unique", preamble="preamble-unique"
+        )
+        context = MinutesContext(
+            background="b", participants="p", glossary="g", meeting_date=None
+        )
+
+        # When
+        content = build_map_messages(chunk, context)[1]["content"]
+
+        # Then: the tail is present but explicitly excluded from extraction
+        self.assertIn("preamble-unique", content)
+        self.assertIn("여기서 사실을 추출하지 마세요", content)
+        self.assertLess(
+            content.index("preamble-unique"), content.index("chunk-input-unique")
+        )
+
     def test_map_messages_carry_chunk_and_rendered_context(self) -> None:
         # Given
         chunk = TranscriptChunk(number=2, total=3, text="chunk-input-unique")

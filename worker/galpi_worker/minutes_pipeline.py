@@ -10,6 +10,13 @@ MAP_PROGRESS_START: Final = 35.0
 MAP_PROGRESS_CEILING: Final = 68.0
 REDUCE_PROGRESS_START: Final = 70.0
 REDUCE_PROGRESS_CEILING: Final = 88.0
+# Each chunk starts mid-conversation, so it carries the tail of the previous
+# one as read-only context. Without it a decision stated just before the cut
+# reads as an unattributed follow-up in the next chunk's notes.
+CHUNK_OVERLAP_CHARS: Final = 400
+# The provider is the bottleneck, not the CPU; a small pool keeps a long
+# meeting's map pass from running strictly one request at a time.
+MAP_MAX_WORKERS: Final = 3
 
 RefinementStrategy = Literal["single", "map_reduce"]
 
@@ -38,6 +45,7 @@ class TranscriptChunk:
     number: int
     total: int
     text: str
+    preamble: str = ""
 
 
 MAP_SYSTEM_PROMPT: Final = """당신은 긴 한국어 회의 전사본의 한 구간에서 최종 회의록에 필요한 사실만 추출합니다.
@@ -91,7 +99,12 @@ def split_transcript(
         packed.append("\n".join(current))
     total = len(packed)
     return [
-        TranscriptChunk(number=index + 1, total=total, text=text)
+        TranscriptChunk(
+            number=index + 1,
+            total=total,
+            text=text,
+            preamble=packed[index - 1][-CHUNK_OVERLAP_CHARS:] if index else "",
+        )
         for index, text in enumerate(packed)
     ]
 
@@ -102,12 +115,19 @@ def build_map_messages(
     """Build one fact-extraction request for a long-transcript chunk."""
 
     date = context.meeting_date or "미정"
+    preamble = (
+        f"<이전구간끝>\n{chunk.preamble}\n</이전구간끝>\n"
+        "위 이전구간끝은 맥락 참고용입니다. 여기서 사실을 추출하지 마세요.\n\n"
+        if chunk.preamble
+        else ""
+    )
     user = (
         f'<회의정보 날짜="{date}">\n'
         f"<사전정보>\n{context.background}\n</사전정보>\n"
         f"<참석자>\n{context.participants}\n</참석자>\n"
         f"<단어집>\n{context.glossary}\n</단어집>\n"
         f"</회의정보>\n\n"
+        f"{preamble}"
         f'<전사구간 번호="{chunk.number}" 전체="{chunk.total}">\n'
         f"{chunk.text}\n"
         "</전사구간>\n\n"

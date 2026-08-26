@@ -6,7 +6,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 from .assistant_stream import DEFAULT_MODEL
-from .core import SpeakerHint
+from .core import InvalidInput, SpeakerHint
 from .engine import transcribe
 from .preparation import prepare_models
 from .protocol import EventWriter
@@ -40,6 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     minutes.add_argument("--participants", type=Path)
     minutes.add_argument("--glossary", type=Path)
     minutes.add_argument("--model", default=DEFAULT_MODEL)
+    minutes.add_argument("--meeting-date")
     return parser
 
 
@@ -63,6 +64,7 @@ def main() -> int:
                     args.glossary,
                     args.model,
                     events,
+                    meeting_date=args.meeting_date,
                 )
                 return 0
 
@@ -84,17 +86,12 @@ def main() -> int:
                 engine=args.engine,
             )
         return 0
-    except ValueError as error:
+    except InvalidInput as error:
         events.fail("INVALID_INPUT", str(error))
         return 2
-    except (
-        AttributeError,
-        ImportError,
-        KeyError,
-        OSError,
-        RuntimeError,
-        TypeError,
-    ) as error:
+    except Exception as error:  # noqa: BLE001 - the host needs an event, not a traceback
+        # Every abnormal exit must still reach the host as one error event;
+        # an unlisted exception type would otherwise die silently on stderr.
         events.fail("ENGINE_ERROR", f"{type(error).__name__}: {error}")
         return 1
 

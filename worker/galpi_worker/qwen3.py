@@ -12,42 +12,50 @@ from __future__ import annotations
 import gc
 import json
 import os
-import re
 import subprocess
 import tempfile
+import unicodedata
+import wave
 from collections.abc import Callable
-from importlib import import_module
 from pathlib import Path
-from typing import Protocol, TypedDict, cast
+from typing import TypedDict, cast
 
-from .artifacts import Segment, filter_segments, write_outputs_atomic
-from .core import SpeakerHint, parse_asr_context, validate_speaker_hint
+from .artifacts import (
+    Segment,
+    Transcription,
+    filter_segments,
+    write_json_atomic,
+    write_outputs_atomic,
+)
+from .core import InvalidInput, SpeakerHint, parse_asr_context, validate_speaker_hint
 from .preparation import (
     PYANNOTE_MODEL_ID,
     QWEN3_MLX_MODEL_DIR_NAME,
 )
 from .protocol import EventWriter
-from .runtime import configure_warnings, select_torch_device
+from .runtime import configure_warnings, ffmpeg_executable, select_torch_device
 
-# The aligner emits short chunks; subtitles stay readable when consecutive
-# chunks merge into sentence groups ending at terminal punctuation or when a
-# group grows past roughly one breath of speech.
+# The aligner emits one entry per word; those words regroup into segments that
+# end at terminal punctuation, at a speaker change, after a breath-long pause,
+# or once a group has run for one breath of speech.
 SENTENCE_ENDINGS = ".!?…"
 MAX_SENTENCE_SECONDS = 12.0
-# qwen-asr exposes no progress callback, so Galpi chunks long meetings itself
-# and reports per-chunk progress. The upstream 180s chunks can exceed even a
-# 1024-token Korean generation budget; Galpi instead cuts near one-minute
-# silences and hard-limits continuous speech to 75s. That keeps each request
-# within the upstream 512-token default while bounding pathological repetition.
-CHUNK_TARGET_SECONDS = 60.0
-CHUNK_MAX_SECONDS = 75.0
-MAX_NEW_TOKENS = 512
+SPEAKER_GAP_SECONDS = 0.8
+# Galpi cuts long meetings near real silences so words stay intact, then hands
+# each cut to the runtime. mlx-qwen3-asr re-splits anything longer than 30s at
+# an energy minimum that can land mid-word, so a Galpi chunk stays at or under
+# that limit and its own silence-aligned boundary is the one that survives.
+# `max_new_tokens` stays unset: the runtime derives a per-chunk budget from the
+# chunk duration, which is a tighter bound than one fixed number.
+CHUNK_TARGET_SECONDS = 25.0
+CHUNK_MAX_SECONDS = 30.0
 SILENCE_NOISE_FLOOR = "-35dB"
 SILENCE_MIN_DURATION = 0.6
-SENTENCE_SPLIT = re.compile(r"(?<=[.!?…])\s+")
-# Aligner chunks carry bare words without spaces or terminal punctuation,
-# so those text characters are skipped when mapping text onto chunks.
-SKIPPED_TEXT_CHARS = ".,!?…"
+SAMPLE_RATE = 16_000
+# The hotword slot is finite; a runaway roster would crowd out the audio.
+BIAS_CONTEXT_CHAR_BUDGET = 500
+# Written into the checkpoint so the two engines never read each other's work.
+QWEN3_ENGINE_TAG = "qwen3"
 
 
 class TimestampEntry(TypedDict):
@@ -60,6 +68,14 @@ class TimestampEntry(TypedDict):
 
 class MlxWord(TypedDict):
     """One MLX forced-aligner word dict entry."""
+
+    text: str
+    start: float
+    end: float
+
+
+class WordSpan(TypedDict):
+    """One aligner word carrying its slice of the model's punctuated text."""
 
     text: str
     start: float
@@ -85,9 +101,12 @@ def transcribe_qwen3(
 
     validate_speaker_hint(speaker_hint)
     if not audio_path.is_file():
-        raise ValueError(f"audio file not found: {audio_path}")
+        raise InvalidInput(f"audio file not found: {audio_path}")
     output_dir.mkdir(parents=True, exist_ok=True)
     configure_warnings()
+
+    base_name = audio_path.stem
+    checkpoint_path = output_dir / f"{base_name}.aligned.v2.json"
 
     # The Qwen3 stack decodes audio through libsndfile, which rejects
     # compressed containers (m4a/AAC, mov, ...). Every input goes through the
@@ -101,57 +120,19 @@ def transcribe_qwen3(
     with tempfile.TemporaryDirectory(prefix="galpi-qwen3-") as work_dir:
         working_audio = Path(work_dir) / "audio.wav"
         decode_to_wav(audio_path, working_audio)
-
-        events.emit(
-            "phase",
-            phase="transcribing",
-            percent=10.0,
-            message="한국어 음성을 Qwen3(MLX)로 전사합니다. (Metal GPU)",
-        )
-        from mlx_qwen3_asr import Session
-
-        # The readiness gate guarantees the converted 8-bit weights exist in
-        # the app cache; a missing directory means prepare was skipped.
-        asr_dir = mlx_asr_model_dir()
-        if not asr_dir.joinpath("weights.safetensors").is_file():
-            raise RuntimeError(f"MLX Qwen3 모델이 준비되지 않았습니다: {asr_dir}")
-        session = Session(model=str(asr_dir))
-        context = build_bias_context(asr_context_path)
         duration = audio_duration(working_audio)
-        silence_midpoints = detect_silences(working_audio)
-        chunks = plan_audio_chunks(duration, silence_midpoints)
-        segments: list[Segment] = []
-        for index, (start, end) in enumerate(chunks):
-            chunk_path = Path(work_dir) / f"chunk-{index:04d}.wav"
-            extract_range(working_audio, chunk_path, start, end)
-            result = session.transcribe(
-                str(chunk_path),
-                language="Korean",
-                context=context,
-                return_timestamps=True,
-                max_new_tokens=MAX_NEW_TOKENS,
-            )
-            # TranscriptionResult.segments is annotated with bare dicts
-            # upstream; word_entries normalizes the shape.
-            raw_segments = result.segments  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-            entries = offset_entries(word_entries(cast("object", raw_segments)), start)
-            segments.extend(build_segments(result.text, entries))
+
+        spans = read_word_checkpoint(checkpoint_path)
+        if spans is None:
+            spans = recognize_words(working_audio, duration, asr_context_path, events)
+            write_word_checkpoint(checkpoint_path, spans)
+        else:
             events.emit(
                 "phase",
                 phase="transcribing",
-                percent=10.0 + 80.0 * (index + 1) / len(chunks),
-                message=f"전사 중… 구간 {index + 1}/{len(chunks)}",
+                percent=100.0,
+                message="기존 전사 체크포인트를 사용합니다.",
             )
-        del session
-        gc.collect()
-        release_mps_cache()
-
-        events.emit(
-            "phase",
-            phase="transcribing",
-            percent=100.0,
-            message="전사가 완료되었습니다.",
-        )
         events.emit(
             "phase",
             phase="aligning",
@@ -169,7 +150,7 @@ def transcribe_qwen3(
 
         device = select_torch_device(mps_available=torch.backends.mps.is_available())
         turns = diarize(working_audio, speaker_hint, device, events)
-        assigned = assign_speakers_to_segments(segments, turns)
+        assigned = group_word_spans(spans, turns)
         events.emit(
             "phase",
             phase="diarizing",
@@ -185,28 +166,167 @@ def transcribe_qwen3(
         percent=30.0,
         message="환각 구간을 정리하고 결과를 씁니다.",
     )
-    base_name = audio_path.stem
     srt_path = output_dir / f"{base_name}.srt"
     text_path = output_dir / f"{base_name}_화자별.txt"
     write_outputs_atomic(srt_path, text_path, kept)
     events.emit(
         "phase", phase="writing", percent=100.0, message="결과 파일을 저장했습니다."
     )
-    # The Qwen3 pipeline publishes srt/txt only, so the completion carries an
-    # empty checkpoint string meaning "no checkpoint" for the host.
     events.emit(
         "completed",
         srt=str(srt_path),
         txt=str(text_path),
-        checkpoint="",
+        checkpoint=str(checkpoint_path),
         segments=len(kept),
         filtered=len(filtered),
     )
 
 
-class ImageioFfmpeg(Protocol):
-    @staticmethod
-    def get_ffmpeg_exe() -> str: ...
+def recognize_words(
+    working_audio: Path,
+    duration: float,
+    asr_context_path: Path | None,
+    events: EventWriter,
+) -> list[WordSpan]:
+    """Run the MLX ASR pass and return every aligner word on the meeting clock."""
+
+    events.emit(
+        "phase",
+        phase="transcribing",
+        percent=10.0,
+        message="한국어 음성을 Qwen3(MLX)로 전사합니다. (Metal GPU)",
+    )
+    from mlx_qwen3_asr import Session
+
+    # The readiness gate guarantees the converted 8-bit weights exist in
+    # the app cache; a missing directory means prepare was skipped.
+    asr_dir = mlx_asr_model_dir()
+    if not asr_dir.joinpath("weights.safetensors").is_file():
+        raise RuntimeError(f"MLX Qwen3 모델이 준비되지 않았습니다: {asr_dir}")
+    session = Session(model=str(asr_dir))
+    context = build_bias_context(asr_context_path)
+    samples = read_samples(working_audio)
+    chunks = plan_audio_chunks(duration, detect_silences(working_audio))
+    spans: list[WordSpan] = []
+    for index, (start, end) in enumerate(chunks):
+        # The runtime treats a bare array as 16 kHz mono, which is exactly what
+        # the decode step produced, so a slice needs no file of its own.
+        window = samples[int(start * SAMPLE_RATE) : int(end * SAMPLE_RATE)]
+        result = session.transcribe(
+            window,
+            language="Korean",
+            context=context,
+            return_timestamps=True,
+        )
+        report_generation_limit(index, len(chunks), result, events)
+        # TranscriptionResult.segments is annotated with bare dicts
+        # upstream; word_entries normalizes the shape.
+        raw_segments = result.segments  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        entries = offset_entries(word_entries(cast("object", raw_segments)), start)
+        spans.extend(build_word_spans(result.text, entries))
+        events.emit(
+            "phase",
+            phase="transcribing",
+            percent=10.0 + 80.0 * (index + 1) / len(chunks),
+            message=f"전사 중… 구간 {index + 1}/{len(chunks)}",
+        )
+    del session
+    gc.collect()
+    release_mps_cache()
+    events.emit(
+        "phase",
+        phase="transcribing",
+        percent=100.0,
+        message="전사가 완료되었습니다.",
+    )
+    return spans
+
+
+def report_generation_limit(
+    index: int,
+    total: int,
+    result: object,
+    events: EventWriter,
+) -> None:
+    """Log a chunk that stopped for any reason other than finishing its text.
+
+    `length` means the tail of the chunk was never emitted and `repetition`
+    means the decoder looped, so both leave a visible hole in the transcript
+    that the operator should be able to see in the log.
+    """
+
+    reason = getattr(result, "finish_reason", None)
+    if reason in (None, "eos", "stop"):
+        return
+    events.log(f"구간 {index + 1}/{total} 생성이 '{reason}' 상태로 끝났습니다.")
+
+
+def read_samples(audio_path: Path) -> object:
+    """Read the decoded 16 kHz mono WAV as one float32 array."""
+
+    import numpy as np
+
+    with wave.open(str(audio_path), "rb") as handle:
+        if handle.getsampwidth() != 2:
+            raise RuntimeError("expected 16-bit PCM wav")
+        raw = handle.readframes(handle.getnframes())
+        channels = handle.getnchannels()
+    samples = np.frombuffer(raw, dtype="<i2").astype(np.float32) / 32768.0
+    if channels > 1:
+        samples = samples.reshape(-1, channels).mean(axis=1)
+    return samples
+
+
+def read_word_checkpoint(checkpoint_path: Path) -> list[WordSpan] | None:
+    """Reuse a previous ASR pass, but only one this engine wrote.
+
+    Speaker hints change far more often than the audio does, so the aligner
+    words are worth keeping across runs. The engine tag stops a WhisperX
+    checkpoint from being read back as Qwen3 words and the reverse.
+    """
+
+    if not checkpoint_path.is_file():
+        return None
+    try:
+        payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, dict) or payload.get("engine") != QWEN3_ENGINE_TAG:
+        return None
+    raw = payload.get("segments")
+    if not isinstance(raw, list):
+        return None
+    spans: list[WordSpan] = []
+    for item in cast("list[object]", raw):
+        if not isinstance(item, dict):
+            return None
+        entry = cast("dict[str, object]", item)
+        try:
+            spans.append(
+                WordSpan(
+                    text=str(entry["text"]),
+                    start=float(cast("float", entry["start"])),
+                    end=float(cast("float", entry["end"])),
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            return None
+    return spans
+
+
+def write_word_checkpoint(checkpoint_path: Path, spans: list[WordSpan]) -> None:
+    """Publish the aligner words so a re-run can skip the ASR pass."""
+
+    write_json_atomic(
+        checkpoint_path,
+        Transcription(
+            engine=QWEN3_ENGINE_TAG,
+            segments=[
+                Segment(start=span["start"], end=span["end"], text=span["text"])
+                for span in spans
+            ],
+        ),
+    )
 
 
 def ffmpeg_decode_args(source: Path, destination: Path) -> list[str]:
@@ -227,10 +347,7 @@ def ffmpeg_decode_args(source: Path, destination: Path) -> list[str]:
 def decode_to_wav(source: Path, destination: Path) -> None:
     """Decode any supported container through the bundled ffmpeg binary."""
 
-    ffmpeg = cast(
-        ImageioFfmpeg,
-        cast(object, import_module("imageio_ffmpeg")),
-    ).get_ffmpeg_exe()
+    ffmpeg = ffmpeg_executable()
     completed = subprocess.run(
         [ffmpeg, *ffmpeg_decode_args(source, destination)],
         stdout=subprocess.DEVNULL,
@@ -305,10 +422,7 @@ def parse_silencedetect(stderr_text: str) -> list[float]:
 def detect_silences(audio: Path) -> list[float]:
     """Find silence midpoints via ffmpeg silencedetect."""
 
-    ffmpeg = cast(
-        ImageioFfmpeg,
-        cast(object, import_module("imageio_ffmpeg")),
-    ).get_ffmpeg_exe()
+    ffmpeg = ffmpeg_executable()
     completed = subprocess.run(
         [
             ffmpeg,
@@ -326,40 +440,6 @@ def detect_silences(audio: Path) -> list[float]:
         text=True,
     )
     return parse_silencedetect(completed.stderr)
-
-
-def extract_range(source: Path, destination: Path, start: float, end: float) -> None:
-    """Copy [start, end) seconds of the decoded WAV into a chunk file."""
-
-    ffmpeg = cast(
-        ImageioFfmpeg,
-        cast(object, import_module("imageio_ffmpeg")),
-    ).get_ffmpeg_exe()
-    completed = subprocess.run(
-        [
-            ffmpeg,
-            "-y",
-            "-ss",
-            f"{start:.3f}",
-            "-to",
-            f"{end:.3f}",
-            "-i",
-            str(source),
-            "-ar",
-            "16000",
-            "-ac",
-            "1",
-            str(destination),
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if completed.returncode != 0 or not destination.is_file():
-        raise RuntimeError(
-            f"ffmpeg failed to extract [{start:.1f}, {end:.1f})s "
-            f"(exit {completed.returncode})"
-        )
 
 
 def offset_entries(
@@ -412,7 +492,10 @@ def release_mps_cache() -> None:
     try:
         import mlx.core as mx
 
-        mx.metal.clear_cache()
+        # mlx moved the cache reset off the metal namespace in 0.29; the old
+        # path still works but warns, so prefer the new one when present.
+        clear_cache = getattr(mx, "clear_cache", None) or mx.metal.clear_cache
+        clear_cache()
     except (AttributeError, ImportError, RuntimeError):
         pass
     try:
@@ -439,93 +522,141 @@ def build_bias_context(asr_context_path: Path | None) -> str:
         parts.append("참석자 이름: " + ", ".join(names))
     if aliases:
         parts.append("별칭: " + ", ".join(aliases))
-    return "\n".join(parts)
+    return "\n".join(parts)[:BIAS_CONTEXT_CHAR_BUDGET]
 
 
-def build_segments(
+def build_word_spans(
     transcription_text: str,
     entries: list[TimestampEntry],
-) -> list[Segment]:
-    """Split the model text into sentences timed by aligner chunks.
+) -> list[WordSpan]:
+    """Lay the model text over the aligner words, one timed span per word.
 
-    The full `text` carries proper spacing and punctuation while the aligner
-    chunks are bare words, so sentences keep their original form and chunk
-    boundaries only decide where each sentence starts and ends in time.
+    The full `text` carries the spacing and punctuation the aligner strips, so
+    each span takes the raw slice of text its word consumed, together with any
+    punctuation that trails it. Timing comes from the aligner entry.
     """
 
-    sentences = [
-        sentence
-        for sentence in SENTENCE_SPLIT.split(transcription_text.strip())
-        if sentence.strip()
-    ]
-    segments: list[Segment] = []
-    chunk_index = 0
-    chunk_offset = 0
-    for sentence in sentences:
-        target = matchable_chars(sentence)
-        if not target:
+    text = transcription_text.strip()
+    spans: list[WordSpan] = []
+    cursor = 0
+    for entry in entries:
+        needed = len(matchable_chars(entry["text"]))
+        if needed == 0:
             continue
-        start: float | None = None
-        end = 0.0
+        span_start = cursor
         consumed = 0
-        while consumed < len(target) and chunk_index < len(entries):
-            entry = entries[chunk_index]
-            chunk = matchable_chars(entry["text"])
-            available = len(chunk) - chunk_offset
-            if available <= 0:
-                chunk_index += 1
-                chunk_offset = 0
-                continue
-            if start is None:
-                start = entry["start"]
-            take = min(available, len(target) - consumed)
-            consumed += take
-            chunk_offset += take
-            end = entry["end"]
-            if chunk_offset >= len(chunk):
-                chunk_index += 1
-                chunk_offset = 0
-        if start is not None and consumed > 0:
-            segments.append(Segment(start=start, end=end, text=sentence.strip()))
+        while cursor < len(text) and consumed < needed:
+            if matchable_chars(text[cursor]):
+                consumed += 1
+            cursor += 1
+        # Trailing punctuation and spacing belong to the word just consumed,
+        # so a sentence-ending mark stays attached to its own word.
+        while cursor < len(text) and not matchable_chars(text[cursor]):
+            cursor += 1
+        piece = text[span_start:cursor]
+        if piece.strip():
+            spans.append(WordSpan(text=piece, start=entry["start"], end=entry["end"]))
+    if spans and cursor < len(text):
+        # Text the aligner never reached still belongs in the transcript.
+        remainder = text[cursor:]
+        if remainder.strip():
+            spans[-1] = WordSpan(
+                text=spans[-1]["text"] + remainder,
+                start=spans[-1]["start"],
+                end=spans[-1]["end"],
+            )
+    return spans
+
+
+def speaker_for_span(span: WordSpan, turns: list[SpeakerTurn]) -> str:
+    """Pick the turn covering the most of one word, or the nearest one."""
+
+    best_speaker = "UNKNOWN"
+    best_overlap = 0.0
+    for turn in turns:
+        overlap = min(span["end"], turn["end"]) - max(span["start"], turn["start"])
+        if overlap > best_overlap:
+            best_overlap = overlap
+            best_speaker = turn["speaker"]
+    if best_overlap > 0 or not turns:
+        return best_speaker
+    # A word falling in a gap between turns still has an owner: diarization
+    # simply trimmed the span. The closest turn is a better guess than UNKNOWN.
+    nearest = min(
+        turns,
+        key=lambda turn: min(
+            abs(turn["start"] - span["end"]), abs(span["start"] - turn["end"])
+        ),
+    )
+    return nearest["speaker"]
+
+
+def ends_sentence(piece: str) -> bool:
+    """Report whether a word closes a sentence.
+
+    A terminal mark only ends a sentence when whitespace follows it, the same
+    boundary a reader sees. Without that rule the dot inside "3.14" would cut
+    the number in half.
+    """
+
+    return piece.rstrip() != piece and piece.rstrip().endswith(tuple(SENTENCE_ENDINGS))
+
+
+def group_word_spans(
+    spans: list[WordSpan],
+    turns: list[SpeakerTurn],
+) -> list[Segment]:
+    """Merge timed words into speaker-labelled segments.
+
+    A segment breaks at a terminal punctuation mark, at a speaker change, after
+    a breath-long pause, or once it has run for `MAX_SENTENCE_SECONDS`. Breaking
+    on the speaker is what keeps one long unpunctuated stretch from collapsing
+    several people into whoever spoke longest.
+    """
+
+    segments: list[Segment] = []
+    current: list[str] = []
+    current_speaker = ""
+    start = 0.0
+    end = 0.0
+
+    def flush() -> None:
+        nonlocal current
+        text = "".join(current).strip()
+        if text:
+            segments.append(
+                Segment(start=start, end=end, text=text, speaker=current_speaker)
+            )
+        current = []
+
+    for span in spans:
+        speaker = speaker_for_span(span, turns)
+        if current:
+            closed = ends_sentence(current[-1])
+            if (
+                closed
+                or speaker != current_speaker
+                or span["start"] - end >= SPEAKER_GAP_SECONDS
+                or span["end"] - start > MAX_SENTENCE_SECONDS
+            ):
+                flush()
+        if not current:
+            start = span["start"]
+            current_speaker = speaker
+        current.append(span["text"])
+        end = span["end"]
+    flush()
     return segments
 
 
 def matchable_chars(text: str) -> list[str]:
-    """Characters that aligner chunks can also carry (no spaces/punctuation)."""
+    """Apply the exact character rule used by the MLX forced aligner."""
 
     return [
         character
         for character in text
-        if not character.isspace() and character not in SKIPPED_TEXT_CHARS
+        if character == "'" or unicodedata.category(character)[0] in "LN"
     ]
-
-
-def assign_speakers_to_segments(
-    segments: list[Segment],
-    turns: list[SpeakerTurn],
-) -> list[Segment]:
-    """Label each segment with the turn covering the most of its span."""
-
-    assigned: list[Segment] = []
-    for segment in segments:
-        best_speaker = "UNKNOWN"
-        best_overlap = 0.0
-        for turn in turns:
-            overlap = min(segment["end"], turn["end"]) - max(
-                segment["start"], turn["start"]
-            )
-            if overlap > best_overlap:
-                best_overlap = overlap
-                best_speaker = turn["speaker"]
-        assigned.append(
-            Segment(
-                start=segment["start"],
-                end=segment["end"],
-                text=segment["text"],
-                speaker=best_speaker,
-            )
-        )
-    return assigned
 
 
 def diarize(
@@ -587,12 +718,10 @@ def load_waveform(audio_path: Path) -> tuple[object, int]:
     versions and libsndfile rejects compressed containers anyway).
     """
 
-    import wave as wave_module
-
     import numpy as np
     import torch
 
-    with wave_module.open(str(audio_path), "rb") as handle:
+    with wave.open(str(audio_path), "rb") as handle:
         sample_rate = handle.getframerate()
         channels = handle.getnchannels()
         width = handle.getsampwidth()
@@ -610,7 +739,5 @@ def load_waveform(audio_path: Path) -> tuple[object, int]:
 def audio_duration(audio_path: Path) -> float:
     """Read the audio length in seconds without loading samples."""
 
-    import wave as wave_module
-
-    with wave_module.open(str(audio_path), "rb") as handle:
+    with wave.open(str(audio_path), "rb") as handle:
         return handle.getnframes() / float(handle.getframerate())

@@ -8,6 +8,17 @@ from typing import Literal, cast
 
 SpeakerMode = Literal["auto", "exact", "range"]
 
+
+class InvalidInput(ValueError):
+    """A caller-supplied argument or payload the worker refuses to run on.
+
+    Subclasses ValueError so existing callers keep working, but lets
+    ``__main__`` tell Galpi's own validation apart from a ValueError raised
+    deep inside a model library, which is an engine failure rather than bad
+    input.
+    """
+
+
 # The model's hotwords slot keeps roughly the first 223 prompt tokens; Korean
 # syllables average about one token each, so a character budget slightly under
 # that leaves safe headroom for the separator and special tokens.
@@ -35,6 +46,14 @@ _REPETITION_MIN_TOKENS = 6
 _REPETITION_DOMINANCE = 0.8
 _REPETITION_TOKEN_SPLIT = re.compile(r"[,\.\s]+")
 
+# Token dominance only catches a single word looping. A decoder that stalls on
+# a whole phrase ("네 알겠습니다 네 알겠습니다 ...") keeps every token below the
+# dominance bar, so phrases are checked too: if one repeated n-gram covers most
+# of the segment, nothing was actually said.
+_PHRASE_MIN_TOKENS = 8
+_PHRASE_LENGTHS = (2, 3, 4)
+_PHRASE_COVERAGE = 0.6
+
 
 def validate_speaker_hint(hint: SpeakerHint) -> None:
     """Validate speaker hints before model work starts."""
@@ -43,20 +62,24 @@ def validate_speaker_hint(hint: SpeakerHint) -> None:
         return
     if hint.mode == "exact":
         if hint.exact is None or hint.exact <= 0:
-            raise ValueError("speaker count must be greater than zero")
+            raise InvalidInput("speaker count must be greater than zero")
         return
     if hint.minimum is None or hint.maximum is None:
-        raise ValueError("speaker range requires minimum and maximum")
+        raise InvalidInput("speaker range requires minimum and maximum")
     if hint.minimum <= 0 or hint.maximum <= 0:
-        raise ValueError("speaker range values must be greater than zero")
+        raise InvalidInput("speaker range values must be greater than zero")
     if hint.minimum > hint.maximum:
-        raise ValueError("speaker range minimum must not exceed maximum")
+        raise InvalidInput("speaker range minimum must not exceed maximum")
 
 
 def should_filter_segment(text: str) -> bool:
     """Return whether a segment is a known hallucination or a repetition loop."""
 
-    return _HALLUCINATION_PATTERN.search(text) is not None or _is_repetition_loop(text)
+    return (
+        _HALLUCINATION_PATTERN.search(text) is not None
+        or _is_repetition_loop(text)
+        or _is_phrase_loop(text)
+    )
 
 
 def _is_repetition_loop(text: str) -> bool:
@@ -65,6 +88,23 @@ def _is_repetition_loop(text: str) -> bool:
         return False
     dominant_count = Counter(tokens).most_common(1)[0][1]
     return dominant_count / len(tokens) >= _REPETITION_DOMINANCE
+
+
+def _is_phrase_loop(text: str) -> bool:
+    tokens = [token for token in _REPETITION_TOKEN_SPLIT.split(text) if token]
+    if len(tokens) < _PHRASE_MIN_TOKENS:
+        return False
+    for length in _PHRASE_LENGTHS:
+        if len(tokens) < length * 2:
+            continue
+        phrases = [
+            tuple(tokens[index : index + length])
+            for index in range(len(tokens) - length + 1)
+        ]
+        repeats = Counter(phrases).most_common(1)[0][1]
+        if repeats * length / len(tokens) >= _PHRASE_COVERAGE:
+            return True
+    return False
 
 
 def parse_asr_context(payload: object) -> tuple[list[str], list[str], list[str]]:

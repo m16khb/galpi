@@ -1,5 +1,6 @@
 """Contract tests for pure Galpi worker behavior."""
 
+import json
 import logging
 import unittest
 from contextlib import redirect_stdout
@@ -14,6 +15,7 @@ from ..galpi_worker.core import (
     should_filter_segment,
     validate_speaker_hint,
 )
+from ..galpi_worker.preparation import DownloadReporter
 from ..galpi_worker.protocol import EventWriter
 from ..galpi_worker.runtime import configure_warnings, select_torch_device
 from .minutes_prompt_cases import GlossaryTests, MapReduceTests, ParticipantTests
@@ -46,6 +48,47 @@ class SpeakerHintTests(unittest.TestCase):
         # When / Then
         with self.assertRaisesRegex(ValueError, "minimum"):
             validate_speaker_hint(hint)
+
+
+class DownloadReporterTests(unittest.TestCase):
+    def reporter(self, buffer: StringIO) -> DownloadReporter:
+        return DownloadReporter(EventWriter(stream=buffer), 10.0, 40.0)
+
+    def test_maps_downloaded_bytes_onto_the_phase_band(self) -> None:
+        # Given: two files whose sizes are known before any byte arrives
+        buffer = StringIO()
+        reporter = self.reporter(buffer)
+        reporter.add_total(600)
+        reporter.add_total(400)
+
+        # When: half the total has landed
+        reporter.add_progress(500)
+
+        # Then: the phase percent sits halfway through the band
+        event = json.loads(buffer.getvalue().strip())
+        self.assertEqual(event["phase"], "models")
+        self.assertEqual(event["percent"], 25.0)
+
+    def test_throttles_so_a_fast_download_cannot_flood_the_stream(self) -> None:
+        # Given
+        buffer = StringIO()
+        reporter = self.reporter(buffer)
+        reporter.add_total(1000)
+
+        # When: many chunks arrive back to back
+        for _ in range(50):
+            reporter.add_progress(10)
+
+        # Then: only the first one is reported
+        self.assertEqual(len(buffer.getvalue().strip().splitlines()), 1)
+
+    def test_reports_nothing_before_a_size_is_known(self) -> None:
+        # Given / When: bytes arrive before any bar declared its total
+        buffer = StringIO()
+        self.reporter(buffer).add_progress(10)
+
+        # Then
+        self.assertEqual(buffer.getvalue(), "")
 
 
 class AsrContextTests(unittest.TestCase):
@@ -127,6 +170,29 @@ class HallucinationFilterTests(unittest.TestCase):
     def test_preserves_short_real_utterance(self) -> None:
         # Given
         text = "잠시만요"
+
+        # When
+        filtered = should_filter_segment(text)
+
+        # Then
+        self.assertFalse(filtered)
+
+    def test_filters_a_repeated_phrase_no_single_token_dominates(self) -> None:
+        # Given: the decoder stalled on a whole phrase, so every token stays
+        # well under the single-token dominance bar
+        text = "네 알겠습니다 " * 6
+
+        # When
+        filtered = should_filter_segment(text)
+
+        # Then
+        self.assertTrue(filtered)
+
+    def test_preserves_natural_speech_that_reuses_common_words(self) -> None:
+        # Given: ordinary meeting speech repeats fillers without looping
+        text = (
+            "네 좋습니다 그럼 그렇게 진행하시죠 확인 후에 다시 말씀드릴게요 감사합니다"
+        )
 
         # When
         filtered = should_filter_segment(text)
