@@ -17,11 +17,15 @@ export class RecordingController {
   private state: RecordingViewState = initialRecordingState
   private timer: number | null = null
   private readonly pendingFailures = new Map<string, RecordingFailure>()
+  // The webview suspends interval callbacks while the window is hidden, so a
+  // visibility change is the first moment the frozen counter can catch up.
+  private readonly refresh = (): void => this.tick()
 
   constructor(
     private readonly backend: BackendPort,
     private readonly view: AppView,
     private readonly selectAudio: (path: string) => void,
+    private readonly now: () => number = () => Date.now(),
   ) {}
 
   render(): void {
@@ -39,7 +43,7 @@ export class RecordingController {
     this.render()
     try {
       const started = await this.backend.startRecording(outputRoot)
-      this.state = startRecordingState(started.recordingId, started.path)
+      this.state = startRecordingState(started.recordingId, started.path, this.now())
       this.render()
       const earlyFailure = this.pendingFailures.get(started.recordingId)
       this.pendingFailures.clear()
@@ -47,10 +51,9 @@ export class RecordingController {
         await this.cleanupFailure(earlyFailure)
         return
       }
-      this.timer = window.setInterval(() => {
-        this.state = tickRecording(this.state)
-        this.render()
-      }, 1_000)
+      this.timer = window.setInterval(() => this.tick(), 1_000)
+      document.addEventListener("visibilitychange", this.refresh)
+      window.addEventListener("focus", this.refresh)
     } catch (error) {
       this.pendingFailures.clear()
       this.state = failRecordingState(errorMessage(error))
@@ -68,7 +71,7 @@ export class RecordingController {
     try {
       const result = await this.backend.stopRecording(recordingId)
       this.selectAudio(result.path)
-      this.state = completeRecordingState(this.state, result.path)
+      this.state = completeRecordingState(this.state, result.path, result.durationSeconds)
     } catch (error) {
       this.state = failRecordingState(errorMessage(error))
     }
@@ -129,10 +132,18 @@ export class RecordingController {
     }
   }
 
+  private tick(): void {
+    const next = tickRecording(this.state, this.now())
+    if (next === this.state) return
+    this.state = next
+    this.render()
+  }
+
   private clearTimer(): void {
-    if (this.timer !== null) {
-      window.clearInterval(this.timer)
-      this.timer = null
-    }
+    if (this.timer === null) return
+    window.clearInterval(this.timer)
+    this.timer = null
+    document.removeEventListener("visibilitychange", this.refresh)
+    window.removeEventListener("focus", this.refresh)
   }
 }

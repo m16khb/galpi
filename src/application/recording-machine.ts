@@ -2,6 +2,7 @@ export interface RecordingViewState {
   readonly status: "idle" | "starting" | "recording" | "stopping" | "failed" | "completed"
   readonly recordingId: string | null
   readonly path: string | null
+  readonly startedAtMs: number | null
   readonly elapsedSeconds: number
   readonly message: string
 }
@@ -10,6 +11,7 @@ export const initialRecordingState: RecordingViewState = {
   status: "idle",
   recordingId: null,
   path: null,
+  startedAtMs: null,
   elapsedSeconds: 0,
   message: "마이크로 바로 녹음할 수 있습니다.",
 }
@@ -26,19 +28,30 @@ export function canStartRecording(state: RecordingViewState): boolean {
   return state.status === "idle" || state.status === "completed" || state.status === "failed"
 }
 
-export function startRecordingState(recordingId: string, path: string): RecordingViewState {
+export function startRecordingState(
+  recordingId: string,
+  path: string,
+  startedAtMs: number,
+): RecordingViewState {
   return {
     status: "recording",
     recordingId,
     path,
+    startedAtMs,
     elapsedSeconds: 0,
     message: "녹음 중입니다.",
   }
 }
 
-export function tickRecording(state: RecordingViewState): RecordingViewState {
+// Elapsed time is measured against the session start instead of counting
+// ticks: the webview throttles or suspends timers while the window sits in
+// the background, so every skipped tick would otherwise be lost for good.
+export function tickRecording(state: RecordingViewState, nowMs: number): RecordingViewState {
   if (state.status !== "recording") return state
-  return { ...state, elapsedSeconds: state.elapsedSeconds + 1 }
+  if (state.startedAtMs === null) return state
+  const elapsedSeconds = Math.max(0, Math.floor((nowMs - state.startedAtMs) / 1_000))
+  if (elapsedSeconds === state.elapsedSeconds) return state
+  return { ...state, elapsedSeconds }
 }
 
 export function stopRecordingState(state: RecordingViewState): RecordingViewState {
@@ -49,14 +62,19 @@ export function cancelRecordingState(state: RecordingViewState): RecordingViewSt
   return { ...state, status: "stopping", message: "녹음을 취소하고 파일을 정리합니다." }
 }
 
+// The finished time comes from the captured frames the recorder actually
+// wrote, which is the only authoritative length of the saved file.
 export function completeRecordingState(
   state: RecordingViewState,
   path: string,
+  durationSeconds: number,
 ): RecordingViewState {
   return {
     ...state,
     status: "completed",
     path,
+    startedAtMs: null,
+    elapsedSeconds: Math.max(0, Math.round(durationSeconds)),
     message: "녹음이 완료되어 전사 파일로 선택했습니다.",
   }
 }
