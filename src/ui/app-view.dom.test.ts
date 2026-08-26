@@ -138,6 +138,19 @@ describe("AppView stage flow (real DOM)", () => {
     expect(hidden(root, "#result-minutes-row")).toBe(true)
   })
 
+  test("hands the finished transcript to the augment file picker", () => {
+    // Given
+    view.setEnvironment(environment(true))
+
+    // When
+    view.renderResult(result)
+
+    // Then: augmentation starts from the transcript the run just published
+    const picker = root.querySelector("#transcript-selection") as HTMLElement
+    expect(root.querySelector("#transcript-path")?.textContent).toBe(result.txt)
+    expect(picker.dataset["selected"]).toBe("true")
+  })
+
   test("refinement progress renders inside the augment panel, not the top job panel", () => {
     // Given: a rendered result with a saved key
     view.setEnvironment(environment(true))

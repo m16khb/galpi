@@ -257,6 +257,9 @@ export class AppView {
     this.element("#result-checkpoint-row").hidden = !hasCheckpoint
     this.path("#result-srt", result.srt)
     this.path("#result-txt", result.txt)
+    // Augmentation runs on the transcript this job just published, so the
+    // picker shows it instead of asking for a file that is already here.
+    this.setTranscript(result.txt)
     if (hasCheckpoint) {
       this.path("#result-checkpoint", result.checkpoint)
     }
