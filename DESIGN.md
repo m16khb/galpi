@@ -22,6 +22,7 @@ Galpi is a calm local audio workbench: technically precise, quiet during long wo
 | Surface/secondary | `--surface-secondary` | `#efede7` | Setup rail, grouped controls |
 | Surface/elevated | `--surface-elevated` | `#fffefa` | Task and result surfaces |
 | Surface/inverse | `--surface-inverse` | `#20201e` | Log panel |
+| Surface/sunken | `--surface-sunken` | `#dedbd3` | Segmented-control track behind raised options |
 | Text/primary | `--text-primary` | `#24231f` | Headings and body |
 | Text/secondary | `--text-secondary` | `#666159` | Supporting copy |
 | Text/inverse | `--text-inverse` | `#f7f6f2` | Log panel text |
@@ -29,6 +30,7 @@ Galpi is a calm local audio workbench: technically precise, quiet during long wo
 | Border/subtle | `--border-subtle` | `#e8e4da` | Surface separation |
 | Accent/primary | `--accent-primary` | `#b75b37` | Primary action and current phase |
 | Accent/hover | `--accent-hover` | `#98482c` | Primary action hover |
+| Accent/on-primary | `--accent-on-primary` | `#fffefa` | Label on an accent-filled button |
 | Accent/text | `--accent-text` | `#98482c` | Small accent labels and text links (eyebrow, section index, phase label, text buttons) |
 | Status/success | `--status-success` | `#3f7356` | Ready and completed |
 | Status/warning | `--status-warning` | `#8a5e1c` | Setup attention |

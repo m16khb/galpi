@@ -42,7 +42,7 @@ Galpi records audio inside the app or imports an existing meeting file, then run
 Requirements:
 
 - macOS 14 or later on Apple Silicon
-- Rust 1.85 or later
+- Rust 1.88 or later
 - Bun 1.3 or later
 - Tauri CLI 2.11.4
 
@@ -159,8 +159,8 @@ The completion screen can open each artifact or reveal its output folder in Find
 
 - Audio and transcription artifacts are stored in the local folder you choose.
 - Transcription, alignment, and diarization models (Qwen3, WhisperX, pyannote) are stored in Galpi's app-specific Hugging Face cache.
-- Hugging Face and assistant credentials are stored in an Application Support settings file with `0600` permissions.
-- Credentials are not currently encrypted with macOS Keychain.
+- The Hugging Face token and the AI augmentation API key are stored in the macOS Keychain (service `com.m16khb.galpi`). A token left in plaintext by an earlier version is moved into the Keychain the first time it is read and removed from the file.
+- The remaining settings (attendee roster, glossary, model names) stay in an Application Support settings file with `0600` permissions.
 - Transcripts are not sent to an external LLM API unless AI minutes are run.
 - The worker launches fixed programs with explicit argv and does not execute shell strings.
 
@@ -210,7 +210,7 @@ cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 uvx ruff check worker
 uvx ruff format --check worker
 uvx basedpyright --pythonpath <WhisperX Python path>
-PYTHONPATH=. python3 -m unittest worker.tests.test_core -v
+PYTHONPATH=. python3 -m unittest discover -s worker/tests -t . -v
 ```
 
 ### Production build
@@ -226,7 +226,24 @@ src-tauri/target/release/bundle/macos/Galpi.app
 src-tauri/target/release/bundle/dmg/Galpi_0.1.0_aarch64.dmg
 ```
 
-The build creates the `.app` first, then packages the DMG with `hdiutil`. Distribution signing and notarization must be performed separately in an Apple Developer certificate environment.
+The build creates the `.app` first, then packages the DMG with `hdiutil`.
+
+#### Distributing to other people
+
+Gatekeeper blocks an unsigned, un-notarized DMG on every Mac that receives it. Sign and notarize with an Apple Developer certificate before handing the build to anyone.
+
+`.github/workflows/release.yml` builds the DMG on a `v*` tag and, when the repository secrets below are set, signs and notarizes it, then verifies the result with `codesign` and `spctl`.
+
+| Secret | Contents |
+|---|---|
+| `APPLE_CERTIFICATE` | base64 of the Developer ID Application certificate (`.p12`) |
+| `APPLE_CERTIFICATE_PASSWORD` | Password for that `.p12` |
+| `APPLE_SIGNING_IDENTITY` | For example `Developer ID Application: Name (TEAMID)` |
+| `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID` | Apple ID, app-specific password, and team id for notarization |
+
+Without the secrets the workflow still produces an ad-hoc signed DMG, which is for internal testing only.
+
+The entitlements Hardened Runtime needs are declared in `src-tauri/Entitlements.plist`. Galpi installs its own Python environment on first run and loads PyTorch and MLX from it, so library validation must be disabled and executable memory allowed. No signed build has been produced yet, so verify this during the first notarization.
 
 ## Troubleshooting
 
@@ -239,7 +256,9 @@ The build creates the `.app` first, then packages the DMG with `hdiutil`. Distri
 | Microphone recording does not start | Check Galpi microphone access in System Settings |
 | Other participants are not recorded | System-audio capture is not supported yet |
 | AI minutes fail | Check API Key, Base URL, model name, and provider quota |
-| The app will not open on another Mac | Current builds are unsigned and not notarized; check Gatekeeper and distribution state |
+| The app will not open on another Mac | Gatekeeper blocks unsigned, un-notarized builds. Sign and notarize before distributing (see "Distributing to other people") |
+| The engine shows `Pending` again after an update | The readiness marker tracks the hash of the dependency lock file. When the lock changes, press **Prepare local engine** once to match the environment (models are not downloaded again) |
+| Tokens appear to be missing | Credentials now live in the Keychain. If Keychain access was denied, check the `com.m16khb.galpi` items in Keychain Access |
 
 ## Project status
 

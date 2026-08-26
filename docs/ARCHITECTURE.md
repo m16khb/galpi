@@ -145,7 +145,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 uvx ruff check worker && uvx ruff format --check worker
-PYTHONPATH=. python -m unittest worker.tests.test_core -v
+PYTHONPATH=. python3 -m unittest discover -s worker/tests -t . -v
 ```
 
 아키텍처 위반은 게이트 실패로: 펜스는 `scripts/check-architecture.ts`가 권위다.

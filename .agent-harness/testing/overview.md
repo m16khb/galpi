@@ -25,7 +25,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 uvx ruff check worker
 uvx ruff format --check worker
-PYTHONPATH=. python3 -m unittest worker.tests.test_core -v
+PYTHONPATH=. python3 -m unittest discover -s worker/tests -t . -v
 ```
 
 ## Test structure in this repo
@@ -39,7 +39,7 @@ PYTHONPATH=. python3 -m unittest worker.tests.test_core -v
   (error codes, event ordering); if a fake diverges, fix the fake (LSP rule,
   docs/ARCHITECTURE.md §4).
 - Worker pure modules (`core`, `artifacts`, `minutes_*`) are tested without
-  the ML stack (`worker.tests.test_core`).
+  the ML stack (every module under `worker/tests`).
 - Behavioral tests use Given/When/Then comments where setup is nontrivial.
 - Worker stdout is machine-readable JSONL only; never emit diagnostics there.
 

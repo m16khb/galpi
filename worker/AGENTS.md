@@ -28,7 +28,7 @@ worker/
 │   ├── assistant_stream.py # OpenAI-compatible SSE transport and progress
 │   └── refine.py          # Short/long refinement orchestration and publication
 ├── stubs/whisperx/        # Local types for the untyped dependency
-└── tests/test_core.py     # Pure contract tests; no ML stack required
+└── tests/                 # Pure contract tests; no ML stack required
 ```
 
 ## WHERE TO LOOK
@@ -67,7 +67,7 @@ worker/
 - Refinement stays single-pass through 48,000 characters. Longer transcripts split
   only at whole speaker-turn boundaries, map facts per chunk, then reduce once into
   the normative minutes format; all progress remains monotonic on `phase`.
-- Tests use stdlib `unittest`; `worker.tests.test_core` re-exports the split contract cases.
+- Tests use stdlib `unittest`; run the whole directory with `unittest discover`.
 
 ## ANTI-PATTERNS
 

@@ -24,7 +24,7 @@ galpi/
 │       ├── domain/              # Framework-free requests, roster value objects, artifacts, worker protocol
 │       ├── application/         # Ports, use cases, job/recording lifecycle
 │       └── adapters/            # Tauri ingress and OS/process/audio egress
-├── worker/                      # Python WhisperX sidecar, strict stubs, unittest contracts
+├── worker/                      # Python transcription sidecar (Qwen3/WhisperX), strict stubs
 ├── scripts/                     # Architecture check, sidecar staging, DMG packaging
 ├── DESIGN.md                    # UI system and accessibility contract
 └── package.json                 # Canonical Bun workflows
@@ -136,17 +136,18 @@ cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 uvx ruff check worker
 uvx ruff format --check worker
 uvx basedpyright --pythonpath <WhisperX-Python>
-PYTHONPATH=. python -m unittest worker.tests.test_core -v
+PYTHONPATH=. python3 -m unittest discover -s worker/tests -t . -v
 bun run build
 ```
 
 ## NOTES
 
-- Supported distribution target: macOS 14+ on Apple Silicon; Rust 1.85+, Bun 1.3+.
-- `bun run check` covers architecture, Biome, and TypeScript only; it omits Rust/Python gates.
+- Supported distribution target: macOS 14+ on Apple Silicon; Rust 1.88+, Bun 1.3+.
+- `bun run check` covers architecture, Biome, and TypeScript only; `bun run check:all` adds the
+  Rust and Python gates.
 - Dev/build staging may download the pinned ARM64 `uv` archive before compiling Tauri.
 - `bun run build` expects macOS `hdiutil`; signing and notarization remain separate.
-- Build scripts currently hardcode ARM64 and release artifact version `0.1.0`.
+- Build scripts hardcode ARM64; the DMG name follows `tauri.conf.json`'s version.
 - Worker protocol, Rust parser, frontend event schema, and job reducer form one change set.
 
 <!-- AGENT_HARNESS:START -->

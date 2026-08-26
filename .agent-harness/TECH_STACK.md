@@ -21,20 +21,27 @@ high unless noted.
 
 ## Rust host (Tauri)
 
-- Rust edition 2024, `rust-version = "1.85"` (`src-tauri/Cargo.toml`).
+- Rust edition 2024, `rust-version = "1.88"` (`src-tauri/Cargo.toml`), pinned components
+  via `rust-toolchain.toml`.
 - `tauri = "2"` / `tauri-build = "2"`; Tauri CLI 2.11.4 pinned in README quick
   start (`cargo install tauri-cli --version 2.11.4 --locked`).
 - cargo is the package manager; fmt/clippy/test gates run with
   `--manifest-path src-tauri/Cargo.toml`.
 
-## Python worker (WhisperX sidecar)
+## Python worker (transcription sidecar)
 
-- WhisperX 3.8.6, torch/torchaudio 2.8.0, pyannote.audio 4.0.7,
-  imageio-ffmpeg 0.6.0 (`worker/requirements.txt`).
+- Two isolated presets, each with its own virtualenv and lock file:
+  - Qwen3 (default): mlx-qwen3-asr 0.3.5 on mlx 0.32.1, plus torch/torchaudio
+    2.8.0 and pyannote.audio 4.0.7 for diarization
+    (`worker/requirements-qwen3.txt` → `requirements-qwen3.lock`).
+  - WhisperX: WhisperX 3.8.6, torch/torchaudio 2.8.0, pyannote.audio 4.0.7,
+    imageio-ffmpeg 0.6.0 (`worker/requirements.txt` → `requirements.lock`).
+- The app installs from the lock files; the WhisperX lock is hash-pinned, while
+  the Qwen3 lock pins versions only because mlx ships a wheel per macOS release.
 - strict Pyright (`pyrightconfig.json`: `typeCheckingMode: strict`,
   `stubPath: worker/stubs`); local WhisperX stubs, lazy heavy imports.
 - Tooling via `uv`/`uvx`: ruff (lint + format), basedpyright, unittest
-  (`worker.tests.test_core`). App-managed Python 3.12 environment; no global
+  (every module under `worker/tests`). App-managed Python 3.12 environment; no global
   Python/ffmpeg/WhisperX install required (README quick start).
 
 ## Platform target
