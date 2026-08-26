@@ -4,24 +4,34 @@ use hound::{SampleFormat, WavSpec, WavWriter};
 use std::fs::{File, OpenOptions};
 use std::io::BufWriter;
 use std::path::Path;
-use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
+use std::sync::mpsc::{Receiver, Sender, SyncSender, channel, sync_channel};
 use std::thread::JoinHandle;
 
-const QUEUE_CAPACITY: usize = 32;
+pub(super) const FRAMES_PER_CHUNK: usize = 4_096;
+const QUEUE_SECONDS: usize = 30;
 const RIFF_DATA_LIMIT: u64 = u32::MAX as u64 - 44;
 
 pub enum WriterCommand {
-    Samples(Vec<i16>),
-    Finish(SyncSender<Result<WriterSummary, String>>),
+    Samples {
+        samples: Vec<i16>,
+        dropped_before: u64,
+    },
+    Finish {
+        trailing_dropped: u64,
+        reply: SyncSender<Result<WriterSummary, String>>,
+    },
     Cancel(SyncSender<()>),
 }
 
 pub struct WriterSummary {
     pub samples: u64,
+    pub dropped_samples: u64,
 }
 
 pub struct WriterHandle {
     sender: SyncSender<WriterCommand>,
+    /// Emptied buffers travelling back to the capture callback for refilling.
+    recycled: Option<Receiver<Vec<i16>>>,
     thread: JoinHandle<()>,
 }
 
@@ -53,11 +63,20 @@ pub fn spawn(
             ));
         }
     };
-    let (sender, receiver) = sync_channel(QUEUE_CAPACITY);
+    let (sender, receiver) = sync_channel(queue_capacity(sample_rate));
+    let (recycle_sender, recycled) = channel();
     let thread = match std::thread::Builder::new()
         .name("galpi-wav-writer".to_owned())
-        .spawn(move || run_writer(writer, &receiver, sample_rate, channels, &failure))
-    {
+        .spawn(move || {
+            run_writer(
+                writer,
+                &receiver,
+                &recycle_sender,
+                sample_rate,
+                channels,
+                &failure,
+            );
+        }) {
         Ok(thread) => thread,
         Err(error) => {
             return Err(remove_after_spawn_failure(
@@ -66,7 +85,11 @@ pub fn spawn(
             ));
         }
     };
-    Ok(WriterHandle { sender, thread })
+    Ok(WriterHandle {
+        sender,
+        recycled: Some(recycled),
+        thread,
+    })
 }
 
 fn remove_after_spawn_failure(path: &Path, error: AppError) -> AppError {
@@ -84,10 +107,20 @@ impl WriterHandle {
         self.sender.clone()
     }
 
-    pub fn finish(self) -> Result<WriterSummary, AppError> {
+    /// Hand the buffer pool to the capture stream; only one owner can hold it.
+    pub fn take_recycled(&mut self) -> Receiver<Vec<i16>> {
+        self.recycled
+            .take()
+            .unwrap_or_else(|| channel::<Vec<i16>>().1)
+    }
+
+    pub fn finish(self, trailing_dropped: u64) -> Result<WriterSummary, AppError> {
         let (reply, receiver) = sync_channel(1);
         self.sender
-            .send(WriterCommand::Finish(reply))
+            .send(WriterCommand::Finish {
+                trailing_dropped,
+                reply,
+            })
             .map_err(|_| AppError::new("WAV_WRITER_FAILED", "WAV writer가 종료되었습니다."))?;
         let result = receiver
             .recv()
@@ -114,20 +147,76 @@ impl WriterHandle {
     }
 }
 
+const fn queue_capacity(sample_rate: u32) -> usize {
+    let frames = sample_rate as usize * QUEUE_SECONDS;
+    frames.div_ceil(FRAMES_PER_CHUNK)
+}
+
+fn append_silence(
+    writer: &mut WavWriter<BufWriter<File>>,
+    samples: &mut u64,
+    count: u64,
+) -> Result<(), String> {
+    for _ in 0..count {
+        writer
+            .write_sample(0_i16)
+            .map_err(|error| error.to_string())?;
+        *samples += 1;
+    }
+    Ok(())
+}
+
+fn append_samples(
+    writer: &mut WavWriter<BufWriter<File>>,
+    samples: &mut u64,
+    mut chunk: Vec<i16>,
+    recycle: &Sender<Vec<i16>>,
+) -> Result<(), String> {
+    let result = write_chunk(writer, samples, &chunk);
+    // The buffer goes back to the callback either way; a write failure ends
+    // the recording, and an unreturned buffer would just make it allocate.
+    chunk.clear();
+    let _returned = recycle.send(chunk);
+    result
+}
+
+fn write_chunk(
+    writer: &mut WavWriter<BufWriter<File>>,
+    samples: &mut u64,
+    chunk: &[i16],
+) -> Result<(), String> {
+    // hound's bulk writer skips the per-sample bounds and format checks that
+    // `write_sample` repeats for every one of 48,000 samples a second.
+    let count = u32::try_from(chunk.len()).map_err(|error| error.to_string())?;
+    let mut bulk = writer.get_i16_writer(count);
+    for sample in chunk {
+        bulk.write_sample(*sample);
+    }
+    bulk.flush().map_err(|error| error.to_string())?;
+    *samples += u64::from(count);
+    Ok(())
+}
+
 fn run_writer(
     mut writer: WavWriter<BufWriter<File>>,
     receiver: &Receiver<WriterCommand>,
+    recycle: &Sender<Vec<i16>>,
     sample_rate: u32,
     channels: u16,
     failure: &SharedFailure,
 ) {
     let flush_every = u64::from(sample_rate) * u64::from(channels) * 5;
     let mut samples = 0_u64;
+    let mut dropped_samples = 0_u64;
     let mut next_flush = flush_every;
     while let Ok(command) = receiver.recv() {
         match command {
-            WriterCommand::Samples(chunk) => {
-                if samples.saturating_add(chunk.len() as u64) * 2 > RIFF_DATA_LIMIT {
+            WriterCommand::Samples {
+                samples: chunk,
+                dropped_before,
+            } => {
+                let additional = dropped_before.saturating_add(chunk.len() as u64);
+                if samples.saturating_add(additional) * 2 > RIFF_DATA_LIMIT {
                     set_failure(
                         failure,
                         "WAV_TOO_LARGE",
@@ -135,12 +224,15 @@ fn run_writer(
                     );
                     continue;
                 }
-                for sample in chunk {
-                    if let Err(error) = writer.write_sample(sample) {
-                        set_failure(failure, "WAV_WRITE_FAILED", error.to_string());
-                        break;
-                    }
-                    samples += 1;
+                if let Err(error) = append_silence(&mut writer, &mut samples, dropped_before) {
+                    set_failure(failure, "WAV_WRITE_FAILED", error);
+                    continue;
+                }
+                dropped_samples += dropped_before;
+                let outcome = append_samples(&mut writer, &mut samples, chunk, recycle);
+                if let Err(error) = outcome {
+                    set_failure(failure, "WAV_WRITE_FAILED", error);
+                    continue;
                 }
                 if samples >= next_flush {
                     if let Err(error) = writer.flush() {
@@ -149,10 +241,29 @@ fn run_writer(
                     next_flush = samples.saturating_add(flush_every);
                 }
             }
-            WriterCommand::Finish(reply) => {
+            WriterCommand::Finish {
+                trailing_dropped,
+                reply,
+            } => {
+                if samples.saturating_add(trailing_dropped) * 2 > RIFF_DATA_LIMIT {
+                    set_failure(
+                        failure,
+                        "WAV_TOO_LARGE",
+                        "WAV 파일이 4GB 한도에 도달했습니다.".to_owned(),
+                    );
+                } else if let Err(error) =
+                    append_silence(&mut writer, &mut samples, trailing_dropped)
+                {
+                    set_failure(failure, "WAV_WRITE_FAILED", error);
+                } else {
+                    dropped_samples += trailing_dropped;
+                }
                 let result = writer
                     .finalize()
-                    .map(|()| WriterSummary { samples })
+                    .map(|()| WriterSummary {
+                        samples,
+                        dropped_samples,
+                    })
                     .map_err(|error| error.to_string());
                 if reply.send(result).is_err() {
                     set_failure(
@@ -184,42 +295,5 @@ fn run_writer(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::spawn;
-    use crate::adapters::outbound::recording::failure;
-    use crate::application::error::AppError;
-    use crate::application::model::RecordingFailure;
-    use crate::application::ports::RecordingEvents;
-    use hound::WavReader;
-    use std::sync::Arc;
-    use uuid::Uuid;
-
-    struct NoopEvents;
-
-    impl RecordingEvents for NoopEvents {
-        fn emit_failure(&self, _failure: RecordingFailure) -> Result<(), AppError> {
-            Ok(())
-        }
-    }
-
-    #[test]
-    fn writes_exact_pcm_samples_and_header() -> Result<(), Box<dyn std::error::Error>> {
-        let path = std::env::temp_dir().join(format!("galpi-writer-{}.wav", Uuid::now_v7()));
-        let failure = failure::new(Uuid::now_v7(), Arc::new(NoopEvents));
-        let writer = spawn(&path, 48_000, 2, failure)?;
-        writer
-            .sender()
-            .send(super::WriterCommand::Samples(vec![-32_768, 0, 32_767, 1]))?;
-        let summary = writer.finish()?;
-        let mut reader = WavReader::open(&path)?;
-        let spec = reader.spec();
-        let samples = reader.samples::<i16>().collect::<Result<Vec<_>, _>>()?;
-        std::fs::remove_file(path)?;
-
-        assert_eq!(summary.samples, 4);
-        assert_eq!(spec.channels, 2);
-        assert_eq!(spec.sample_rate, 48_000);
-        assert_eq!(samples, [-32_768, 0, 32_767, 1]);
-        Ok(())
-    }
-}
+#[path = "writer_tests.rs"]
+mod tests;

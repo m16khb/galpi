@@ -53,7 +53,7 @@ pub struct TranscriptionResult {
     pub job_id: Uuid,
     pub srt: String,
     pub txt: String,
-    pub checkpoint: String,
+    pub checkpoint: Option<String>,
     pub output_directory: String,
     pub segments: usize,
     pub filtered: usize,
@@ -84,6 +84,7 @@ pub struct RecordingResult {
     pub sample_rate: u32,
     pub channels: u16,
     pub frames: u64,
+    pub dropped_frames: u64,
     pub duration_seconds: f64,
 }
 

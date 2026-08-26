@@ -196,6 +196,7 @@ export class AppView {
     this.recordingActive =
       state.status === "starting" || state.status === "recording" || state.status === "stopping"
     this.element("#recorder").dataset["state"] = state.status
+    this.element("#recorder").dataset["warning"] = String(state.warning)
     this.element<HTMLButtonElement>("#record-button").hidden = this.recordingActive
     this.element("#recording-active").hidden = !this.recordingActive
     this.element("#recording-status").textContent = state.message
@@ -206,12 +207,19 @@ export class AppView {
           ? "저장 중"
           : "녹음 중"
     this.element("#recording-path").textContent = state.path ?? "마이크 입력을 저장합니다."
-    this.element("#recording-time").textContent = formatElapsed(state.elapsedSeconds)
+    this.setRecordingTime(state.elapsedSeconds)
     this.element<HTMLButtonElement>("#stop-recording-button").disabled =
       state.status === "starting" || state.status === "stopping"
     this.element<HTMLButtonElement>("#cancel-recording-button").disabled =
       state.status === "starting" || state.status === "stopping"
     this.refreshActions()
+  }
+
+  /// Update only the clock, which is all that changes on a recording tick.
+  setRecordingTime(elapsedSeconds: number): void {
+    const clock = this.element("#recording-time")
+    clock.textContent = formatElapsed(elapsedSeconds)
+    clock.setAttribute("datetime", `PT${Math.max(0, Math.round(elapsedSeconds))}S`)
   }
 
   renderJob(state: JobViewState): void {

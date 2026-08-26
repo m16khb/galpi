@@ -11,7 +11,7 @@ use async_trait::async_trait;
 use cpal::Stream;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
@@ -31,6 +31,7 @@ struct ActiveRecording {
     folder: PathBuf,
     sample_rate: u32,
     channels: u16,
+    dropped_samples: Arc<AtomicU64>,
 }
 
 pub struct NativeRecorder {
@@ -116,15 +117,19 @@ fn start_sync(
     let sample_rate = supported.sample_rate();
     let channels = supported.channels();
     let failure = failure::new(recording_id, events);
-    let samples = Arc::new(AtomicU64::new(0));
-    let writer = writer::spawn(&partial_path, sample_rate, channels, failure.clone())?;
+    let dropped_samples = Arc::new(AtomicU64::new(0));
+    let mut writer = writer::spawn(&partial_path, sample_rate, channels, failure.clone())?;
+    let recycled = writer.take_recycled();
     let stream = match capture::build(
         &device,
         &supported.config(),
         supported.sample_format(),
-        writer.sender(),
+        capture::WriterChannels {
+            sender: writer.sender(),
+            recycled,
+        },
         failure.clone(),
-        samples.clone(),
+        dropped_samples.clone(),
         channels,
     ) {
         Ok(stream) => stream,
@@ -159,6 +164,7 @@ fn start_sync(
         folder,
         sample_rate,
         channels,
+        dropped_samples,
     });
     Ok(RecordingStatus {
         recording_id,
@@ -174,7 +180,8 @@ fn stop_sync(
 ) -> Result<RecordingResult, AppError> {
     let recording = take_recording(state, recording_id)?;
     drop(recording.stream);
-    let summary = match recording.writer.finish() {
+    let trailing_dropped = recording.dropped_samples.swap(0, Ordering::Relaxed);
+    let summary = match recording.writer.finish(trailing_dropped) {
         Ok(summary) => summary,
         Err(error) => {
             return Err(with_cleanup(
@@ -223,6 +230,7 @@ fn stop_sync(
         sample_rate: recording.sample_rate,
         channels: recording.channels,
         frames,
+        dropped_frames: summary.dropped_samples / u64::from(recording.channels),
         duration_seconds,
     })
 }

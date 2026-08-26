@@ -33,6 +33,9 @@ const started: RecordingStatus = {
 
 function harness(result: RecordingResult, clock: () => number) {
   const states: RecordingViewState[] = []
+  // A tick that only advances the clock takes the narrow path, so the elapsed
+  // time reaches the view through either call.
+  const times: number[] = []
   const backend = {
     startRecording: async () => started,
     stopRecording: async () => result,
@@ -40,10 +43,12 @@ function harness(result: RecordingResult, clock: () => number) {
   } as unknown as BackendPort
   const view = {
     setRecording: (state: RecordingViewState) => states.push(state),
+    setRecordingTime: (elapsedSeconds: number) => times.push(elapsedSeconds),
     showError: () => undefined,
   } as unknown as AppView
   return {
     states,
+    times,
     controller: new RecordingController(backend, view, () => undefined, clock),
   }
 }
@@ -52,8 +57,8 @@ describe("RecordingController elapsed time", () => {
   test("catches up on foreground return after background ticks are dropped", async () => {
     // Given a recording started while the window was visible
     let now = 10_000
-    const { controller, states } = harness(
-      { ...started, path: "/tmp/meeting.wav", frames: 0, durationSeconds: 0 },
+    const { controller, times } = harness(
+      { ...started, path: "/tmp/meeting.wav", frames: 0, droppedFrames: 0, durationSeconds: 0 },
       () => now,
     )
     await controller.start("/tmp")
@@ -63,13 +68,19 @@ describe("RecordingController elapsed time", () => {
     dom.document.dispatchEvent(new dom.Event("visibilitychange"))
 
     // Then the counter reflects the real recording time, not one lost tick
-    expect(states.at(-1)?.elapsedSeconds).toBe(90)
+    expect(times.at(-1)).toBe(90)
   })
 
   test("settles the finished time on the recorded file duration", async () => {
     let now = 0
     const { controller, states } = harness(
-      { ...started, path: "/tmp/meeting.wav", frames: 4_320_000, durationSeconds: 90.2 },
+      {
+        ...started,
+        path: "/tmp/meeting.wav",
+        frames: 4_320_000,
+        droppedFrames: 0,
+        durationSeconds: 90.2,
+      },
       () => now,
     )
     await controller.start("/tmp")

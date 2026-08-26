@@ -18,7 +18,10 @@ fn treats_core_audio_xrun_as_recoverable() {
     assert!(!is_recoverable_stream_error(ErrorKind::DeviceNotAvailable));
 }
 
+/// Skipped where `pmset` is unavailable or restricted (sandboxed CI images);
+/// run it with `cargo test -- --ignored` on a real desktop session.
 #[test]
+#[ignore = "reads the live system assertion table through pmset"]
 fn sleep_blocker_holds_and_releases_a_system_sleep_assertion() -> Result<(), String> {
     // Given: a distinctive assertion name to find in the system assertion table
     let name = "galpi-test-recording-sleep-blocker";

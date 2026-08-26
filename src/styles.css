@@ -998,7 +998,12 @@ button:disabled {
 .recording-status {
   margin: 9px 0 0;
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 11px;
+}
+
+.recorder[data-warning="true"] .recording-status {
+  color: var(--status-warning);
+  font-weight: 700;
 }
 
 .choice-divider {

@@ -1,5 +1,5 @@
-use super::failure::{SharedFailure, has_failure, set_failure};
-use super::writer::WriterCommand;
+use super::failure::{SharedFailure, has_failure, record_failure, set_failure};
+use super::writer::{FRAMES_PER_CHUNK, WriterCommand};
 use crate::application::error::AppError;
 use cpal::traits::DeviceTrait;
 use cpal::{
@@ -8,25 +8,31 @@ use cpal::{
 };
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc::{SyncSender, TrySendError};
+use std::sync::mpsc::{Receiver, SyncSender, TrySendError};
 
-const MAX_FRAMES_PER_CHUNK: usize = 4_096;
+/// The writer-facing endpoints one capture stream owns.
+pub struct WriterChannels {
+    pub sender: SyncSender<WriterCommand>,
+    /// Buffers the writer has finished with, waiting to be filled again.
+    pub recycled: Receiver<Vec<i16>>,
+}
 
 pub fn build(
     device: &Device,
     config: &StreamConfig,
     format: SampleFormat,
-    sender: SyncSender<WriterCommand>,
+    channels_out: WriterChannels,
     failure: SharedFailure,
-    samples: Arc<AtomicU64>,
+    dropped_samples: Arc<AtomicU64>,
     channels: u16,
 ) -> Result<Stream, AppError> {
     let capture = Capture {
         device,
         config,
-        sender,
+        sender: channels_out.sender,
+        recycled: channels_out.recycled,
         failure,
-        samples,
+        dropped_samples,
         channels,
     };
     match format {
@@ -53,8 +59,10 @@ struct Capture<'a> {
     device: &'a Device,
     config: &'a StreamConfig,
     sender: SyncSender<WriterCommand>,
+    /// Buffers the writer has finished with, waiting to be filled again.
+    recycled: Receiver<Vec<i16>>,
     failure: SharedFailure,
-    samples: Arc<AtomicU64>,
+    dropped_samples: Arc<AtomicU64>,
     channels: u16,
 }
 
@@ -71,8 +79,9 @@ impl Capture<'_> {
                     enqueue(
                         input,
                         &self.sender,
+                        &self.recycled,
                         &self.failure,
-                        &self.samples,
+                        &self.dropped_samples,
                         self.channels,
                         convert,
                     );
@@ -100,38 +109,65 @@ pub(super) fn is_recoverable_stream_error(kind: ErrorKind) -> bool {
 fn enqueue<T: Copy>(
     input: &[T],
     sender: &SyncSender<WriterCommand>,
+    recycled: &Receiver<Vec<i16>>,
     failure: &SharedFailure,
-    samples: &AtomicU64,
+    dropped_samples: &AtomicU64,
     channels: u16,
     convert: fn(T) -> i16,
 ) {
     if has_failure(failure) {
         return;
     }
-    let chunk_samples = MAX_FRAMES_PER_CHUNK * usize::from(channels);
+    let chunk_samples = FRAMES_PER_CHUNK * usize::from(channels);
     for input_chunk in input.chunks(chunk_samples) {
-        let chunk = input_chunk.iter().copied().map(convert).collect();
-        match sender.try_send(WriterCommand::Samples(chunk)) {
-            Ok(()) => {
-                samples.fetch_add(input_chunk.len() as u64, Ordering::Relaxed);
+        let mut chunk = take_buffer(recycled, chunk_samples);
+        chunk.extend(input_chunk.iter().copied().map(convert));
+        let dropped_before = dropped_samples.swap(0, Ordering::Relaxed);
+        match sender.try_send(WriterCommand::Samples {
+            samples: chunk,
+            dropped_before,
+        }) {
+            Ok(()) => {}
+            Err(TrySendError::Full(WriterCommand::Samples { mut samples, .. })) => {
+                // The writer is behind. Drop this chunk, remember how much of
+                // the timeline it covered, and keep the buffer for reuse.
+                samples.clear();
+                let _returned = recycled.try_iter().count();
+                dropped_samples.fetch_add(
+                    dropped_before.saturating_add(input_chunk.len() as u64),
+                    Ordering::Relaxed,
+                );
             }
             Err(TrySendError::Full(_)) => {
-                set_failure(
-                    failure,
-                    "AUDIO_OVERRUN",
-                    "디스크 기록이 마이크 입력을 따라가지 못했습니다.".to_owned(),
+                dropped_samples.fetch_add(
+                    dropped_before.saturating_add(input_chunk.len() as u64),
+                    Ordering::Relaxed,
                 );
-                return;
             }
             Err(TrySendError::Disconnected(_)) => {
-                set_failure(
+                // The writer thread already reported whatever killed it; the
+                // audio thread only needs the state to be visible to `stop`.
+                record_failure(
                     failure,
                     "WAV_WRITER_FAILED",
-                    "녹음 파일 writer가 예기치 않게 종료되었습니다.".to_owned(),
+                    "녹음 파일 writer가 예기치 않게 종료되었습니다.",
                 );
                 return;
             }
         }
+    }
+}
+
+/// Take a buffer the writer has finished with, allocating only when the pool
+/// is empty. Keeping allocation out of the steady state is what makes the
+/// callback safe to run on the realtime audio thread.
+fn take_buffer(recycled: &Receiver<Vec<i16>>, capacity: usize) -> Vec<i16> {
+    match recycled.try_recv() {
+        Ok(mut buffer) => {
+            buffer.clear();
+            buffer
+        }
+        Err(_) => Vec::with_capacity(capacity),
     }
 }
 
@@ -163,3 +199,90 @@ fn float_to_i16(sample: f64) -> i16 {
 }
 
 fn _assert_sample_types(_: I24, _: U24) {}
+
+#[cfg(test)]
+mod tests {
+    use super::enqueue;
+    use crate::adapters::outbound::recording::failure;
+    use crate::adapters::outbound::recording::writer::WriterCommand;
+    use crate::application::error::AppError;
+    use crate::application::model::RecordingFailure;
+    use crate::application::ports::RecordingEvents;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::mpsc::{channel, sync_channel};
+    use uuid::Uuid;
+
+    struct NoopEvents;
+
+    impl RecordingEvents for NoopEvents {
+        fn emit_failure(&self, _failure: RecordingFailure) -> Result<(), AppError> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn counts_samples_instead_of_failing_when_writer_queue_is_full()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Given
+        let (sender, _receiver) = sync_channel(1);
+        sender.send(WriterCommand::Samples {
+            samples: vec![1],
+            dropped_before: 0,
+        })?;
+        let failure = failure::new(Uuid::now_v7(), Arc::new(NoopEvents));
+        let dropped_samples = AtomicU64::new(0);
+        let (_recycle, recycled) = channel();
+
+        // When
+        enqueue(
+            &[2_i16, 3_i16],
+            &sender,
+            &recycled,
+            &failure,
+            &dropped_samples,
+            1,
+            |sample| sample,
+        );
+
+        // Then
+        assert_eq!(dropped_samples.load(Ordering::Relaxed), 2);
+        assert!(failure::take_failure(&failure)?.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn refills_a_recycled_buffer_instead_of_allocating() -> Result<(), Box<dyn std::error::Error>> {
+        // Given: the writer returned a buffer it had finished with
+        let (sender, receiver) = sync_channel(4);
+        let (recycle, recycled) = channel();
+        let mut spent = Vec::with_capacity(64);
+        spent.push(9_i16);
+        let address = spent.as_ptr();
+        spent.clear();
+        recycle.send(spent)?;
+        let failure = failure::new(Uuid::now_v7(), Arc::new(NoopEvents));
+        let dropped_samples = AtomicU64::new(0);
+
+        // When
+        enqueue(
+            &[4_i16, 5_i16],
+            &sender,
+            &recycled,
+            &failure,
+            &dropped_samples,
+            1,
+            |sample| sample,
+        );
+
+        // Then: the queued chunk reuses that same allocation
+        match receiver.recv()? {
+            WriterCommand::Samples { samples, .. } => {
+                assert_eq!(samples, [4, 5]);
+                assert_eq!(samples.as_ptr(), address);
+            }
+            _ => unreachable!("enqueue only sends samples"),
+        }
+        Ok(())
+    }
+}

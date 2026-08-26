@@ -31,6 +31,7 @@ impl RecordingPort for FakePort {
             sample_rate: 48_000,
             channels: 1,
             frames: 48_000,
+            dropped_frames: 0,
             duration_seconds: 1.0,
         })
     }

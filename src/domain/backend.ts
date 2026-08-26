@@ -68,6 +68,7 @@ export interface RecordingStatus {
 
 export interface RecordingResult extends RecordingStatus {
   readonly frames: number
+  readonly droppedFrames: number
   readonly durationSeconds: number
 }
 

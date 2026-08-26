@@ -49,9 +49,21 @@ describe("recording state", () => {
   test("settles the finished time on the recorded file duration", () => {
     const stopped = tickRecording(startRecordingState("recording-1", "/tmp/meeting.wav", 0), 3_000)
 
-    const state = completeRecordingState(stopped, "/tmp/meeting.wav", 62.4)
+    const state = completeRecordingState(stopped, "/tmp/meeting.wav", 62.4, 0)
 
     expect(state.elapsedSeconds).toBe(62)
+  })
+
+  test("warns when a completed recording contains dropped audio frames", () => {
+    // Given
+    const stopped = startRecordingState("recording-1", "/tmp/meeting.wav", 0)
+
+    // When
+    const state = completeRecordingState(stopped, "/tmp/meeting.wav", 1, 4_800)
+
+    // Then
+    expect(state.warning).toBe(true)
+    expect(state.message).toContain("일부 오디오")
   })
 
   test("blocks a second start while microphone permission is pending", () => {

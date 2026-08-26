@@ -5,6 +5,7 @@ export interface RecordingViewState {
   readonly startedAtMs: number | null
   readonly elapsedSeconds: number
   readonly message: string
+  readonly warning: boolean
 }
 
 export const initialRecordingState: RecordingViewState = {
@@ -14,6 +15,7 @@ export const initialRecordingState: RecordingViewState = {
   startedAtMs: null,
   elapsedSeconds: 0,
   message: "마이크로 바로 녹음할 수 있습니다.",
+  warning: false,
 }
 
 export function beginRecordingState(): RecordingViewState {
@@ -40,6 +42,7 @@ export function startRecordingState(
     startedAtMs,
     elapsedSeconds: 0,
     message: "녹음 중입니다.",
+    warning: false,
   }
 }
 
@@ -68,6 +71,7 @@ export function completeRecordingState(
   state: RecordingViewState,
   path: string,
   durationSeconds: number,
+  droppedFrames: number,
 ): RecordingViewState {
   return {
     ...state,
@@ -75,7 +79,11 @@ export function completeRecordingState(
     path,
     startedAtMs: null,
     elapsedSeconds: Math.max(0, Math.round(durationSeconds)),
-    message: "녹음이 완료되어 전사 파일로 선택했습니다.",
+    warning: droppedFrames > 0,
+    message:
+      droppedFrames === 0
+        ? "녹음이 완료되어 전사 파일로 선택했습니다."
+        : "녹음은 완료됐지만 일부 오디오가 누락되어 무음으로 대체됐습니다.",
   }
 }
 

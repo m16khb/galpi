@@ -71,7 +71,12 @@ export class RecordingController {
     try {
       const result = await this.backend.stopRecording(recordingId)
       this.selectAudio(result.path)
-      this.state = completeRecordingState(this.state, result.path, result.durationSeconds)
+      this.state = completeRecordingState(
+        this.state,
+        result.path,
+        result.durationSeconds,
+        result.droppedFrames,
+      )
     } catch (error) {
       this.state = failRecordingState(errorMessage(error))
     }
@@ -135,7 +140,14 @@ export class RecordingController {
   private tick(): void {
     const next = tickRecording(this.state, this.now())
     if (next === this.state) return
+    // A tick only ever advances the clock, so the rest of the recorder — its
+    // buttons, its path, its status line — is left exactly as it is.
+    const clockOnly = next.status === this.state.status && next.message === this.state.message
     this.state = next
+    if (clockOnly) {
+      this.view.setRecordingTime(next.elapsedSeconds)
+      return
+    }
     this.render()
   }
 

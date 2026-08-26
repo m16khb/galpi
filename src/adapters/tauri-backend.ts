@@ -98,6 +98,7 @@ const recordingStatusSchema = z.object({
 
 const recordingResultSchema = recordingStatusSchema.extend({
   frames: z.number().int().nonnegative(),
+  droppedFrames: z.number().int().nonnegative(),
   durationSeconds: z.number().nonnegative(),
 })
 
