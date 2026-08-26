@@ -59,7 +59,7 @@ export class AppController {
       this.outputRoot = environment.defaultOutputDirectory
       this.view.setOutput(environment.defaultOutputDirectory)
       this.view.setEnvironment(environment)
-      this.view.tokenSettings.setConfigured((await this.backend.loadHuggingFaceToken()) !== null)
+      this.view.tokenSettings.setStored(await this.backend.huggingFaceTokenStored())
       const assistant = await this.backend.loadAssistantSettings()
       this.view.assistantSettings.setConfigured(assistant.apiKey !== null)
       this.view.setAssistantKeyReady(assistant.apiKey !== null)
@@ -155,7 +155,7 @@ export class AppController {
     assistant.setBusy(true)
     settings.showMessage("저장된 설정을 불러오는 중입니다.")
     try {
-      settings.setToken(await this.backend.loadHuggingFaceToken())
+      settings.setStored(await this.backend.huggingFaceTokenStored())
       const loaded = await this.backend.loadAssistantSettings()
       assistant.setSettings(loaded)
       this.view.setAssistantKeyReady(loaded.apiKey !== null)
@@ -173,12 +173,15 @@ export class AppController {
   private async persistSettings(): Promise<void> {
     const settings = this.view.tokenSettings
     const assistant = this.view.assistantSettings
-    const token = settings.token().trim()
     settings.showMessage("변경사항을 자동 저장하는 중입니다.", "saving")
     try {
-      await this.backend.saveHuggingFaceToken(token)
-      if (settings.persisted() !== (token.length > 0 ? token : null)) {
-        settings.setToken(token.length > 0 ? token : null)
+      // Autosave runs on every edit anywhere in the sheet. Saving the token
+      // only when the user has actually typed a new one keeps a roster edit
+      // from reaching the keychain, which on macOS means a prompt.
+      const pending = settings.pendingToken()
+      if (pending !== null) {
+        await this.backend.saveHuggingFaceToken(pending)
+        settings.setToken(pending)
       }
       const saved = {
         ...assistant.settings(),

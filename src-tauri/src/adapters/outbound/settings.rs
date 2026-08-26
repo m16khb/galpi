@@ -1,11 +1,12 @@
 use super::paths::AppPaths;
-use super::secrets::{Keychain, Secret, SecretStore};
+use super::secrets::{Secret, SecretStore, SettingsFile};
 use crate::application::error::AppError;
 use crate::application::ports::SettingsPort;
 use crate::domain::engine::EnginePreset;
 use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::io::ErrorKind;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -14,7 +15,14 @@ use tauri::AppHandle;
 #[derive(Debug)]
 pub struct LocalSettingsStore {
     path: PathBuf,
-    secrets: Box<dyn SecretStore>,
+    secrets: std::sync::Arc<dyn SecretStore>,
+    /// What each secret currently holds, once it has been read.
+    ///
+    /// Every keychain call is a permission check, and macOS asks the user
+    /// about it whenever the app's signature is not one it already trusts.
+    /// Caching means one question per secret per launch instead of one per
+    /// settings autosave, which fires on every keystroke in the roster.
+    cached_secrets: tokio::sync::Mutex<HashMap<Secret, Option<String>>>,
     /// Serializes read-modify-write cycles and caches the parsed file.
     ///
     /// Every save rewrites the whole document, so two concurrent saves would
@@ -28,16 +36,28 @@ impl LocalSettingsStore {
     pub fn new(app: &AppHandle) -> Result<Self, AppError> {
         Ok(Self {
             path: AppPaths::resolve(app)?.root.join("settings.json"),
-            secrets: Box::new(Keychain),
+            // Swap for `Keychain` once the app ships with a stable
+            // Developer ID signature; see the secrets module.
+            secrets: std::sync::Arc::new(SettingsFile),
+            cached_secrets: tokio::sync::Mutex::new(HashMap::new()),
             state: tokio::sync::Mutex::new(None),
         })
     }
 
     #[cfg(test)]
     fn for_path(path: PathBuf) -> Self {
+        Self::with_secrets(
+            path,
+            std::sync::Arc::new(super::secrets::InMemorySecrets::default()),
+        )
+    }
+
+    #[cfg(test)]
+    fn with_secrets(path: PathBuf, secrets: std::sync::Arc<dyn SecretStore>) -> Self {
         Self {
             path,
-            secrets: Box::new(super::secrets::InMemorySecrets::default()),
+            secrets,
+            cached_secrets: tokio::sync::Mutex::new(HashMap::new()),
             state: tokio::sync::Mutex::new(None),
         }
     }
@@ -48,8 +68,18 @@ impl LocalSettingsStore {
     /// `settings.json`. Reading one migrates it and clears the plaintext copy,
     /// so the file stops carrying the secret without the user re-entering it.
     async fn secret(&self, secret: Secret) -> Result<Option<String>, AppError> {
-        if let Some(value) = self.secrets.read(secret)? {
-            return Ok(Some(value));
+        if let Some(cached) = self.cached_secrets.lock().await.get(&secret) {
+            return Ok(cached.clone());
+        }
+        let stored = self.secrets.read(secret)?;
+        if stored.is_some() {
+            let _previous = self
+                .cached_secrets
+                .lock()
+                .await
+                .insert(secret, stored.clone());
+            self.note_secret_present(secret, true).await?;
+            return Ok(stored);
         }
         let legacy = {
             let state = self.load().await?;
@@ -59,6 +89,7 @@ impl LocalSettingsStore {
             })
         };
         let Some(value) = legacy else {
+            let _previous = self.cached_secrets.lock().await.insert(secret, None);
             return Ok(None);
         };
         self.store_secret(secret, Some(&value)).await?;
@@ -66,13 +97,97 @@ impl LocalSettingsStore {
     }
 
     /// Publish a secret to the keychain and keep the file free of plaintext.
+    ///
+    /// A value identical to the one already stored does nothing at all. The
+    /// settings sheet autosaves the whole document whenever any field changes,
+    /// so without this an edit to a participant's name would rewrite the API
+    /// key and ask the user to authorize the keychain again.
     async fn store_secret(&self, secret: Secret, value: Option<&str>) -> Result<(), AppError> {
+        let unchanged = {
+            let cache = self.cached_secrets.lock().await;
+            cache.get(&secret) == Some(&value.map(str::to_owned))
+        };
+        if unchanged {
+            return Ok(());
+        }
         self.secrets.write(secret, value)?;
+        let _previous = self
+            .cached_secrets
+            .lock()
+            .await
+            .insert(secret, value.map(str::to_owned));
+        let present = value.is_some();
+        // A store that holds the secret itself wants the file scrubbed; the
+        // settings file is the store, so the value stays where it is.
+        let kept_here = self.secrets.keeps_plaintext_in_settings();
+        let retained = kept_here.then(|| value.map(str::to_owned));
         self.update(|settings| match secret {
-            Secret::HuggingFaceToken => settings.hugging_face_token = None,
-            Secret::AssistantApiKey => settings.assistant_api_key = None,
+            Secret::HuggingFaceToken => {
+                if let Some(value) = retained {
+                    settings.hugging_face_token = value;
+                } else {
+                    settings.hugging_face_token = None;
+                }
+                settings.hugging_face_token_stored = present;
+            }
+            Secret::AssistantApiKey => {
+                if let Some(value) = retained {
+                    settings.assistant_api_key = value;
+                } else {
+                    settings.assistant_api_key = None;
+                }
+                settings.assistant_api_key_stored = present;
+            }
         })
         .await
+    }
+
+    /// Record that a secret exists, so the flag survives into the next launch.
+    async fn note_secret_present(&self, secret: Secret, present: bool) -> Result<(), AppError> {
+        let already = {
+            let state = self.load().await?;
+            state.as_ref().is_some_and(|settings| match secret {
+                Secret::HuggingFaceToken => settings.hugging_face_token_stored == present,
+                Secret::AssistantApiKey => settings.assistant_api_key_stored == present,
+            })
+        };
+        if already {
+            return Ok(());
+        }
+        self.update(|settings| match secret {
+            Secret::HuggingFaceToken => settings.hugging_face_token_stored = present,
+            Secret::AssistantApiKey => settings.assistant_api_key_stored = present,
+        })
+        .await
+    }
+
+    /// Whether a secret is on file.
+    ///
+    /// Answered from the settings file, which is what keeps opening the sheet
+    /// off the keychain. The one exception is an install whose secret was moved
+    /// into the keychain before this flag existed: that is read once, and the
+    /// flag it writes means it is never read again.
+    async fn secret_stored(&self, secret: Secret) -> Result<bool, AppError> {
+        if let Some(cached) = self.cached_secrets.lock().await.get(&secret) {
+            return Ok(cached.is_some());
+        }
+        let recorded = {
+            let state = self.load().await?;
+            state.as_ref().map(|settings| match secret {
+                Secret::HuggingFaceToken => (
+                    settings.hugging_face_token_stored,
+                    settings.hugging_face_token.is_some(),
+                ),
+                Secret::AssistantApiKey => (
+                    settings.assistant_api_key_stored,
+                    settings.assistant_api_key.is_some(),
+                ),
+            })
+        };
+        match recorded {
+            Some((true, _) | (_, true)) => Ok(true),
+            _ => Ok(self.secret(secret).await?.is_some()),
+        }
     }
 
     /// Read the settings, parsing the file only the first time.
@@ -106,6 +221,8 @@ struct LocalSettings {
     engine_preset: EnginePreset,
     hugging_face_token: Option<String>,
     assistant_api_key: Option<String>,
+    hugging_face_token_stored: bool,
+    assistant_api_key_stored: bool,
     assistant_model: Option<String>,
     assistant_base_url: Option<String>,
     assistant_reasoning_effort: Option<String>,
@@ -121,6 +238,8 @@ impl LocalSettings {
         self.engine_preset == EnginePreset::default()
             && self.hugging_face_token.is_none()
             && self.assistant_api_key.is_none()
+            && !self.hugging_face_token_stored
+            && !self.assistant_api_key_stored
             && self.assistant_model.is_none()
             && self.assistant_base_url.is_none()
             && self.assistant_reasoning_effort.is_none()
@@ -132,6 +251,10 @@ impl LocalSettings {
 
 #[async_trait]
 impl SettingsPort for LocalSettingsStore {
+    async fn hugging_face_token_stored(&self) -> Result<bool, AppError> {
+        self.secret_stored(Secret::HuggingFaceToken).await
+    }
+
     async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError> {
         self.secret(Secret::HuggingFaceToken).await
     }
@@ -155,14 +278,20 @@ impl SettingsPort for LocalSettingsStore {
             .await
     }
 
+    async fn load_assistant_api_key(&self) -> Result<Option<String>, AppError> {
+        self.secret(Secret::AssistantApiKey).await
+    }
+
     async fn load_assistant(&self) -> Result<AssistantSettings, AppError> {
-        let api_key = self.secret(Secret::AssistantApiKey).await?;
+        let api_key_stored = self.secret_stored(Secret::AssistantApiKey).await?;
         let state = self.load().await?;
         let settings = state
             .as_ref()
             .ok_or_else(|| AppError::new("SETTINGS_INVALID", "앱 설정을 읽지 못했습니다."))?;
         Ok(AssistantSettings {
-            api_key,
+            // Deliberately absent: a refinement asks for it separately.
+            api_key: None,
+            api_key_stored,
             model: settings.assistant_model.clone(),
             base_url: settings.assistant_base_url.clone(),
             reasoning_effort: settings.assistant_reasoning_effort.clone(),
@@ -173,8 +302,8 @@ impl SettingsPort for LocalSettingsStore {
     }
 
     async fn save_assistant(&self, assistant: AssistantSettings) -> Result<(), AppError> {
-        self.secrets
-            .write(Secret::AssistantApiKey, assistant.api_key.as_deref())?;
+        self.store_secret(Secret::AssistantApiKey, assistant.api_key.as_deref())
+            .await?;
         self.update(|settings| {
             settings.assistant_api_key = None;
             settings.assistant_model = assistant.model;
@@ -245,6 +374,7 @@ async fn remove_settings(path: &Path) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::secrets::{InMemorySecrets, Secret, SecretStore};
     use super::LocalSettingsStore;
     use crate::application::error::AppError;
     use crate::application::ports::SettingsPort;
@@ -311,6 +441,146 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn an_unchanged_secret_never_reaches_the_keychain_again()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Given: a stored key, already read once
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        let secrets = std::sync::Arc::new(InMemorySecrets::default());
+        let store =
+            LocalSettingsStore::with_secrets(directory.join("settings.json"), secrets.clone());
+        let assistant = |glossary: Vec<GlossaryEntry>| AssistantSettings {
+            api_key: Some("zai_key".to_owned()),
+            api_key_stored: true,
+            model: Some("glm-5.3".to_owned()),
+            base_url: None,
+            reasoning_effort: None,
+            background: None,
+            participants: Vec::new(),
+            glossary,
+        };
+        store.save_assistant(assistant(Vec::new())).await?;
+        let after_first_save = secrets.writes();
+
+        // When: the sheet autosaves again because an unrelated field changed
+        store
+            .save_assistant(assistant(vec![GlossaryEntry {
+                id: "g1".to_owned(),
+                term: "갈피".to_owned(),
+                description: None,
+            }]))
+            .await?;
+        store.save_assistant(assistant(Vec::new())).await?;
+
+        // Then: the keychain was never asked again, and the key is intact
+        assert_eq!(secrets.writes(), after_first_save);
+        assert_eq!(
+            store.load_assistant_api_key().await?.as_deref(),
+            Some("zai_key")
+        );
+        // Loading the settings reports that a key exists without reading it.
+        let loaded = store.load_assistant().await?;
+        assert!(loaded.api_key_stored);
+        assert_eq!(loaded.api_key, None);
+        tokio::fs::remove_dir_all(directory).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn a_secret_is_read_from_the_keychain_once_per_launch()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Given
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        let secrets = std::sync::Arc::new(InMemorySecrets::default());
+        let store =
+            LocalSettingsStore::with_secrets(directory.join("settings.json"), secrets.clone());
+        store
+            .save_hugging_face_token(Some("hf_saved".to_owned()))
+            .await?;
+        let reads_before = secrets.reads();
+
+        // When: several parts of the app ask for the token
+        for _ in 0..5 {
+            assert_eq!(
+                store.load_hugging_face_token().await?.as_deref(),
+                Some("hf_saved")
+            );
+        }
+
+        // Then: the keychain answered once and the cache answered the rest
+        assert_eq!(secrets.reads(), reads_before);
+        // Storing only in the keychain leaves nothing worth keeping on disk, so
+        // the settings file may never have been created.
+        let _removed = tokio::fs::remove_dir_all(directory).await;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn a_secret_moved_before_the_flag_existed_is_found_once_and_remembered()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Given: the keychain holds a token, but the settings file predates the
+        // flag that records it — the state an install left in by the previous
+        // release, where the plaintext was cleared and nothing took its place
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        tokio::fs::create_dir_all(&directory).await?;
+        let path = directory.join("settings.json");
+        tokio::fs::write(&path, r#"{"enginePreset":"whisperx"}"#).await?;
+        let secrets = std::sync::Arc::new(InMemorySecrets::default());
+        secrets.write(Secret::HuggingFaceToken, Some("hf_migrated"))?;
+        let store = LocalSettingsStore::with_secrets(path.clone(), secrets.clone());
+
+        // When: the sheet asks whether a token is saved
+        assert!(store.hugging_face_token_stored().await?);
+        let reads_after_first = secrets.reads();
+
+        // Then: a fresh process reads the file, not the keychain
+        let next_launch = LocalSettingsStore::with_secrets(path, secrets.clone());
+        assert!(next_launch.hugging_face_token_stored().await?);
+        assert_eq!(secrets.reads(), reads_after_first);
+
+        tokio::fs::remove_dir_all(directory).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn the_settings_file_store_keeps_the_value_it_is_given()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Given: the store the app actually ships with until it is signed
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        let path = directory.join("settings.json");
+        let store = LocalSettingsStore::with_secrets(
+            path.clone(),
+            std::sync::Arc::new(super::super::secrets::SettingsFile),
+        );
+
+        // When
+        store
+            .save_hugging_face_token(Some("hf_saved".to_owned()))
+            .await?;
+
+        // Then: the token is readable, reported as stored, and in the document,
+        // because with this store the document is where it lives
+        assert_eq!(
+            store.load_hugging_face_token().await?.as_deref(),
+            Some("hf_saved")
+        );
+        assert!(store.hugging_face_token_stored().await?);
+        assert!(tokio::fs::read_to_string(&path).await?.contains("hf_saved"));
+        assert_eq!(
+            tokio::fs::metadata(&path).await?.permissions().mode() & 0o777,
+            0o600
+        );
+
+        // And clearing it removes the value rather than leaving it behind
+        store.save_hugging_face_token(None).await?;
+        assert!(!store.hugging_face_token_stored().await?);
+        let document = tokio::fs::read_to_string(&path).await.unwrap_or_default();
+        assert!(!document.contains("hf_saved"), "cleared token survived");
+
+        let _removed = tokio::fs::remove_dir_all(directory).await;
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn migrates_a_token_left_in_an_older_settings_file()
     -> Result<(), Box<dyn std::error::Error>> {
         // Given: a settings file written before tokens moved to the keychain
@@ -350,6 +620,7 @@ mod tests {
         store
             .save_assistant(AssistantSettings {
                 api_key: Some("zai_key".to_owned()),
+                api_key_stored: true,
                 model: Some("glm-5.2".to_owned()),
                 base_url: Some("https://openrouter.ai/api/v1".to_owned()),
                 reasoning_effort: Some("max".to_owned()),
@@ -375,7 +646,11 @@ mod tests {
 
         // Then
         let assistant = store.load_assistant().await?;
-        assert_eq!(assistant.api_key.as_deref(), Some("zai_key"));
+        assert!(assistant.api_key_stored);
+        assert_eq!(
+            store.load_assistant_api_key().await?.as_deref(),
+            Some("zai_key")
+        );
         assert_eq!(assistant.model.as_deref(), Some("glm-5.2"));
         assert_eq!(
             assistant.base_url.as_deref(),

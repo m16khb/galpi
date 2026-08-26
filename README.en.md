@@ -159,8 +159,8 @@ The completion screen can open each artifact or reveal its output folder in Find
 
 - Audio and transcription artifacts are stored in the local folder you choose.
 - Transcription, alignment, and diarization models (Qwen3, WhisperX, pyannote) are stored in Galpi's app-specific Hugging Face cache.
-- The Hugging Face token and the AI augmentation API key are stored in the macOS Keychain (service `com.m16khb.galpi`). A token left in plaintext by an earlier version is moved into the Keychain the first time it is read and removed from the file.
-- The remaining settings (attendee roster, glossary, model names) stay in an Application Support settings file with `0600` permissions.
+- Every setting, including the Hugging Face token and the AI augmentation API key, is stored in an Application Support settings file with `0600` permissions.
+- Credentials are not encrypted with the macOS Keychain yet. The Keychain ties access to an item to the app's code signature, and ad-hoc signing changes that signature on every build, so each update would ask users to re-authorize a token they never touched. The move lands together with Developer ID signing; the implementation is ready in `src-tauri/src/adapters/outbound/secrets.rs`.
 - Transcripts are not sent to an external LLM API unless AI minutes are run.
 - The worker launches fixed programs with explicit argv and does not execute shell strings.
 
@@ -232,7 +232,7 @@ The build creates the `.app` first, then packages the DMG with `hdiutil`.
 
 Gatekeeper blocks an unsigned, un-notarized DMG on every Mac that receives it. Sign and notarize with an Apple Developer certificate before handing the build to anyone.
 
-Signing is a prerequisite for the Keychain too, not only for Gatekeeper. macOS ties access to a Keychain item to the app's code signature, and ad-hoc signing (`signingIdentity: "-"`) produces a different signature on every build, so the app is not recognized as the one that stored the item. Distributing unsigned builds therefore asks every user to re-authorize their token on each update. A Developer ID signature is stable, so they authorize once.
+A signature also unlocks Keychain storage for credentials. macOS ties access to a Keychain item to the app's code signature, so until that signature is stable every update asks users to re-authorize a token they never touched.
 
 `.github/workflows/release.yml` builds the DMG on a `v*` tag and, when the repository secrets below are set, signs and notarizes it, then verifies the result with `codesign` and `spctl`.
 
@@ -260,7 +260,6 @@ The entitlements Hardened Runtime needs are declared in `src-tauri/Entitlements.
 | AI minutes fail | Check API Key, Base URL, model name, and provider quota |
 | The app will not open on another Mac | Gatekeeper blocks unsigned, un-notarized builds. Sign and notarize before distributing (see "Distributing to other people") |
 | The engine shows `Pending` again after an update | The readiness marker tracks the hash of the dependency lock file. When the lock changes, press **Prepare local engine** once to match the environment (models are not downloaded again) |
-| Tokens appear to be missing | Credentials now live in the Keychain. If Keychain access was denied, check the `com.m16khb.galpi` items in Keychain Access |
 
 ## Project status
 

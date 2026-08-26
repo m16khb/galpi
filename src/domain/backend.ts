@@ -16,7 +16,7 @@ import type { SpeakerHint } from "./speaker"
 export interface BackendPort {
   diagnose(): Promise<EnvironmentStatus>
   prepare(jobId: string): Promise<SetupResult>
-  loadHuggingFaceToken(): Promise<string | null>
+  huggingFaceTokenStored(): Promise<boolean>
   saveHuggingFaceToken(token: string): Promise<void>
   loadAssistantSettings(): Promise<AssistantSettings>
   saveAssistantSettings(settings: AssistantSettings): Promise<void>

@@ -52,7 +52,6 @@ const setupResultSchema = z.object({
   jobId: z.string(),
   status: environmentSchema,
 })
-const huggingFaceTokenSchema = z.string().nullable()
 const participantSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -162,8 +161,8 @@ export class TauriBackend implements BackendPort {
     )
   }
 
-  async loadHuggingFaceToken(): Promise<string | null> {
-    return huggingFaceTokenSchema.parse(await invoke<unknown>("load_hugging_face_token"))
+  async huggingFaceTokenStored(): Promise<boolean> {
+    return z.boolean().parse(await invoke<unknown>("hugging_face_token_stored"))
   }
 
   async saveHuggingFaceToken(token: string): Promise<void> {

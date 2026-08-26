@@ -1,9 +1,12 @@
 //! Secret storage for the two credentials Galpi holds.
 //!
-//! Tokens used to live in `settings.json` alongside the roster and the model
-//! choice. That file is readable by anything running as the user and travels
-//! into backups and sync folders, which is not where an API key belongs. The
-//! Keychain is the platform's answer, and it is what this module wraps.
+//! The destination is the macOS Keychain, and [`Keychain`] implements it. It is
+//! not what the app uses yet: macOS ties access to a Keychain item to the code
+//! signature that stored it, and Galpi's ad-hoc signature changes on every
+//! build, so each release would ask every user to re-authorize a token they
+//! never touched. Until the app ships with a Developer ID signature, secrets
+//! stay in the settings file, which [`SettingsFile`] represents, and the switch
+//! is one line in `LocalSettingsStore::new`.
 
 use crate::application::error::AppError;
 use security_framework::passwords::{
@@ -11,16 +14,21 @@ use security_framework::passwords::{
 };
 
 /// The Keychain service every Galpi secret is filed under.
+#[expect(dead_code, reason = "used once the app switches to Keychain storage")]
 const SERVICE: &str = "com.m16khb.galpi";
 
 /// One stored credential.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Secret {
     HuggingFaceToken,
     AssistantApiKey,
 }
 
 impl Secret {
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "used once the app switches to Keychain storage")
+    )]
     const fn account(self) -> &'static str {
         match self {
             Self::HuggingFaceToken => "hugging-face-token",
@@ -37,9 +45,21 @@ impl Secret {
 pub trait SecretStore: std::fmt::Debug + Send + Sync {
     fn read(&self, secret: Secret) -> Result<Option<String>, AppError>;
     fn write(&self, secret: Secret, value: Option<&str>) -> Result<(), AppError>;
+
+    /// Whether the settings file is where the value actually lives.
+    ///
+    /// A store that holds the secret itself wants the file scrubbed; one that
+    /// does not would be erasing the only copy.
+    fn keeps_plaintext_in_settings(&self) -> bool {
+        false
+    }
 }
 
 /// The macOS login keychain.
+///
+/// Not wired up yet — see the module comment. Kept compiled so the switch is a
+/// one-line change rather than a rewrite once the app is signed.
+#[expect(dead_code, reason = "wired up once the app ships a stable signature")]
 #[derive(Debug, Default)]
 pub struct Keychain;
 
@@ -79,11 +99,29 @@ impl SecretStore for Keychain {
 #[derive(Debug, Default)]
 pub struct InMemorySecrets {
     values: std::sync::Mutex<std::collections::HashMap<&'static str, String>>,
+    /// How many times the store has been asked to read or write, which stands
+    /// in for how many times a real keychain would have asked the user.
+    writes: std::sync::atomic::AtomicUsize,
+    reads: std::sync::atomic::AtomicUsize,
+}
+
+#[cfg(test)]
+impl InMemorySecrets {
+    pub fn writes(&self) -> usize {
+        self.writes.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    pub fn reads(&self) -> usize {
+        self.reads.load(std::sync::atomic::Ordering::Relaxed)
+    }
 }
 
 #[cfg(test)]
 impl SecretStore for InMemorySecrets {
     fn read(&self, secret: Secret) -> Result<Option<String>, AppError> {
+        let _count = self
+            .reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         Ok(self
             .values
             .lock()
@@ -105,5 +143,30 @@ impl SecretStore for InMemorySecrets {
             }
         }
         Ok(())
+    }
+}
+
+/// Keeps a secret in the settings file rather than the keychain.
+///
+/// The file is created 0600 in the app's own Application Support directory.
+/// That is weaker than the keychain — it is readable by anything running as
+/// this user, and it travels into backups — and it is what Galpi did before
+/// and still does until the app is signed. `LocalSettingsStore` writes and
+/// clears the fields; this type exists so the choice of destination stays in
+/// one place.
+#[derive(Debug, Default)]
+pub struct SettingsFile;
+
+impl SecretStore for SettingsFile {
+    fn read(&self, _secret: Secret) -> Result<Option<String>, AppError> {
+        Ok(None)
+    }
+
+    fn write(&self, _secret: Secret, _value: Option<&str>) -> Result<(), AppError> {
+        Ok(())
+    }
+
+    fn keeps_plaintext_in_settings(&self) -> bool {
+        true
     }
 }

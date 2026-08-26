@@ -82,8 +82,8 @@ impl Application {
         self.settings.save_engine_preset(preset).await
     }
 
-    pub async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError> {
-        self.settings.load_hugging_face_token().await
+    pub async fn hugging_face_token_stored(&self) -> Result<bool, AppError> {
+        self.settings.hugging_face_token_stored().await
     }
 
     pub async fn save_hugging_face_token(&self, token: String) -> Result<(), AppError> {
@@ -123,12 +123,19 @@ impl Application {
             .cloned()
             .collect();
         let glossary: Vec<GlossaryEntry> = assistant.glossary.clone();
-        let api_key = assistant.api_key.ok_or_else(|| {
-            AppError::new(
-                "ASSISTANT_KEY_MISSING",
-                "설정에서 z.ai 코딩 플랜 토큰을 먼저 저장해 주세요.",
-            )
-        })?;
+        // Read here rather than with the rest of the settings: this is the one
+        // moment the key is actually needed, so it is the only moment worth
+        // asking the keychain — and the user — about it.
+        let api_key = self
+            .settings
+            .load_assistant_api_key()
+            .await?
+            .ok_or_else(|| {
+                AppError::new(
+                    "ASSISTANT_KEY_MISSING",
+                    "설정에서 z.ai 코딩 플랜 토큰을 먼저 저장해 주세요.",
+                )
+            })?;
         let output = minutes_path(&artifacts.txt);
         let (job, mut cancel) = self.jobs.claim_with_id(job_id)?;
         let job_id = job.id();

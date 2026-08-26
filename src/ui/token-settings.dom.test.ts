@@ -49,6 +49,39 @@ describe("TokenSettingsView (real DOM)", () => {
     expect(input.value).not.toContain("hf_real_secret_value")
   })
 
+  test("shows a stored token as a mask it cannot reveal", () => {
+    // Given: the host reports a saved token without sending its value, which
+    // is what keeps opening settings from reaching the keychain
+    view.setStored(true)
+
+    // When / Then: the field is masked, locked, and has nothing to reveal
+    expect(input.value).not.toBe("")
+    expect(input.readOnly).toBeTrue()
+    const toggle = input
+      .closest("body")
+      ?.querySelector("#toggle-token-visibility") as HTMLElement
+    expect(toggle.hidden).toBeTrue()
+    view.toggleVisibility()
+    expect(input.value).not.toBe("hf_real_secret_value")
+  })
+
+  test("offers nothing to save while a stored token sits untouched", () => {
+    // Given
+    view.setStored(true)
+
+    // When / Then: autosave has no token to write, so no keychain prompt
+    expect(view.pendingToken()).toBeNull()
+  })
+
+  test("offers a freshly typed token to save", () => {
+    // Given: no token is stored and the user types one
+    view.setStored(false)
+    input.value = "  hf_typed_value  "
+
+    // When / Then
+    expect(view.pendingToken()).toBe("hf_typed_value")
+  })
+
   test("keeps an empty field editable so a new token can be entered", () => {
     // Given / When
     view.setToken(null)

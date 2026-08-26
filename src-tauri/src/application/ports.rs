@@ -84,9 +84,14 @@ pub trait RecordingEvents: Send + Sync {
 
 #[async_trait]
 pub trait SettingsPort: Send + Sync {
+    /// Whether a Hugging Face token is on file, without reading it.
+    async fn hugging_face_token_stored(&self) -> Result<bool, AppError>;
     async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError>;
     async fn save_hugging_face_token(&self, token: Option<String>) -> Result<(), AppError>;
+    /// Everything except the API key, which stays in the keychain until a
+    /// refinement actually needs it.
     async fn load_assistant(&self) -> Result<AssistantSettings, AppError>;
+    async fn load_assistant_api_key(&self) -> Result<Option<String>, AppError>;
     async fn save_assistant(&self, settings: AssistantSettings) -> Result<(), AppError>;
     async fn load_engine_preset(&self) -> Result<EnginePreset, AppError>;
     async fn save_engine_preset(&self, preset: EnginePreset) -> Result<(), AppError>;

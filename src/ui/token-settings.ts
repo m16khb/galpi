@@ -11,7 +11,10 @@ export function tokenDisplayValue(token: string, visible: boolean): string {
 
 export class TokenSettingsView {
   private readonly root: HTMLElement
+  /// A token this window has seen — only ever one the user just typed.
   private persistedToken: string | null = null
+  /// Whether the host holds a token, whose value never crosses the IPC border.
+  private stored = false
   private visible = false
   private previouslyFocused: HTMLElement | null = null
 
@@ -62,20 +65,42 @@ export class TokenSettingsView {
     return this.persistedToken ?? this.element<HTMLInputElement>("#settings-hf-token").value
   }
 
-  setToken(token: string | null): void {
-    const input = this.element<HTMLInputElement>("#settings-hf-token")
-    this.persistedToken = token
-    this.visible = false
-    input.value = token === null ? "" : tokenDisplayValue(token, false)
-    input.readOnly = token !== null
-    input.dataset["visible"] = "false"
-    this.renderVisibility(false)
-    this.setConfigured(token !== null)
+  /// A token the user has typed and not yet saved.
+  ///
+  /// Null once a token is stored: the host keeps the value in the keychain and
+  /// the field shows only a mask, so there is nothing here to save again.
+  pendingToken(): string | null {
+    if (this.stored) return null
+    const value = this.element<HTMLInputElement>("#settings-hf-token").value.trim()
+    return value.length > 0 ? value : null
   }
 
-  /// The token the backend last confirmed, or null when none is stored.
-  persisted(): string | null {
-    return this.persistedToken
+  setToken(token: string | null): void {
+    this.persistedToken = token
+    this.render(token !== null, token)
+  }
+
+  /// Show that a token is saved without knowing what it says.
+  ///
+  /// Reading the value is a keychain access, and macOS asks the user about
+  /// each one, so opening settings must not need it. Changing a stored token
+  /// means clearing it and entering the new one.
+  setStored(stored: boolean): void {
+    this.persistedToken = null
+    this.render(stored, null)
+  }
+
+  private render(stored: boolean, token: string | null): void {
+    const input = this.element<HTMLInputElement>("#settings-hf-token")
+    this.stored = stored
+    this.visible = false
+    input.value = stored ? tokenDisplayValue(token ?? "", false) : ""
+    input.readOnly = stored
+    input.dataset["visible"] = "false"
+    this.renderVisibility(false)
+    this.setConfigured(stored)
+    // A value the window does not hold cannot be revealed.
+    this.element<HTMLButtonElement>("#toggle-token-visibility").hidden = token === null
   }
 
   clearToken(): void {
@@ -83,6 +108,7 @@ export class TokenSettingsView {
   }
 
   toggleVisibility(): void {
+    if (this.persistedToken === null) return
     const input = this.element<HTMLInputElement>("#settings-hf-token")
     this.visible = nextTokenVisibility(this.visible)
     if (this.persistedToken !== null) {

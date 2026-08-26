@@ -41,7 +41,7 @@ function createBackend(onSave: (settings: AssistantSettings) => void | Promise<v
     prepare: async () => {
       throw new Error("unused prepare")
     },
-    loadHuggingFaceToken: async () => null,
+    huggingFaceTokenStored: async () => false,
     saveHuggingFaceToken: async () => undefined,
     loadAssistantSettings: async () => initialAssistant,
     saveEnginePreset: async () => undefined,

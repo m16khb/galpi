@@ -159,8 +159,8 @@ bun run dev
 
 - 음성과 전사 산출물은 사용자가 선택한 로컬 폴더에 저장됩니다.
 - 전사·정렬·화자분리 모델(Qwen3, WhisperX, pyannote)은 Galpi의 앱 전용 Hugging Face 캐시에 저장됩니다.
-- Hugging Face 토큰과 AI 증강 API 키는 macOS Keychain에 저장됩니다(서비스 이름 `com.m16khb.galpi`). 이전 버전이 설정 파일에 평문으로 남긴 토큰은 처음 읽을 때 Keychain으로 옮기고 파일에서 지웁니다.
-- 나머지 설정(참석자 명부, 단어집, 모델 이름 등)은 Application Support 아래 설정 파일에 `0600` 권한으로 저장됩니다.
+- Hugging Face 토큰과 AI 증강 API 키를 포함한 모든 설정은 Application Support 아래 설정 파일에 `0600` 권한으로 저장됩니다.
+- 자격 증명은 아직 macOS Keychain으로 암호화하지 않습니다. Keychain은 항목 접근 권한을 앱의 코드 서명에 묶는데, 현재 빌드는 ad-hoc 서명이라 빌드마다 서명이 달라져 사용자가 업데이트할 때마다 접근 허용 창을 다시 보게 됩니다. Keychain 전환은 Developer ID 서명과 함께 적용할 예정입니다(구현은 `src-tauri/src/adapters/outbound/secrets.rs`에 준비되어 있습니다).
 - AI 회의록을 실행하지 않으면 전사문은 외부 LLM API로 전송되지 않습니다.
 - worker는 고정된 프로그램과 argv로 실행되며 셸 문자열을 실행하지 않습니다.
 
@@ -232,7 +232,7 @@ src-tauri/target/release/bundle/dmg/Galpi_0.1.0_aarch64.dmg
 
 서명·공증되지 않은 DMG를 받은 Mac은 Gatekeeper가 실행을 막습니다. 배포 전에 Apple Developer 인증서로 서명하고 공증하세요.
 
-서명은 Gatekeeper 때문만이 아니라 Keychain 때문에도 선행 조건입니다. macOS는 Keychain 항목의 접근 권한을 앱의 코드 서명에 묶어 두는데, ad-hoc 서명(`signingIdentity: "-"`)은 빌드마다 서명이 달라져 같은 앱으로 인정받지 못합니다. 그래서 미서명 빌드를 배포하면 사용자가 업데이트할 때마다 토큰 접근 허용 창을 다시 보게 됩니다. Developer ID로 서명하면 서명이 고정되어 최초 1회만 허용하면 됩니다.
+서명이 붙으면 자격 증명도 Keychain으로 옮길 수 있습니다. macOS는 Keychain 항목의 접근 권한을 앱의 코드 서명에 묶어 두므로, 서명이 고정되기 전에는 사용자가 업데이트할 때마다 접근 허용 창을 보게 됩니다.
 
 `.github/workflows/release.yml`이 `v*` 태그에서 DMG를 만들고, 아래 저장소 시크릿이 설정되어 있으면 서명·공증까지 수행한 뒤 `codesign`/`spctl`로 검증합니다.
 
@@ -260,7 +260,6 @@ Hardened Runtime에 필요한 entitlement는 `src-tauri/Entitlements.plist`에 �
 | AI 회의록이 실패함 | API Key, Base URL, 모델 이름, 제공자 사용량 한도 확인 |
 | 다른 Mac에서 앱을 열 수 없음 | 미서명·미공증 빌드는 Gatekeeper가 막습니다. 서명·공증해 배포하세요(위 "다른 사람에게 배포할 때") |
 | 앱 업데이트 후 엔진이 다시 `대기`로 표시됨 | 엔진 준비 마커가 의존성 잠금 파일의 해시를 따릅니다. 잠금이 바뀌면 **로컬 엔진 준비**를 한 번 더 눌러 환경을 맞춥니다(모델은 다시 받지 않습니다) |
-| 토큰이 사라진 것처럼 보임 | 자격 증명은 이제 Keychain에 있습니다. Keychain 접근을 거부했다면 `키체인 접근`에서 `com.m16khb.galpi` 항목의 권한을 확인하세요 |
 
 ## 현재 상태
 

@@ -12,7 +12,7 @@ function unavailableBackend(): BackendPort {
   return {
     diagnose: unavailable,
     prepare: unavailable,
-    loadHuggingFaceToken: unavailable,
+    huggingFaceTokenStored: unavailable,
     saveHuggingFaceToken: unavailable,
     loadAssistantSettings: unavailable,
     saveAssistantSettings: unavailable,
@@ -130,7 +130,7 @@ describe("AppController engine preset", () => {
         }
       },
       prepare: unavailable,
-      loadHuggingFaceToken: async () => null,
+      huggingFaceTokenStored: async () => false,
       saveHuggingFaceToken: unavailable,
       loadAssistantSettings: async () => ({
         apiKey: null,
@@ -218,7 +218,7 @@ describe("AppController transcript import", () => {
         engineVersion: "test",
       }),
       prepare: unavailable,
-      loadHuggingFaceToken: async () => null,
+      huggingFaceTokenStored: async () => false,
       saveHuggingFaceToken: unavailable,
       loadAssistantSettings: async () => ({
         apiKey: "zai_key",

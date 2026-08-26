@@ -61,6 +61,12 @@ impl GlossaryEntry {
 #[serde(rename_all = "camelCase")]
 pub struct AssistantSettings {
     pub api_key: Option<String>,
+    /// Whether a key is on file, for callers that only need to know that.
+    ///
+    /// Reading the key itself is a keychain access, and macOS turns each one
+    /// into a question for the user; the settings sheet asks this instead.
+    #[serde(default)]
+    pub api_key_stored: bool,
     pub model: Option<String>,
     #[serde(default)]
     pub base_url: Option<String>,
@@ -75,8 +81,10 @@ pub struct AssistantSettings {
 
 impl AssistantSettings {
     pub fn trimmed(self) -> Self {
+        let api_key = keep_filled(self.api_key);
         Self {
-            api_key: keep_filled(self.api_key),
+            api_key_stored: self.api_key_stored || api_key.is_some(),
+            api_key,
             model: keep_filled(self.model),
             base_url: keep_filled(self.base_url),
             reasoning_effort: self.reasoning_effort.and_then(|effort| {

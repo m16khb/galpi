@@ -185,6 +185,17 @@ impl EnginePort for FakePort {
 
 #[async_trait]
 impl SettingsPort for FakePort {
+    async fn hugging_face_token_stored(&self) -> Result<bool, AppError> {
+        Ok(self.load_hugging_face_token().await?.is_some())
+    }
+
+    async fn load_assistant_api_key(&self) -> Result<Option<String>, AppError> {
+        self.assistant
+            .lock()
+            .map(|settings| settings.api_key.clone())
+            .map_err(|_| AppError::new("TEST_ERROR", "assistant settings lock poisoned"))
+    }
+
     async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError> {
         self.settings_token
             .lock()
@@ -327,13 +338,17 @@ async fn saved_hugging_face_token_is_trimmed_and_can_be_cleared() -> Result<(), 
 
     app.save_hugging_face_token("  hf_saved  ".to_owned())
         .await?;
+    assert!(app.hugging_face_token_stored().await?);
     assert_eq!(
-        app.load_hugging_face_token().await?,
+        port.settings_token
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "settings token lock poisoned"))?
+            .clone(),
         Some("hf_saved".to_owned())
     );
 
     app.save_hugging_face_token("   ".to_owned()).await?;
-    assert_eq!(app.load_hugging_face_token().await?, None);
+    assert!(!app.hugging_face_token_stored().await?);
     Ok(())
 }
 
@@ -381,6 +396,7 @@ async fn transcription_carries_glossary_and_roster_for_asr_biasing() -> Result<(
     let app = port.application();
     app.save_assistant_settings(AssistantSettings {
         api_key: None,
+        api_key_stored: false,
         model: None,
         base_url: None,
         reasoning_effort: None,
@@ -507,6 +523,7 @@ async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(),
     let app = port.application();
     app.save_assistant_settings(AssistantSettings {
         api_key: Some("  zai_key  ".to_owned()),
+        api_key_stored: true,
         model: Some("glm-5-turbo".to_owned()),
         base_url: Some("https://openrouter.ai/api/v1".to_owned()),
         reasoning_effort: Some("max".to_owned()),
@@ -621,6 +638,7 @@ async fn imported_transcript_is_refinable_without_transcription() -> Result<(), 
     let app = port.application();
     app.save_assistant_settings(AssistantSettings {
         api_key: Some("zai_key".to_owned()),
+        api_key_stored: true,
         ..AssistantSettings::default()
     })
     .await?;
