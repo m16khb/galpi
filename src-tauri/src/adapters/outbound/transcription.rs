@@ -147,7 +147,7 @@ async fn run_worker(
             ));
         }
     };
-    let artifacts = validate_artifacts(output, &srt, &txt, checkpoint.as_deref()).await?;
+    let artifacts = validate_artifacts(output, &srt, &txt, checkpoint.as_deref(), input).await?;
     Ok(CompletedTranscription {
         artifacts,
         segments,
@@ -160,6 +160,7 @@ async fn validate_artifacts(
     srt: &Path,
     txt: &Path,
     checkpoint: Option<&Path>,
+    source_audio: &Path,
 ) -> Result<Artifacts, AppError> {
     let root = tokio::fs::canonicalize(job_directory)
         .await
@@ -176,6 +177,7 @@ async fn validate_artifacts(
         checkpoint,
         minutes: None,
         output_directory: root,
+        source_audio: Some(source_audio.to_path_buf()),
     })
 }
 

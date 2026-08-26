@@ -2,7 +2,25 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <!-- Recording from the microphone. -->
   <key>com.apple.security.device.audio-input</key>
+  <true/>
+
+  <!--
+    The three below exist for the Hardened Runtime, which notarization
+    requires. Galpi installs its own Python environment at first run and loads
+    PyTorch and MLX from it; those libraries are not signed by us, and the
+    Metal backend generates executable memory for the shaders it compiles.
+    Without these the engine cannot load once the app is notarized.
+
+    Not yet exercised: no signed build has been produced, so these are the
+    documented requirements rather than a verified configuration.
+  -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
   <true/>
 </dict>
 </plist>

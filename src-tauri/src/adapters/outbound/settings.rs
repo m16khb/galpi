@@ -1,4 +1,5 @@
 use super::paths::AppPaths;
+use super::secrets::{Keychain, Secret, SecretStore};
 use crate::application::error::AppError;
 use crate::application::ports::SettingsPort;
 use crate::domain::engine::EnginePreset;
@@ -10,16 +11,92 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use tauri::AppHandle;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct LocalSettingsStore {
     path: PathBuf,
+    secrets: Box<dyn SecretStore>,
+    /// Serializes read-modify-write cycles and caches the parsed file.
+    ///
+    /// Every save rewrites the whole document, so two concurrent saves would
+    /// each read the same starting state and the second would drop the first's
+    /// field. Holding the lock across the cycle makes that impossible, and the
+    /// cached value spares a read and a parse on the transcription path.
+    state: tokio::sync::Mutex<Option<LocalSettings>>,
 }
 
 impl LocalSettingsStore {
     pub fn new(app: &AppHandle) -> Result<Self, AppError> {
         Ok(Self {
             path: AppPaths::resolve(app)?.root.join("settings.json"),
+            secrets: Box::new(Keychain),
+            state: tokio::sync::Mutex::new(None),
         })
+    }
+
+    #[cfg(test)]
+    fn for_path(path: PathBuf) -> Self {
+        Self {
+            path,
+            secrets: Box::new(super::secrets::InMemorySecrets::default()),
+            state: tokio::sync::Mutex::new(None),
+        }
+    }
+
+    /// Read a secret, moving it out of the settings file the first time.
+    ///
+    /// Installs that predate keychain storage still have their tokens in
+    /// `settings.json`. Reading one migrates it and clears the plaintext copy,
+    /// so the file stops carrying the secret without the user re-entering it.
+    async fn secret(&self, secret: Secret) -> Result<Option<String>, AppError> {
+        if let Some(value) = self.secrets.read(secret)? {
+            return Ok(Some(value));
+        }
+        let legacy = {
+            let state = self.load().await?;
+            state.as_ref().and_then(|settings| match secret {
+                Secret::HuggingFaceToken => settings.hugging_face_token.clone(),
+                Secret::AssistantApiKey => settings.assistant_api_key.clone(),
+            })
+        };
+        let Some(value) = legacy else {
+            return Ok(None);
+        };
+        self.store_secret(secret, Some(&value)).await?;
+        Ok(Some(value))
+    }
+
+    /// Publish a secret to the keychain and keep the file free of plaintext.
+    async fn store_secret(&self, secret: Secret, value: Option<&str>) -> Result<(), AppError> {
+        self.secrets.write(secret, value)?;
+        self.update(|settings| match secret {
+            Secret::HuggingFaceToken => settings.hugging_face_token = None,
+            Secret::AssistantApiKey => settings.assistant_api_key = None,
+        })
+        .await
+    }
+
+    /// Read the settings, parsing the file only the first time.
+    async fn load(&self) -> Result<tokio::sync::MutexGuard<'_, Option<LocalSettings>>, AppError> {
+        let mut state = self.state.lock().await;
+        if state.is_none() {
+            *state = Some(read_settings(&self.path).await?);
+        }
+        Ok(state)
+    }
+
+    /// Apply a change and publish it, keeping the cache and file in step.
+    async fn update(&self, change: impl FnOnce(&mut LocalSettings)) -> Result<(), AppError> {
+        let mut state = self.load().await?;
+        let settings = state
+            .as_mut()
+            .ok_or_else(|| AppError::new("SETTINGS_INVALID", "앱 설정을 읽지 못했습니다."))?;
+        change(settings);
+        let result = store_settings(&self.path, settings).await;
+        if result.is_err() {
+            // The file no longer matches the cache, so drop it and re-read.
+            *state = None;
+        }
+        result
     }
 }
 
@@ -56,48 +133,58 @@ impl LocalSettings {
 #[async_trait]
 impl SettingsPort for LocalSettingsStore {
     async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError> {
-        Ok(read_settings(&self.path).await?.hugging_face_token)
+        self.secret(Secret::HuggingFaceToken).await
     }
 
     async fn save_hugging_face_token(&self, token: Option<String>) -> Result<(), AppError> {
-        let mut settings = read_settings(&self.path).await?;
-        settings.hugging_face_token = token;
-        store_settings(&self.path, &settings).await
+        self.store_secret(Secret::HuggingFaceToken, token.as_deref())
+            .await
     }
 
     async fn load_engine_preset(&self) -> Result<EnginePreset, AppError> {
-        Ok(read_settings(&self.path).await?.engine_preset)
+        Ok(self
+            .load()
+            .await?
+            .as_ref()
+            .map(|settings| settings.engine_preset)
+            .unwrap_or_default())
     }
 
     async fn save_engine_preset(&self, preset: EnginePreset) -> Result<(), AppError> {
-        let mut settings = read_settings(&self.path).await?;
-        settings.engine_preset = preset;
-        store_settings(&self.path, &settings).await
+        self.update(|settings| settings.engine_preset = preset)
+            .await
     }
 
     async fn load_assistant(&self) -> Result<AssistantSettings, AppError> {
-        let settings = read_settings(&self.path).await?;
+        let api_key = self.secret(Secret::AssistantApiKey).await?;
+        let state = self.load().await?;
+        let settings = state
+            .as_ref()
+            .ok_or_else(|| AppError::new("SETTINGS_INVALID", "앱 설정을 읽지 못했습니다."))?;
         Ok(AssistantSettings {
-            api_key: settings.assistant_api_key,
-            model: settings.assistant_model,
-            base_url: settings.assistant_base_url,
-            reasoning_effort: settings.assistant_reasoning_effort,
-            background: settings.assistant_background,
-            participants: settings.participants,
-            glossary: settings.glossary,
+            api_key,
+            model: settings.assistant_model.clone(),
+            base_url: settings.assistant_base_url.clone(),
+            reasoning_effort: settings.assistant_reasoning_effort.clone(),
+            background: settings.assistant_background.clone(),
+            participants: settings.participants.clone(),
+            glossary: settings.glossary.clone(),
         })
     }
 
     async fn save_assistant(&self, assistant: AssistantSettings) -> Result<(), AppError> {
-        let mut settings = read_settings(&self.path).await?;
-        settings.assistant_api_key = assistant.api_key;
-        settings.assistant_model = assistant.model;
-        settings.assistant_base_url = assistant.base_url;
-        settings.assistant_reasoning_effort = assistant.reasoning_effort;
-        settings.assistant_background = assistant.background;
-        settings.participants = assistant.participants;
-        settings.glossary = assistant.glossary;
-        store_settings(&self.path, &settings).await
+        self.secrets
+            .write(Secret::AssistantApiKey, assistant.api_key.as_deref())?;
+        self.update(|settings| {
+            settings.assistant_api_key = None;
+            settings.assistant_model = assistant.model;
+            settings.assistant_base_url = assistant.base_url;
+            settings.assistant_reasoning_effort = assistant.reasoning_effort;
+            settings.assistant_background = assistant.background;
+            settings.participants = assistant.participants;
+            settings.glossary = assistant.glossary;
+        })
+        .await
     }
 }
 
@@ -161,24 +248,56 @@ mod tests {
     use super::LocalSettingsStore;
     use crate::application::error::AppError;
     use crate::application::ports::SettingsPort;
+    use crate::domain::engine::EnginePreset;
     use crate::domain::roster::{AssistantSettings, GlossaryEntry, Participant};
     use std::os::unix::fs::PermissionsExt;
     use uuid::Uuid;
 
     #[tokio::test]
-    async fn stores_token_with_private_permissions_and_removes_it()
+    async fn a_corrupted_settings_file_is_reported_rather_than_reset()
     -> Result<(), Box<dyn std::error::Error>> {
+        // Given: a settings file that is not valid JSON
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        tokio::fs::create_dir_all(&directory).await?;
+        let path = directory.join("settings.json");
+        tokio::fs::write(&path, "{ not json").await?;
+        let store = LocalSettingsStore::for_path(path.clone());
+
+        // When
+        let result = store.load_assistant().await;
+
+        // Then: the caller learns the file is bad, and it is still on disk
+        assert_eq!(
+            result.err().map(|error| error.code),
+            Some("SETTINGS_INVALID".to_owned())
+        );
+        assert!(tokio::fs::try_exists(&path).await?);
+        tokio::fs::remove_dir_all(directory).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn keeps_the_token_out_of_the_settings_file() -> Result<(), Box<dyn std::error::Error>> {
+        // Given
         let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
         let path = directory.join("settings.json");
-        let store = LocalSettingsStore { path: path.clone() };
+        let store = LocalSettingsStore::for_path(path.clone());
 
+        // When: a token is saved alongside an ordinary preference
         store
             .save_hugging_face_token(Some("hf_saved".to_owned()))
             .await?;
+        store.save_engine_preset(EnginePreset::WhisperX).await?;
 
+        // Then: it reads back, but the file on disk never carries it
         assert_eq!(
             store.load_hugging_face_token().await?.as_deref(),
             Some("hf_saved")
+        );
+        let document = tokio::fs::read_to_string(&path).await?;
+        assert!(
+            !document.contains("hf_saved"),
+            "the token must not be written in plaintext:\n{document}"
         );
         assert_eq!(
             tokio::fs::metadata(&path).await?.permissions().mode() & 0o777,
@@ -192,13 +311,39 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn migrates_a_token_left_in_an_older_settings_file()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Given: a settings file written before tokens moved to the keychain
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        tokio::fs::create_dir_all(&directory).await?;
+        let path = directory.join("settings.json");
+        tokio::fs::write(&path, r#"{"huggingFaceToken":"hf_legacy"}"#).await?;
+        let store = LocalSettingsStore::for_path(path.clone());
+
+        // When: the token is read for the first time
+        let token = store.load_hugging_face_token().await?;
+
+        // Then: the user keeps their token and the plaintext copy is gone
+        assert_eq!(token.as_deref(), Some("hf_legacy"));
+        assert_eq!(
+            store.load_hugging_face_token().await?.as_deref(),
+            Some("hf_legacy")
+        );
+        let document = tokio::fs::read_to_string(&path).await.unwrap_or_default();
+        assert!(
+            !document.contains("hf_legacy"),
+            "plaintext survived:\n{document}"
+        );
+        tokio::fs::remove_dir_all(directory).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn keeps_assistant_settings_when_the_hugging_face_token_is_cleared()
     -> Result<(), Box<dyn std::error::Error>> {
         // Given
         let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
-        let store = LocalSettingsStore {
-            path: directory.join("settings.json"),
-        };
+        let store = LocalSettingsStore::for_path(directory.join("settings.json"));
         store
             .save_hugging_face_token(Some("hf_saved".to_owned()))
             .await?;

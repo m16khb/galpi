@@ -56,5 +56,8 @@ pub fn run() {
             crate::adapters::inbound::tauri::cancel_recording,
         ])
         .run(tauri::generate_context!())
-        .unwrap_or_else(|error| eprintln!("failed to run Galpi: {error}"));
+        .unwrap_or_else(|error| {
+            eprintln!("failed to run Galpi: {error}");
+            std::process::exit(1);
+        });
 }

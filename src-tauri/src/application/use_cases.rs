@@ -64,16 +64,17 @@ impl Application {
             request
         } else {
             SetupRequest {
+                job_id: request.job_id,
                 hugging_face_token: self.settings.load_hugging_face_token().await?,
             }
         };
         let preset = self.settings.load_engine_preset().await?;
-        let (job_id, mut cancel) = self.jobs.claim()?;
+        let (job, mut cancel) = self.jobs.claim_with_id(request.job_id)?;
+        let job_id = job.id();
         let result = self
             .engine
             .prepare(job_id, &mut cancel, &request, preset)
             .await;
-        self.jobs.finish(job_id)?;
         result.map(|status| SetupResult { job_id, status })
     }
 
@@ -109,6 +110,7 @@ impl Application {
     /// sends no participant context at all.
     pub async fn refine_transcript(
         &self,
+        job_id: Uuid,
         target: Uuid,
         attendees: &[String],
     ) -> Result<RefinementResult, AppError> {
@@ -128,7 +130,8 @@ impl Application {
             )
         })?;
         let output = minutes_path(&artifacts.txt);
-        let (job_id, mut cancel) = self.jobs.claim()?;
+        let (job, mut cancel) = self.jobs.claim_with_id(job_id)?;
+        let job_id = job.id();
         let result = self
             .refinement
             .refine(
@@ -137,6 +140,7 @@ impl Application {
                 RefinementJob {
                     transcript: &artifacts.txt,
                     output: &output,
+                    source_audio: artifacts.source_audio.as_deref(),
                     background: assistant.background.as_deref(),
                     participants: &participants,
                     glossary: &glossary,
@@ -147,7 +151,6 @@ impl Application {
                 },
             )
             .await;
-        self.jobs.finish(job_id)?;
         let minutes = result?;
         self.jobs.register_minutes(target, minutes.clone())?;
         Ok(RefinementResult {
@@ -162,10 +165,9 @@ impl Application {
     ) -> Result<TranscriptionResult, AppError> {
         validate_speaker_hint(&request.speaker_hint)
             .map_err(|error| AppError::new("INVALID_SPEAKER_HINT", error.to_string()))?;
-        let (job_id, mut cancel) = self.jobs.claim_with_id(request.job_id)?;
-        let result = self.run_transcription(job_id, &mut cancel, &request).await;
-        self.jobs.finish(job_id)?;
-        result
+        let (job, mut cancel) = self.jobs.claim_with_id(request.job_id)?;
+        self.run_transcription(job.id(), &mut cancel, &request)
+            .await
     }
 
     /// Register an existing transcript file as a finished meeting so it can be
@@ -174,7 +176,8 @@ impl Application {
         &self,
         request: TranscriptImportRequest,
     ) -> Result<TranscriptImportResult, AppError> {
-        let (job_id, _unused_cancel) = self.jobs.claim_with_id(request.job_id)?;
+        let (job, _unused_cancel) = self.jobs.claim_with_id(request.job_id)?;
+        let job_id = job.id();
         let result = self
             .imports
             .import_transcript(
@@ -182,7 +185,6 @@ impl Application {
                 Path::new(&request.output_root),
             )
             .await;
-        self.jobs.finish(job_id)?;
         let artifacts = result?;
         self.jobs.register(job_id, artifacts.clone())?;
         Ok(TranscriptImportResult {
@@ -230,7 +232,7 @@ impl Application {
             job_id,
             srt: artifact_path(completed.artifacts.srt.as_ref()),
             txt: completed.artifacts.txt.to_string_lossy().into_owned(),
-            checkpoint: artifact_path(completed.artifacts.checkpoint.as_ref()),
+            checkpoint: optional_artifact_path(completed.artifacts.checkpoint.as_ref()),
             output_directory: completed
                 .artifacts
                 .output_directory
@@ -328,9 +330,13 @@ fn verify_recording_id(active: Option<Uuid>, requested: Uuid) -> Result<(), AppE
     }
 }
 
-/// Completed transcriptions always carry srt and checkpoint artifacts; keep
-/// the IPC shape a plain string either way.
+/// Completed transcriptions always carry an srt, so its slot stays a plain
+/// string; the checkpoint is optional and keeps its absence in the type.
 fn artifact_path(path: Option<&std::path::PathBuf>) -> String {
     path.map(|path| path.to_string_lossy().into_owned())
         .unwrap_or_default()
+}
+
+fn optional_artifact_path(path: Option<&std::path::PathBuf>) -> Option<String> {
+    path.map(|path| path.to_string_lossy().into_owned())
 }

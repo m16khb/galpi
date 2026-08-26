@@ -6,6 +6,7 @@ mod paths;
 mod process;
 pub mod recording;
 mod refinement;
+mod secrets;
 pub mod settings;
 mod setup;
 mod transcription;

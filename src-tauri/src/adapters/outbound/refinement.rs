@@ -7,6 +7,7 @@ use crate::domain::roster::{GlossaryEntry, Participant};
 use crate::domain::worker::WorkerEvent;
 use std::path::{Path, PathBuf};
 use tauri::AppHandle;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::oneshot;
 use uuid::Uuid;
 
@@ -69,6 +70,17 @@ pub async fn run(
     canonical_minutes(directory, &minutes).await
 }
 
+/// The local date the audio file was last written, as `YYYY-MM-DD`.
+///
+/// A recording is written once, when the meeting ends, so its timestamp is the
+/// meeting's own date. The transcript's timestamp is not: it is whenever the
+/// transcription ran, which can be days later.
+fn recorded_on(audio: &Path) -> Option<String> {
+    let modified = std::fs::metadata(audio).ok()?.modified().ok()?;
+    let recorded: chrono::DateTime<chrono::Local> = modified.into();
+    Some(recorded.format("%Y-%m-%d").to_string())
+}
+
 async fn run_worker(
     runtime: &Runtime<'_>,
     job_id: Uuid,
@@ -101,6 +113,10 @@ async fn run_worker(
     if let Some(model) = job.model {
         args.push("--model".into());
         args.push(model.into());
+    }
+    if let Some(recorded_on) = job.source_audio.and_then(recorded_on) {
+        args.push("--meeting-date".into());
+        args.push(recorded_on.into());
     }
 
     let process = run_process(
@@ -156,16 +172,22 @@ pub(crate) async fn write_private_file(
     contents: &str,
 ) -> Result<PathBuf, AppError> {
     let path = std::env::temp_dir().join(format!("galpi-{kind}-{job_id}"));
-    tokio::fs::write(&path, contents)
+    // Created private rather than chmod'ed afterwards: between a default-mode
+    // create and the chmod, the attendee roster is world-readable on a shared
+    // machine. `create_new` also refuses to write through an existing file.
+    let mut file = tokio::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(&path)
         .await
         .map_err(|error| AppError::io("사전 정보를 임시로 저장하지 못했습니다", &error))?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        tokio::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))
-            .await
-            .map_err(|error| AppError::io("사전 정보 파일 권한을 지정하지 못했습니다", &error))?;
-    }
+    file.write_all(contents.as_bytes())
+        .await
+        .map_err(|error| AppError::io("사전 정보를 임시로 저장하지 못했습니다", &error))?;
+    file.flush()
+        .await
+        .map_err(|error| AppError::io("사전 정보를 임시로 저장하지 못했습니다", &error))?;
     Ok(path)
 }
 

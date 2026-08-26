@@ -2,7 +2,7 @@ use crate::application::error::AppError;
 use crate::application::ports::JobEvents;
 use crate::domain::worker::{WorkerEvent, parse_worker_event};
 use nix::sys::signal::Signal;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::ffi::OsString;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
@@ -12,6 +12,7 @@ use std::time::Duration;
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::oneshot;
+use tokio::time::Instant;
 use uuid::Uuid;
 
 mod guard;
@@ -32,6 +33,54 @@ pub struct ProcessSpec {
 #[derive(Debug, Default)]
 pub struct ProcessResult {
     pub completed: Option<WorkerEvent>,
+}
+
+/// End a cancelled run: ask politely, then insist, and reap either way.
+///
+/// Returning the error rather than raising it keeps both call sites a single
+/// expression, and the child is always waited on so no zombie survives.
+async fn terminate_on_cancel(
+    guard: &mut ProcessGroupGuard,
+    child: &mut tokio::process::Child,
+) -> Result<AppError, AppError> {
+    guard.terminate(Signal::SIGTERM)?;
+    let wait = tokio::time::timeout(Duration::from_secs(3), child.wait()).await;
+    if wait.is_err() {
+        guard.terminate(Signal::SIGKILL)?;
+        let _status = child.wait().await;
+    }
+    guard.disarm();
+    Ok(AppError::new("CANCELLED", "사용자가 작업을 취소했습니다."))
+}
+
+/// How long a partial batch of worker log lines waits for company.
+const LOG_BATCH_INTERVAL: Duration = Duration::from_millis(100);
+/// How many lines force a batch out before the interval elapses.
+const LOG_BATCH_LINES: usize = 32;
+
+/// Deliver the buffered worker log lines as one event.
+///
+/// The webview parses and renders every event it receives, so a `uv pip
+/// install` printing thousands of lines is the difference between one event
+/// every 100ms and thousands of them.
+fn flush_logs(
+    events: &dyn JobEvents,
+    job_id: Uuid,
+    pending: &mut Vec<String>,
+) -> Result<(), AppError> {
+    if pending.is_empty() {
+        return Ok(());
+    }
+    let message = pending.join("\n");
+    pending.clear();
+    emit(
+        events,
+        job_id,
+        WorkerEvent::Log {
+            stream: "stderr".to_owned(),
+            message,
+        },
+    )
 }
 
 pub async fn run_process(
@@ -77,7 +126,11 @@ pub async fn run_process(
     let mut stdout_open = true;
     let mut stderr_open = true;
     let mut result = ProcessResult::default();
-    let mut error_tail = Vec::new();
+    let mut error_tail: VecDeque<String> = VecDeque::new();
+    // Dependency installs and model downloads print thousands of stderr lines.
+    // One IPC event per line floods the webview, so lines ride out in batches.
+    let mut pending: Vec<String> = Vec::new();
+    let mut flush_at = Instant::now();
 
     while stdout_open || stderr_open {
         tokio::select! {
@@ -88,52 +141,47 @@ pub async fn run_process(
                 }
             }
             line = read_bounded_line(&mut stderr, &mut stderr_buffer), if stderr_open => {
-                match line? {
-                    Some(line) => {
-                        emit(events, job_id, WorkerEvent::Log {
-                            stream: "stderr".to_owned(),
-                            message: line.clone(),
-                        })?;
-                        error_tail.push(line);
-                        if error_tail.len() > 20 {
-                            error_tail.remove(0);
-                        }
+                if let Some(line) = line? {
+                    if pending.is_empty() {
+                        flush_at = Instant::now() + LOG_BATCH_INTERVAL;
                     }
-                    None => stderr_open = false,
+                    pending.push(line.clone());
+                    error_tail.push_back(line);
+                    if error_tail.len() > 20 {
+                        let _oldest = error_tail.pop_front();
+                    }
+                    if pending.len() >= LOG_BATCH_LINES {
+                        flush_logs(events, job_id, &mut pending)?;
+                    }
+                } else {
+                    stderr_open = false;
+                    flush_logs(events, job_id, &mut pending)?;
                 }
             }
+            () = tokio::time::sleep_until(flush_at), if !pending.is_empty() => {
+                flush_logs(events, job_id, &mut pending)?;
+            }
             _ = &mut *cancel => {
-                process_guard.terminate(Signal::SIGTERM)?;
-                let wait = tokio::time::timeout(Duration::from_secs(3), child.wait()).await;
-                if wait.is_err() {
-                    process_guard.terminate(Signal::SIGKILL)?;
-                    let _status = child.wait().await;
-                }
-                process_guard.disarm();
-                return Err(AppError::new("CANCELLED", "사용자가 작업을 취소했습니다."));
+                flush_logs(events, job_id, &mut pending)?;
+                return Err(terminate_on_cancel(&mut process_guard, &mut child).await?);
             }
         }
     }
 
+    flush_logs(events, job_id, &mut pending)?;
     let status = tokio::select! {
         status = child.wait() => {
             status.map_err(|error| AppError::io("프로세스 종료 상태를 확인하지 못했습니다", &error))?
         }
         _ = &mut *cancel => {
-            process_guard.terminate(Signal::SIGTERM)?;
-            let wait = tokio::time::timeout(Duration::from_secs(3), child.wait()).await;
-            if wait.is_err() {
-                process_guard.terminate(Signal::SIGKILL)?;
-                let _status = child.wait().await;
-            }
-            process_guard.disarm();
-            return Err(AppError::new("CANCELLED", "사용자가 작업을 취소했습니다."));
+            flush_logs(events, job_id, &mut pending)?;
+            return Err(terminate_on_cancel(&mut process_guard, &mut child).await?);
         }
     };
     process_guard.disarm();
     if !status.success() {
         let detail = error_tail
-            .last()
+            .back()
             .cloned()
             .unwrap_or_else(|| format!("exit status {status}"));
         return Err(AppError::new("PROCESS_FAILED", detail));

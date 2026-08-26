@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Local Korean meeting transcription desktop app"
 authors = ["m16khb <m16khb@gmail.com>"]
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [lib]
 name = "galpi_lib"
@@ -19,6 +19,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 cpal = "0.18.2"
 hound = "3.5.1"
 nix = { version = "0.30", features = ["signal"] }
+security-framework = "3.7.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri = { version = "2", features = [] }
@@ -43,3 +44,12 @@ todo = "deny"
 unimplemented = "deny"
 module_name_repetitions = "allow"
 missing_errors_doc = "allow"
+
+# Release builds strip symbols and link with full LTO in a single codegen unit.
+# `panic` stays at the default unwind: aborting would turn a panic in the audio
+# writer thread into a lost recording instead of a failed one.
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+strip = true

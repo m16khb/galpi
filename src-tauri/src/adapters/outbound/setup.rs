@@ -1,7 +1,7 @@
 pub use super::environment::diagnose;
-use super::environment::{ENGINE_VERSION, process_environment, status};
+use super::environment::{process_environment, qwen3_marker, status, whisperx_marker};
 use super::model_cache::{can_use_offline_cache, import_standard_cache};
-use crate::adapters::outbound::paths::{AppPaths, QWEN3_ENGINE_VERSION, uv_binary, worker_root};
+use crate::adapters::outbound::paths::{AppPaths, uv_binary, worker_root};
 use crate::adapters::outbound::process::{ProcessSpec, emit, run_process};
 use crate::application::error::AppError;
 use crate::application::model::EnvironmentStatus;
@@ -244,12 +244,13 @@ async fn install_whisperx_engine(
             "--python".into(),
             paths.python.clone().into_os_string(),
             "-r".into(),
-            root.join("requirements.txt").into_os_string(),
+            root.join("requirements.lock").into_os_string(),
+            "--require-hashes".into(),
         ],
         env,
     )
     .await?;
-    tokio::fs::write(&paths.engine_manifest, ENGINE_VERSION)
+    tokio::fs::write(&paths.engine_manifest, whisperx_marker())
         .await
         .map_err(|error| AppError::io("엔진 준비 마커를 쓰지 못했습니다", &error))
 }
@@ -321,7 +322,7 @@ async fn install_qwen3_engine(
             "--python".into(),
             paths.qwen3_python.clone().into_os_string(),
             "-r".into(),
-            root.join("requirements-qwen3.txt").into_os_string(),
+            root.join("requirements-qwen3.lock").into_os_string(),
         ],
         env,
     )
@@ -329,7 +330,7 @@ async fn install_qwen3_engine(
     tokio::fs::create_dir_all(&paths.qwen3_root)
         .await
         .map_err(|error| AppError::io("Qwen3 엔진 폴더를 만들지 못했습니다", &error))?;
-    tokio::fs::write(&paths.qwen3_engine_manifest, QWEN3_ENGINE_VERSION)
+    tokio::fs::write(&paths.qwen3_engine_manifest, qwen3_marker())
         .await
         .map_err(|error| AppError::io("엔진 준비 마커를 쓰지 못했습니다", &error))
 }

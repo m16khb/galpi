@@ -70,9 +70,12 @@ pub async fn save_engine_preset(
 pub async fn refine_transcript(
     application: State<'_, Application>,
     job_id: Uuid,
+    target: Uuid,
     attendees: Vec<String>,
 ) -> Result<RefinementResult, AppError> {
-    application.refine_transcript(job_id, &attendees).await
+    application
+        .refine_transcript(job_id, target, &attendees)
+        .await
 }
 
 #[tauri::command]
@@ -93,7 +96,6 @@ pub async fn import_transcript(
 
 #[tauri::command]
 pub async fn cancel_job(application: State<'_, Application>, job_id: Uuid) -> Result<(), AppError> {
-    tokio::task::yield_now().await;
     application.cancel(job_id)
 }
 
@@ -103,7 +105,6 @@ pub async fn open_artifact(
     job_id: Uuid,
     kind: ArtifactKind,
 ) -> Result<(), AppError> {
-    tokio::task::yield_now().await;
     application.open_artifact(job_id, kind)
 }
 
@@ -112,7 +113,6 @@ pub async fn reveal_output_directory(
     application: State<'_, Application>,
     job_id: Uuid,
 ) -> Result<(), AppError> {
-    tokio::task::yield_now().await;
     application.reveal_output(job_id)
 }
 

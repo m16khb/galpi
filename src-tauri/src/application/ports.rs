@@ -96,6 +96,9 @@ pub trait SettingsPort: Send + Sync {
 pub struct RefinementJob<'a> {
     pub transcript: &'a Path,
     pub output: &'a Path,
+    /// The recorded audio, when this meeting came from a recording rather than
+    /// an imported transcript. Its timestamp dates the minutes.
+    pub source_audio: Option<&'a Path>,
     pub background: Option<&'a str>,
     pub participants: &'a [Participant],
     pub glossary: &'a [GlossaryEntry],

@@ -315,6 +315,7 @@ impl TranscriptImportPort for FakePort {
             checkpoint: None,
             minutes: None,
             output_directory: input.parent().unwrap_or(Path::new("/tmp")).to_owned(),
+            source_audio: None,
         })
     }
 }
@@ -343,6 +344,7 @@ async fn prepare_uses_saved_hugging_face_token() -> Result<(), AppError> {
     app.save_hugging_face_token("hf_saved".to_owned()).await?;
 
     app.prepare(SetupRequest {
+        job_id: Uuid::now_v7(),
         hugging_face_token: None,
     })
     .await?;
@@ -524,7 +526,11 @@ async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(),
 
     // When
     let refined = app
-        .refine_transcript(transcription.job_id, &["ms".to_owned(), "hb".to_owned()])
+        .refine_transcript(
+            Uuid::now_v7(),
+            transcription.job_id,
+            &["ms".to_owned(), "hb".to_owned()],
+        )
         .await?;
 
     // Then
@@ -569,7 +575,9 @@ async fn refinement_is_rejected_before_a_token_is_saved() -> Result<(), AppError
     let transcription = app.transcribe(request(SpeakerHint::Auto)).await?;
 
     // When
-    let result = app.refine_transcript(transcription.job_id, &[]).await;
+    let result = app
+        .refine_transcript(Uuid::now_v7(), transcription.job_id, &[])
+        .await;
 
     // Then
     let Err(error) = result else {
@@ -599,6 +607,7 @@ fn completion(output: &Path) -> CompletedTranscription {
             checkpoint: Some(output.join("meeting.aligned.v2.json")),
             minutes: None,
             output_directory: output.to_owned(),
+            source_audio: Some(output.join("meeting.wav")),
         },
         segments: 8,
         filtered: 1,
@@ -624,7 +633,8 @@ async fn imported_transcript_is_refinable_without_transcription() -> Result<(), 
             output_root: "/tmp/galpi".to_owned(),
         })
         .await?;
-    app.refine_transcript(imported.job_id, &[]).await?;
+    app.refine_transcript(Uuid::now_v7(), imported.job_id, &[])
+        .await?;
 
     // Then: refinement received the imported transcript itself
     let seen = port
@@ -710,6 +720,7 @@ async fn prepare_prepares_the_selected_preset() -> Result<(), AppError> {
 
     // When
     app.prepare(SetupRequest {
+        job_id: Uuid::now_v7(),
         hugging_face_token: None,
     })
     .await?;

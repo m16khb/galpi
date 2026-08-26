@@ -8,6 +8,22 @@ use std::path::{Path, PathBuf};
 use tauri::AppHandle;
 
 pub const ENGINE_VERSION: &str = "3.8.6";
+/// What an installed engine's readiness marker must contain to count as
+/// current: the display version plus the fingerprint of the requirements file
+/// it was installed from. Editing a pin invalidates the existing virtualenv.
+pub fn whisperx_marker() -> String {
+    format!(
+        "{ENGINE_VERSION}+{}",
+        env!("GALPI_WHISPERX_REQUIREMENTS_HASH")
+    )
+}
+
+pub fn qwen3_marker() -> String {
+    format!(
+        "{QWEN3_ENGINE_VERSION}+{}",
+        env!("GALPI_QWEN3_REQUIREMENTS_HASH")
+    )
+}
 pub const QWEN3_MODEL_ID: &str = "Qwen/Qwen3-ASR-1.7B";
 pub const QWEN3_ALIGNER_ID: &str = "Qwen/Qwen3-ForcedAligner-0.6B";
 const PYANNOTE_MODEL_DIR: &str = "models--pyannote--speaker-diarization-community-1";
@@ -60,13 +76,13 @@ pub fn status(paths: &AppPaths, preset: EnginePreset) -> EnvironmentStatus {
 fn whisperx_engine_ready(paths: &AppPaths) -> bool {
     paths.python.is_file()
         && std::fs::read_to_string(&paths.engine_manifest)
-            .is_ok_and(|version| version == ENGINE_VERSION)
+            .is_ok_and(|marker| marker == whisperx_marker())
 }
 
 fn qwen3_engine_ready(paths: &AppPaths) -> bool {
     paths.qwen3_python.is_file()
         && std::fs::read_to_string(&paths.qwen3_engine_manifest)
-            .is_ok_and(|version| version == QWEN3_ENGINE_VERSION)
+            .is_ok_and(|marker| marker == qwen3_marker())
 }
 
 pub fn process_environment(
@@ -98,6 +114,15 @@ pub fn process_environment(
             "UV_PYTHON_INSTALL_DIR".into(),
             paths.python_installations.clone().into_os_string(),
         ),
+        // Several gigabytes of wheels belong inside the app's own data, so
+        // that removing Galpi's folder actually reclaims them.
+        (
+            "UV_CACHE_DIR".into(),
+            paths.cache.join("uv").into_os_string(),
+        ),
+        // Only the interpreter uv installed itself is a known quantity; a
+        // system 3.12 that happens to be on PATH is not.
+        ("UV_PYTHON_PREFERENCE".into(), "only-managed".into()),
         (
             "PATH".into(),
             format!(

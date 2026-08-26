@@ -8,6 +8,12 @@ pub struct Artifacts {
     pub checkpoint: Option<PathBuf>,
     pub minutes: Option<PathBuf>,
     pub output_directory: PathBuf,
+    /// The audio this meeting was transcribed from, when there was any.
+    ///
+    /// Refinement dates the minutes from this file: it is the only artifact
+    /// whose timestamp is the day the meeting happened rather than the day the
+    /// transcript was written. An imported transcript has no audio.
+    pub source_audio: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -79,6 +85,7 @@ mod tests {
             checkpoint: None,
             minutes: None,
             output_directory: PathBuf::from("/tmp/job"),
+            source_audio: None,
         };
 
         // When / Then: only the transcript itself is addressable
