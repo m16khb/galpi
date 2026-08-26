@@ -232,6 +232,8 @@ The build creates the `.app` first, then packages the DMG with `hdiutil`.
 
 Gatekeeper blocks an unsigned, un-notarized DMG on every Mac that receives it. Sign and notarize with an Apple Developer certificate before handing the build to anyone.
 
+Signing is a prerequisite for the Keychain too, not only for Gatekeeper. macOS ties access to a Keychain item to the app's code signature, and ad-hoc signing (`signingIdentity: "-"`) produces a different signature on every build, so the app is not recognized as the one that stored the item. Distributing unsigned builds therefore asks every user to re-authorize their token on each update. A Developer ID signature is stable, so they authorize once.
+
 `.github/workflows/release.yml` builds the DMG on a `v*` tag and, when the repository secrets below are set, signs and notarizes it, then verifies the result with `codesign` and `spctl`.
 
 | Secret | Contents |

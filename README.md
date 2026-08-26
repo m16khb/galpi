@@ -232,6 +232,8 @@ src-tauri/target/release/bundle/dmg/Galpi_0.1.0_aarch64.dmg
 
 서명·공증되지 않은 DMG를 받은 Mac은 Gatekeeper가 실행을 막습니다. 배포 전에 Apple Developer 인증서로 서명하고 공증하세요.
 
+서명은 Gatekeeper 때문만이 아니라 Keychain 때문에도 선행 조건입니다. macOS는 Keychain 항목의 접근 권한을 앱의 코드 서명에 묶어 두는데, ad-hoc 서명(`signingIdentity: "-"`)은 빌드마다 서명이 달라져 같은 앱으로 인정받지 못합니다. 그래서 미서명 빌드를 배포하면 사용자가 업데이트할 때마다 토큰 접근 허용 창을 다시 보게 됩니다. Developer ID로 서명하면 서명이 고정되어 최초 1회만 허용하면 됩니다.
+
 `.github/workflows/release.yml`이 `v*` 태그에서 DMG를 만들고, 아래 저장소 시크릿이 설정되어 있으면 서명·공증까지 수행한 뒤 `codesign`/`spctl`로 검증합니다.
 
 | 시크릿 | 내용 |
