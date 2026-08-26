@@ -1,3 +1,5 @@
+# Direct pins. `requirements.lock` is the resolved set the app installs from;
+# regenerate it with `uv pip compile` after editing anything here.
 whisperx==3.8.6
 torch==2.8.0
 torchaudio==2.8.0

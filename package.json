@@ -20,6 +20,9 @@
     "vite:dev": "vite --port 1420 --strictPort",
     "vite:build": "tsc --noEmit && vite build",
     "check": "bun run architecture:check && biome lint . && tsc --noEmit",
+    "check:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml --all-targets",
+    "check:worker": "uvx ruff check worker && uvx ruff format --check worker && PYTHONPATH=. python3 -m unittest discover -s worker/tests -t .",
+    "check:all": "bun run check && bun test && bun run check:rust && bun run check:worker",
     "architecture:check": "bun run scripts/check-architecture.ts",
     "test": "bun test",
     "sidecar:stage": "bun run scripts/stage-sidecars.ts"

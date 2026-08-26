@@ -1,3 +1,5 @@
+# Direct pins. `requirements-qwen3.lock` is the resolved set the app installs from;
+# regenerate it with `uv pip compile` after editing anything here.
 # Qwen3 candidate transcription stack (MLX runtime). Isolated from the pinned
 # WhisperX environment so the two presets never share dependency versions.
 # mlx-qwen3-asr runs the ASR model and the forced aligner natively on the

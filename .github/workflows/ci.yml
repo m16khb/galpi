@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    # Apple Silicon: the app only ships for arm64 macOS 14+, so the gates run
+    # on the platform they describe.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bun test
+
+  rust:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      # The frontend build output is what tauri.conf.json points `frontendDist`
+      # at; without it the Tauri context macro fails to expand.
+      - run: bun install --frozen-lockfile
+      - run: bun run vite:build
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets
+
+  worker:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uvx ruff check worker
+      - run: uvx ruff format --check worker
+      # The pure helpers import no ML stack, so they run on a bare interpreter.
+      - run: PYTHONPATH=. uv run --python 3.12 python -m unittest discover -s worker/tests -t . -v

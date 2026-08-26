@@ -61,7 +61,14 @@ async function stageWorker(): Promise<void> {
     force: true,
     filter: (source) => !source.includes("__pycache__") && !source.endsWith(".pyc"),
   })
-  const requirements = ["requirements.txt", "requirements-qwen3.txt"]
+  // The locks are what the installer actually reads; the loose requirements
+  // files travel with them so the pins stay readable next to their source.
+  const requirements = [
+    "requirements.txt",
+    "requirements.lock",
+    "requirements-qwen3.txt",
+    "requirements-qwen3.lock",
+  ]
   for (const file of requirements) {
     await cp(join(WORKER_SOURCE, file), join(WORKER_DESTINATION, file))
   }

@@ -51,5 +51,19 @@
       "!src-tauri/icons",
       "!src-tauri/resources/worker"
     ]
-  }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "vite.config.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    }
+  ]
 }

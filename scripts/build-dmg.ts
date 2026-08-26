@@ -7,10 +7,22 @@ const BUNDLE_ROOT = join(ROOT, "src-tauri", "target", "release", "bundle")
 const MACOS_DIRECTORY = join(BUNDLE_ROOT, "macos")
 const APP_PATH = join(MACOS_DIRECTORY, "Galpi.app")
 const DMG_DIRECTORY = join(BUNDLE_ROOT, "dmg")
-const DMG_PATH = join(DMG_DIRECTORY, "Galpi_0.1.0_aarch64.dmg")
 
 class DmgBuildError extends Error {
   readonly name = "DmgBuildError"
+}
+
+/// The version the app was actually built at, read from the same file the
+/// bundler reads, so a release never ships an artifact named after the
+/// previous version.
+async function bundleVersion(): Promise<string> {
+  const config = (await Bun.file(join(ROOT, "src-tauri", "tauri.conf.json")).json()) as {
+    version?: unknown
+  }
+  if (typeof config.version !== "string" || config.version.length === 0) {
+    throw new DmgBuildError("tauri.conf.json is missing a version")
+  }
+  return config.version
 }
 
 async function run(command: readonly string[]): Promise<void> {
@@ -27,6 +39,8 @@ async function run(command: readonly string[]): Promise<void> {
 if (!(await Bun.file(join(APP_PATH, "Contents", "Info.plist")).exists())) {
   throw new DmgBuildError(`Galpi.app not found: ${APP_PATH}`)
 }
+
+const DMG_PATH = join(DMG_DIRECTORY, `Galpi_${await bundleVersion()}_aarch64.dmg`)
 
 await rm(DMG_DIRECTORY, { recursive: true, force: true })
 await rm(join(BUNDLE_ROOT, "share"), { recursive: true, force: true })
@@ -54,7 +68,7 @@ try {
     staging,
     "-ov",
     "-format",
-    "UDZO",
+    "ULMO",
     DMG_PATH,
   ])
 } finally {
