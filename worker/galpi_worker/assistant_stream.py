@@ -15,7 +15,7 @@ from .protocol import EventWriter
 BASE_URL_VARIABLE = "GALPI_ASSISTANT_BASE_URL"
 EFFORT_VARIABLE = "GALPI_ASSISTANT_REASONING_EFFORT"
 DEFAULT_BASE_URL = "https://api.z.ai/api/coding/paas/v4"
-DEFAULT_MODEL = "glm-5.3"
+DEFAULT_MODEL = "glm-5.3-flash"
 MAX_OUTPUT_TOKENS = 32768
 GLM_MAX_OUTPUT_TOKENS = 131072
 REASONING_EFFORTS = frozenset({"low", "medium", "high", "max"})

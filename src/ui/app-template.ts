@@ -264,14 +264,15 @@ export const appTemplate = `
           </div>
           <p id="settings-assistant-help">사용 중인 OpenAI 호환 서비스(z.ai 코딩 플랜, OpenRouter 등)에서 발급한 API 키를 사용합니다.</p>
           <label class="settings-field-label" for="settings-assistant-model">가공 모델</label>
-          <input id="settings-assistant-model" class="settings-input" type="text" list="assistant-model-suggestions" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="glm-5.3" aria-describedby="settings-model-help" />
+          <input id="settings-assistant-model" class="settings-input" type="text" list="assistant-model-suggestions" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="glm-5.3-flash" aria-describedby="settings-model-help" />
           <datalist id="assistant-model-suggestions">
-            <option value="glm-5.3">z.ai · 기본값</option>
+            <option value="glm-5.3-flash">z.ai · 기본값</option>
+            <option value="glm-5.3">z.ai · 플래그십</option>
             <option value="glm-5.2">z.ai · 이전 플래그십</option>
             <option value="glm-5-turbo">z.ai · 빠른 응답</option>
             <option value="glm-4.6">z.ai · 이전 세대</option>
           </datalist>
-          <p id="settings-model-help">z.ai 코딩 플랜의 GLM 모델이 기본값입니다. 다른 제공자를 쓸 때는 그 제공자의 모델 이름을 그대로 입력하세요. 긴 회의는 상위 모델이, 짧은 회의는 Turbo가 유리합니다.</p>
+          <p id="settings-model-help">z.ai 코딩 플랜의 GLM 모델이 기본값입니다. 다른 제공자를 쓸 때는 그 제공자의 모델 이름을 그대로 입력하세요. 긴 회의는 상위 모델이, 짧은 회의는 기본값인 Flash가 유리합니다.</p>
           <label class="settings-field-label" for="settings-assistant-effort">추론 강도</label>
           <select id="settings-assistant-effort" class="settings-select" aria-describedby="settings-effort-help">
             <option value="">제공자 기본값</option>

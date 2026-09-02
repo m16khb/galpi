@@ -8,7 +8,7 @@ const BASE_URL_SELECTOR = "#settings-assistant-base-url"
 const EFFORT_SELECTOR = "#settings-assistant-effort"
 const BACKGROUND_SELECTOR = "#settings-assistant-background"
 
-export const DEFAULT_ASSISTANT_MODEL = "glm-5.3"
+export const DEFAULT_ASSISTANT_MODEL = "glm-5.3-flash"
 
 /** The assistant sheet owns credentials and context; the roster and glossary are edited beside it. */
 export type AssistantCredentials = Omit<AssistantSettings, "participants" | "glossary">

@@ -111,7 +111,7 @@ bun run dev
 
 전사가 끝난 뒤 `AI 증강 실행`을 누르면 OpenAI 호환 API로 Markdown 회의록을 생성합니다. 새 녹음·전사 없이 이미 가지고 있는 전사문도 **03 전사 결과 AI 증강** 패널의 `전사문 파일 가져오기`로 바로 증강할 수 있습니다(txt·md).
 
-- 기본 모델: `glm-5.3`
+- 기본 모델: `glm-5.3-flash`
 - 기본 API: `https://api.z.ai/api/coding/paas/v4`
 - 모델, Base URL, 추론 강도는 설정에서 변경 가능
 

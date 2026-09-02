@@ -8,7 +8,7 @@ import { AppController } from "./controller"
 
 const initialAssistant: AssistantSettings = {
   apiKeyStored: true,
-  model: "glm-5.3",
+  model: "glm-5.3-flash",
   baseUrl: null,
   reasoningEffort: "max",
   background: null,

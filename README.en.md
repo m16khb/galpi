@@ -111,7 +111,7 @@ This context helps Galpi produce stable names and terminology in refined meeting
 
 After transcription, select `AI 증강 실행` (Run AI augmentation) to create Markdown through an OpenAI-compatible API. You can also augment an existing transcript without a new recording: use `전사문 파일 가져오기` (Import transcript file) in the augmentation panel (txt/md).
 
-- Default model: `glm-5.3`
+- Default model: `glm-5.3-flash`
 - Default API: `https://api.z.ai/api/coding/paas/v4`
 - Model, Base URL, and reasoning effort are configurable
 
