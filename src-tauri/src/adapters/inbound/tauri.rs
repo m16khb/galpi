@@ -53,6 +53,16 @@ pub async fn load_assistant_settings(
     application.load_assistant_settings().await
 }
 
+/// Store the assistant key on its own, so the settings autosave never carries
+/// it and an untouched key is never rewritten. A blank string clears it.
+#[tauri::command]
+pub async fn save_assistant_api_key(
+    application: State<'_, Application>,
+    key: String,
+) -> Result<(), AppError> {
+    application.save_assistant_api_key(key).await
+}
+
 #[tauri::command]
 pub async fn save_assistant_settings(
     application: State<'_, Application>,

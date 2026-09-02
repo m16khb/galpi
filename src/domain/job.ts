@@ -26,7 +26,8 @@ export interface TranscriptionResult {
 }
 
 export interface AssistantSettings {
-  readonly apiKey: string | null
+  /** Whether the host holds a key. The value itself never crosses the IPC border. */
+  readonly apiKeyStored: boolean
   readonly model: string | null
   readonly baseUrl: string | null
   readonly reasoningEffort: string | null

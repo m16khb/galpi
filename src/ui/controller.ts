@@ -61,8 +61,8 @@ export class AppController {
       this.view.setEnvironment(environment)
       this.view.tokenSettings.setStored(await this.backend.huggingFaceTokenStored())
       const assistant = await this.backend.loadAssistantSettings()
-      this.view.assistantSettings.setConfigured(assistant.apiKey !== null)
-      this.view.setAssistantKeyReady(assistant.apiKey !== null)
+      this.view.assistantSettings.setStored(assistant.apiKeyStored)
+      this.view.setAssistantKeyReady(assistant.apiKeyStored)
       this.view.participantSettings.setRoster(assistant.participants)
       this.view.glossarySettings.setEntries(assistant.glossary)
       this.view.attendees.setRoster(assistant.participants)
@@ -93,6 +93,7 @@ export class AppController {
     this.view.on("clear-attendees", () => this.view.attendees.clear())
     this.view.onEnginePresetChange((preset) => void this.switchEngine(preset))
     this.view.on("clear-token", () => void this.clearToken())
+    this.view.on("clear-assistant-key", () => void this.clearAssistantKey())
     this.view.on("refine", () => void this.refine())
     this.view.on("open-minutes", () => void this.openArtifact("minutes"))
     this.view.on("model-access", () => void this.openModelAccess())
@@ -158,7 +159,7 @@ export class AppController {
       settings.setStored(await this.backend.huggingFaceTokenStored())
       const loaded = await this.backend.loadAssistantSettings()
       assistant.setSettings(loaded)
-      this.view.setAssistantKeyReady(loaded.apiKey !== null)
+      this.view.setAssistantKeyReady(loaded.apiKeyStored)
       this.view.participantSettings.setRoster(loaded.participants)
       this.view.glossarySettings.setEntries(loaded.glossary)
       settings.showMessage("변경사항은 자동으로 저장됩니다.")
@@ -183,14 +184,21 @@ export class AppController {
         await this.backend.saveHuggingFaceToken(pending)
         settings.setToken(pending)
       }
+      // The same rule as the token above: the sheet does not hold a stored key,
+      // so only one the user just typed is worth sending. The key has its own
+      // command, which keeps it out of the settings payload entirely.
+      const pendingKey = assistant.pendingKey()
+      if (pendingKey !== null) {
+        await this.backend.saveAssistantApiKey(pendingKey)
+        assistant.setKey(pendingKey)
+      }
       const saved = {
         ...assistant.settings(),
         participants: this.view.participantSettings.roster(),
         glossary: this.view.glossarySettings.entries(),
       }
       await this.backend.saveAssistantSettings(saved)
-      assistant.setPersistedKey(saved.apiKey)
-      this.view.setAssistantKeyReady(saved.apiKey !== null)
+      this.view.setAssistantKeyReady(saved.apiKeyStored)
       this.view.attendees.setRoster(saved.participants)
       settings.showMessage("변경사항을 자동 저장했습니다.")
     } catch (error) {
@@ -229,6 +237,24 @@ export class AppController {
       settings.showMessage(errorMessage(error), "error")
     } finally {
       settings.setBusy(false)
+    }
+  }
+
+  /// Clearing is how a stored key is replaced: the window never receives the
+  /// value, so there is nothing to edit in place.
+  private async clearAssistantKey(): Promise<void> {
+    const settings = this.view.tokenSettings
+    const assistant = this.view.assistantSettings
+    assistant.setBusy(true)
+    try {
+      await this.backend.saveAssistantApiKey("")
+      assistant.clearKey()
+      this.view.setAssistantKeyReady(false)
+      settings.showMessage("저장된 API 키를 지웠습니다.")
+    } catch (error) {
+      settings.showMessage(errorMessage(error), "error")
+    } finally {
+      assistant.setBusy(false)
     }
   }
 

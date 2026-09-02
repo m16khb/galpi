@@ -97,6 +97,14 @@ impl Application {
         self.settings.load_assistant().await
     }
 
+    /// Store the assistant key, or clear it when the text is blank.
+    pub async fn save_assistant_api_key(&self, key: String) -> Result<(), AppError> {
+        let key = key.trim();
+        self.settings
+            .save_assistant_api_key((!key.is_empty()).then(|| key.to_owned()))
+            .await
+    }
+
     pub async fn save_assistant_settings(
         &self,
         settings: AssistantSettings,

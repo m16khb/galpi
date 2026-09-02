@@ -290,6 +290,7 @@ export const appTemplate = `
         </section>
         <div class="settings-actions">
           <button class="secondary-button danger" type="button" data-action="clear-token">Hugging Face 토큰 지우기</button>
+          <button class="secondary-button danger" type="button" data-action="clear-assistant-key">AI 증강 API 키 지우기</button>
         </div>
         </div>
       </div>

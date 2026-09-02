@@ -19,6 +19,8 @@ export interface BackendPort {
   huggingFaceTokenStored(): Promise<boolean>
   saveHuggingFaceToken(token: string): Promise<void>
   loadAssistantSettings(): Promise<AssistantSettings>
+  /** Stores the key on its own so a settings autosave can never carry it; "" clears it. */
+  saveAssistantApiKey(key: string): Promise<void>
   saveAssistantSettings(settings: AssistantSettings): Promise<void>
   saveEnginePreset(preset: EnginePreset): Promise<void>
   refineTranscript(

@@ -289,8 +289,6 @@ impl SettingsPort for LocalSettingsStore {
             .as_ref()
             .ok_or_else(|| AppError::new("SETTINGS_INVALID", "앱 설정을 읽지 못했습니다."))?;
         Ok(AssistantSettings {
-            // Deliberately absent: a refinement asks for it separately.
-            api_key: None,
             api_key_stored,
             model: settings.assistant_model.clone(),
             base_url: settings.assistant_base_url.clone(),
@@ -301,11 +299,18 @@ impl SettingsPort for LocalSettingsStore {
         })
     }
 
+    async fn save_assistant_api_key(&self, key: Option<String>) -> Result<(), AppError> {
+        self.store_secret(Secret::AssistantApiKey, key.as_deref())
+            .await
+    }
+
+    /// Save everything except the key, which has its own entry point.
+    ///
+    /// The sheet autosaves this whole document whenever any field changes, and
+    /// it does not hold the key — it only knows one exists. Writing the secret
+    /// from here would erase it on the first keystroke.
     async fn save_assistant(&self, assistant: AssistantSettings) -> Result<(), AppError> {
-        self.store_secret(Secret::AssistantApiKey, assistant.api_key.as_deref())
-            .await?;
         self.update(|settings| {
-            settings.assistant_api_key = None;
             settings.assistant_model = assistant.model;
             settings.assistant_base_url = assistant.base_url;
             settings.assistant_reasoning_effort = assistant.reasoning_effort;
@@ -449,7 +454,6 @@ mod tests {
         let store =
             LocalSettingsStore::with_secrets(directory.join("settings.json"), secrets.clone());
         let assistant = |glossary: Vec<GlossaryEntry>| AssistantSettings {
-            api_key: Some("zai_key".to_owned()),
             api_key_stored: true,
             model: Some("glm-5.3".to_owned()),
             base_url: None,
@@ -458,6 +462,9 @@ mod tests {
             participants: Vec::new(),
             glossary,
         };
+        store
+            .save_assistant_api_key(Some("zai_key".to_owned()))
+            .await?;
         store.save_assistant(assistant(Vec::new())).await?;
         let after_first_save = secrets.writes();
 
@@ -480,7 +487,6 @@ mod tests {
         // Loading the settings reports that a key exists without reading it.
         let loaded = store.load_assistant().await?;
         assert!(loaded.api_key_stored);
-        assert_eq!(loaded.api_key, None);
         tokio::fs::remove_dir_all(directory).await?;
         Ok(())
     }
@@ -618,8 +624,10 @@ mod tests {
             .save_hugging_face_token(Some("hf_saved".to_owned()))
             .await?;
         store
+            .save_assistant_api_key(Some("zai_key".to_owned()))
+            .await?;
+        store
             .save_assistant(AssistantSettings {
-                api_key: Some("zai_key".to_owned()),
                 api_key_stored: true,
                 model: Some("glm-5.2".to_owned()),
                 base_url: Some("https://openrouter.ai/api/v1".to_owned()),
@@ -674,6 +682,111 @@ mod tests {
             Some("회의 녹음·전사 데스크톱 앱")
         );
         tokio::fs::remove_dir_all(directory).await?;
+        Ok(())
+    }
+    /// The store the app actually ships with, which keeps the key in the file.
+    fn shipping_store(path: std::path::PathBuf) -> LocalSettingsStore {
+        LocalSettingsStore::with_secrets(
+            path,
+            std::sync::Arc::new(super::super::secrets::SettingsFile),
+        )
+    }
+
+    #[tokio::test]
+    async fn the_assistant_key_survives_a_relaunch() -> Result<(), Box<dyn std::error::Error>> {
+        // Given: a saved key and the settings written beside it
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        let path = directory.join("settings.json");
+        let store = shipping_store(path.clone());
+        store
+            .save_assistant_api_key(Some("zai_key".to_owned()))
+            .await?;
+        store
+            .save_assistant(AssistantSettings {
+                api_key_stored: true,
+                model: Some("glm-5.3-flash".to_owned()),
+                ..AssistantSettings::default()
+            })
+            .await?;
+
+        // When: the app is launched again
+        let next_launch = shipping_store(path.clone());
+
+        // Then: the refinement still finds the key, and the sheet still says so
+        assert_eq!(
+            next_launch.load_assistant_api_key().await?.as_deref(),
+            Some("zai_key")
+        );
+        let loaded = next_launch.load_assistant().await?;
+        assert!(loaded.api_key_stored);
+        assert_eq!(loaded.model.as_deref(), Some("glm-5.3-flash"));
+        let _removed = tokio::fs::remove_dir_all(directory).await;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn an_autosave_cannot_erase_the_stored_assistant_key()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Given: a stored key, and a settings sheet that never received it
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        let path = directory.join("settings.json");
+        let store = shipping_store(path.clone());
+        store
+            .save_assistant_api_key(Some("zai_key".to_owned()))
+            .await?;
+
+        // When: the sheet autosaves because an unrelated field changed
+        store
+            .save_assistant(AssistantSettings {
+                api_key_stored: true,
+                model: Some("glm-5-turbo".to_owned()),
+                glossary: vec![GlossaryEntry {
+                    id: "term-1".to_owned(),
+                    term: "갈피".to_owned(),
+                    description: None,
+                }],
+                ..AssistantSettings::default()
+            })
+            .await?;
+
+        // Then: the key is untouched, here and on the next launch
+        assert_eq!(
+            store.load_assistant_api_key().await?.as_deref(),
+            Some("zai_key")
+        );
+        assert!(store.load_assistant().await?.api_key_stored);
+        assert_eq!(
+            shipping_store(path)
+                .load_assistant_api_key()
+                .await?
+                .as_deref(),
+            Some("zai_key")
+        );
+        let _removed = tokio::fs::remove_dir_all(directory).await;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn clearing_the_assistant_key_removes_it_from_the_document()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Given
+        let directory = std::env::temp_dir().join(format!("galpi-settings-{}", Uuid::now_v7()));
+        let path = directory.join("settings.json");
+        let store = shipping_store(path.clone());
+        store
+            .save_assistant_api_key(Some("zai_key".to_owned()))
+            .await?;
+        assert!(tokio::fs::read_to_string(&path).await?.contains("zai_key"));
+
+        // When
+        store.save_assistant_api_key(None).await?;
+
+        // Then
+        assert_eq!(store.load_assistant_api_key().await?, None);
+        assert!(!store.load_assistant().await?.api_key_stored);
+        let document = tokio::fs::read_to_string(&path).await.unwrap_or_default();
+        assert!(!document.contains("zai_key"), "cleared key survived");
+        let _removed = tokio::fs::remove_dir_all(directory).await;
         Ok(())
     }
 }

@@ -7,7 +7,7 @@ import { AppView } from "./app-view"
 import { AppController } from "./controller"
 
 const initialAssistant: AssistantSettings = {
-  apiKey: null,
+  apiKeyStored: true,
   model: "glm-5.3",
   baseUrl: null,
   reasoningEffort: "max",
@@ -25,7 +25,10 @@ const initialAssistant: AssistantSettings = {
   glossary: [{ id: "term-1", term: "갈피", description: null }],
 }
 
-function createBackend(onSave: (settings: AssistantSettings) => void | Promise<void>): BackendPort {
+function createBackend(
+  onSave: (settings: AssistantSettings) => void | Promise<void>,
+  onSaveKey: (key: string) => void = () => undefined,
+): BackendPort {
   return {
     diagnose: async () => ({
       enginePreset: "qwen3" as const,
@@ -44,6 +47,9 @@ function createBackend(onSave: (settings: AssistantSettings) => void | Promise<v
     huggingFaceTokenStored: async () => false,
     saveHuggingFaceToken: async () => undefined,
     loadAssistantSettings: async () => initialAssistant,
+    saveAssistantApiKey: async (key) => {
+      onSaveKey(key)
+    },
     saveEnginePreset: async () => undefined,
     saveAssistantSettings: async (settings) => {
       await onSave(settings)
@@ -108,19 +114,21 @@ function dispatchChange(window: Window, element: HTMLElement): void {
 
 async function createHarness(
   onSave: (settings: AssistantSettings) => void | Promise<void>,
+  onSaveKey: (key: string) => void = () => undefined,
 ): Promise<{
   readonly window: Window
   readonly root: HTMLElement
+  readonly view: AppView
   readonly controller: AppController
 }> {
   const window = new Window()
   const root = window.document.createElement("div") as unknown as HTMLElement
   window.document.body.appendChild(root as unknown as never)
   const view = new AppView(root)
-  const controller = new AppController(createBackend(onSave), view)
+  const controller = new AppController(createBackend(onSave, onSaveKey), view)
   await controller.start()
   view.assistantSettings.setSettings(initialAssistant)
-  return { window, root, controller }
+  return { window, root, view, controller }
 }
 
 describe("settings autosave (real DOM)", () => {
@@ -140,6 +148,52 @@ describe("settings autosave (real DOM)", () => {
     expect(persisted.model).toBe("glm-5-turbo")
     expect(root.querySelector('[data-action="save-token"]')).toBeNull()
     expect(root.querySelector("#settings-message")?.textContent).toContain("자동 저장")
+    controller.stop()
+  })
+
+  test("never rewrites a stored assistant key when another field changes", async () => {
+    // Given: a stored key the window never received, and an unrelated edit
+    const saved = deferred<AssistantSettings>()
+    const keyWrites: string[] = []
+    const { window, root, controller } = await createHarness(
+      (settings) => saved.resolve(settings),
+      (key) => keyWrites.push(key),
+    )
+    const background = root.querySelector<HTMLTextAreaElement>("#settings-assistant-background")
+    if (background === null) throw new Error("background field is missing")
+
+    // When
+    background.value = "팀리더: 하빈"
+    dispatchChange(window, background)
+
+    // Then: the key was left alone and is still reported as saved
+    const persisted = await withTimeout(saved.promise)
+    expect(keyWrites).toEqual([])
+    expect(persisted.apiKeyStored).toBeTrue()
+    expect(persisted.background).toBe("팀리더: 하빈")
+    expect(root.querySelector("#assistant-configured-state")?.textContent).toBe("API 키 저장됨")
+    controller.stop()
+  })
+
+  test("sends a newly typed assistant key on its own command", async () => {
+    // Given: no key on file yet
+    const saved = deferred<AssistantSettings>()
+    const keyWrites: string[] = []
+    const { window, root, view, controller } = await createHarness(
+      (settings) => saved.resolve(settings),
+      (key) => keyWrites.push(key),
+    )
+    const key = root.querySelector<HTMLInputElement>("#settings-assistant-key")
+    if (key === null) throw new Error("assistant key field is missing")
+    view.assistantSettings.clearKey()
+
+    // When
+    key.value = "  zai_typed  "
+    dispatchChange(window, key)
+
+    // Then
+    await withTimeout(saved.promise)
+    expect(keyWrites).toEqual(["zai_typed"])
     controller.stop()
   })
 

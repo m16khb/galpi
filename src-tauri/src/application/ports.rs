@@ -92,6 +92,8 @@ pub trait SettingsPort: Send + Sync {
     /// refinement actually needs it.
     async fn load_assistant(&self) -> Result<AssistantSettings, AppError>;
     async fn load_assistant_api_key(&self) -> Result<Option<String>, AppError>;
+    /// Store or clear the assistant key, which `save_assistant` never touches.
+    async fn save_assistant_api_key(&self, key: Option<String>) -> Result<(), AppError>;
     async fn save_assistant(&self, settings: AssistantSettings) -> Result<(), AppError>;
     async fn load_engine_preset(&self) -> Result<EnginePreset, AppError>;
     async fn save_engine_preset(&self, preset: EnginePreset) -> Result<(), AppError>;

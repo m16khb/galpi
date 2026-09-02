@@ -117,7 +117,7 @@ After transcription, select `AI 증강 실행` (Run AI augmentation) to create M
 
 Setup:
 
-1. Open `설정` (Settings) and enter the provider API Key in the **회의록 가공** (Meeting-minutes refinement) section.
+1. Open `설정` (Settings) and enter the provider API Key in the **AI 증강** (AI augmentation) section. A saved key is masked and never shown again; to replace one, clear it with `AI 증강 API 키 지우기` (Clear AI augmentation API key) and enter the new one.
 2. If you are not using z.ai, enter the provider's model name and OpenAI-compatible Base URL.
 3. Select the participants for this meeting and review the glossary and background context.
 4. Finish transcription, then select `AI 증강 실행`.

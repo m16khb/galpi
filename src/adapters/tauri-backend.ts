@@ -68,7 +68,7 @@ const glossaryEntrySchema = z.object({
 })
 
 const assistantSettingsSchema = z.object({
-  apiKey: z.string().nullable(),
+  apiKeyStored: z.boolean(),
   model: z.string().nullable(),
   baseUrl: z.string().nullable(),
   reasoningEffort: z.string().nullable(),
@@ -171,6 +171,10 @@ export class TauriBackend implements BackendPort {
 
   async loadAssistantSettings(): Promise<AssistantSettings> {
     return assistantSettingsSchema.parse(await invoke<unknown>("load_assistant_settings"))
+  }
+
+  async saveAssistantApiKey(key: string): Promise<void> {
+    await invoke("save_assistant_api_key", { key })
   }
 
   async saveAssistantSettings(settings: AssistantSettings): Promise<void> {

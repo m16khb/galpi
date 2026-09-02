@@ -59,6 +59,7 @@ struct FakePort {
     opened_paths: Mutex<Vec<PathBuf>>,
     prepared_token: Mutex<Option<String>>,
     settings_token: Mutex<Option<String>>,
+    assistant_key: Mutex<Option<String>>,
     assistant: Mutex<AssistantSettings>,
     refinements: Mutex<Vec<SeenRefinement>>,
     asr_contexts: Mutex<Vec<String>>,
@@ -76,6 +77,7 @@ impl FakePort {
             opened_paths: Mutex::new(Vec::new()),
             prepared_token: Mutex::new(None),
             settings_token: Mutex::new(None),
+            assistant_key: Mutex::new(None),
             assistant: Mutex::new(AssistantSettings::default()),
             refinements: Mutex::new(Vec::new()),
             asr_contexts: Mutex::new(Vec::new()),
@@ -190,10 +192,18 @@ impl SettingsPort for FakePort {
     }
 
     async fn load_assistant_api_key(&self) -> Result<Option<String>, AppError> {
-        self.assistant
+        self.assistant_key
             .lock()
-            .map(|settings| settings.api_key.clone())
-            .map_err(|_| AppError::new("TEST_ERROR", "assistant settings lock poisoned"))
+            .map(|key| key.clone())
+            .map_err(|_| AppError::new("TEST_ERROR", "assistant key lock poisoned"))
+    }
+
+    async fn save_assistant_api_key(&self, key: Option<String>) -> Result<(), AppError> {
+        *self
+            .assistant_key
+            .lock()
+            .map_err(|_| AppError::new("TEST_ERROR", "assistant key lock poisoned"))? = key;
+        Ok(())
     }
 
     async fn load_hugging_face_token(&self) -> Result<Option<String>, AppError> {
@@ -395,7 +405,6 @@ async fn transcription_carries_glossary_and_roster_for_asr_biasing() -> Result<(
     let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
     let app = port.application();
     app.save_assistant_settings(AssistantSettings {
-        api_key: None,
         api_key_stored: false,
         model: None,
         base_url: None,
@@ -521,8 +530,8 @@ async fn refinement_sends_saved_background_and_publishes_minutes() -> Result<(),
     // Given
     let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
     let app = port.application();
+    app.save_assistant_api_key("  zai_key  ".to_owned()).await?;
     app.save_assistant_settings(AssistantSettings {
-        api_key: Some("  zai_key  ".to_owned()),
         api_key_stored: true,
         model: Some("glm-5-turbo".to_owned()),
         base_url: Some("https://openrouter.ai/api/v1".to_owned()),
@@ -636,8 +645,8 @@ async fn imported_transcript_is_refinable_without_transcription() -> Result<(), 
     // Given: an assistant key and an existing transcript file, no transcription run
     let port = Arc::new(FakePort::new(TranscriptionBehavior::Success));
     let app = port.application();
+    app.save_assistant_api_key("zai_key".to_owned()).await?;
     app.save_assistant_settings(AssistantSettings {
-        api_key: Some("zai_key".to_owned()),
         api_key_stored: true,
         ..AssistantSettings::default()
     })

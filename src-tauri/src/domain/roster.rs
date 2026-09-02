@@ -60,11 +60,14 @@ impl GlossaryEntry {
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AssistantSettings {
-    pub api_key: Option<String>,
     /// Whether a key is on file, for callers that only need to know that.
     ///
-    /// Reading the key itself is a keychain access, and macOS turns each one
-    /// into a question for the user; the settings sheet asks this instead.
+    /// The key itself never travels with these settings. The sheet autosaves
+    /// the whole document whenever any field changes, so a secret carried in
+    /// that payload is one absent field away from being erased; `save_assistant_api_key`
+    /// is the only way in or out. Reading the key is also a keychain access,
+    /// and macOS turns each one into a question for the user, so the sheet
+    /// asks this flag instead.
     #[serde(default)]
     pub api_key_stored: bool,
     pub model: Option<String>,
@@ -81,10 +84,8 @@ pub struct AssistantSettings {
 
 impl AssistantSettings {
     pub fn trimmed(self) -> Self {
-        let api_key = keep_filled(self.api_key);
         Self {
-            api_key_stored: self.api_key_stored || api_key.is_some(),
-            api_key,
+            api_key_stored: self.api_key_stored,
             model: keep_filled(self.model),
             base_url: keep_filled(self.base_url),
             reasoning_effort: self.reasoning_effort.and_then(|effort| {

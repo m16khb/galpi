@@ -38,22 +38,23 @@ describe("AssistantSettingsView (real DOM)", () => {
     ;({ view, key, model, baseUrl, effort, background } = createView())
   })
 
-  test("masks a persisted key while keeping it available for saving", () => {
-    // Given / When
+  test("shows a stored key as a mask it never has to save again", () => {
+    // Given / When: the host reports a key without sending its value
     view.setSettings({
-      apiKey: "zai_real_secret",
+      apiKeyStored: true,
       model: "glm-5.2",
       baseUrl: null,
       reasoningEffort: "max",
       background: "제품: 갈피",
     })
 
-    // Then
-    expect(key.value).not.toContain("zai_real_secret")
+    // Then: the field is masked and read-only, and autosave carries nothing
+    expect(key.value).not.toBe("")
     expect(key.readOnly).toBeTrue()
     expect(background.value).toBe("제품: 갈피")
+    expect(view.pendingKey()).toBeNull()
     expect(view.settings()).toEqual({
-      apiKey: "zai_real_secret",
+      apiKeyStored: true,
       model: "glm-5.2",
       baseUrl: null,
       reasoningEffort: "max",
@@ -61,15 +62,28 @@ describe("AssistantSettingsView (real DOM)", () => {
     })
   })
 
-  test("reveals and hides the persisted key with the eye toggle", () => {
-    // Given
+  test("keeps reporting a stored key while unrelated fields are edited", () => {
+    // Given: a stored key
     view.setSettings({
-      apiKey: "zai_real_secret",
+      apiKeyStored: true,
       model: null,
       baseUrl: null,
       reasoningEffort: "max",
       background: null,
     })
+
+    // When: the user edits something else in the sheet
+    background.value = "팀리더: 하빈"
+    model.value = "glm-5.2"
+
+    // Then: nothing about the key changed, so nothing about it is sent
+    expect(view.pendingKey()).toBeNull()
+    expect(view.settings().apiKeyStored).toBeTrue()
+  })
+
+  test("reveals and hides a key the user just typed with the eye toggle", () => {
+    // Given: a key this window holds because it was entered here
+    view.setKey("zai_real_secret")
 
     // When
     view.toggleVisibility()
@@ -84,10 +98,44 @@ describe("AssistantSettingsView (real DOM)", () => {
     expect(key.value).not.toContain("zai_real_secret")
   })
 
+  test("hides the eye toggle for a key the window never received", () => {
+    // Given / When
+    view.setSettings({
+      apiKeyStored: true,
+      model: null,
+      baseUrl: null,
+      reasoningEffort: "max",
+      background: null,
+    })
+
+    // Then: a value the window does not hold cannot be revealed
+    const toggle = key.ownerDocument.querySelector("#toggle-assistant-visibility") as HTMLElement
+    expect(toggle.hidden).toBeTrue()
+  })
+
+  test("clearing a stored key reopens the field for a new one", () => {
+    // Given
+    view.setSettings({
+      apiKeyStored: true,
+      model: null,
+      baseUrl: null,
+      reasoningEffort: "max",
+      background: null,
+    })
+
+    // When
+    view.clearKey()
+
+    // Then
+    expect(key.value).toBe("")
+    expect(key.readOnly).toBeFalse()
+    expect(view.settings().apiKeyStored).toBeFalse()
+  })
+
   test("falls back to the default model when none was saved", () => {
     // Given / When
     view.setSettings({
-      apiKey: null,
+      apiKeyStored: false,
       model: null,
       baseUrl: null,
       reasoningEffort: "max",
@@ -102,7 +150,7 @@ describe("AssistantSettingsView (real DOM)", () => {
   test("keeps any provider model name in the free-form field", () => {
     // Given / When: an OpenRouter-style model id never present in suggestions
     view.setSettings({
-      apiKey: null,
+      apiKeyStored: false,
       model: "anthropic/claude-sonnet-4",
       baseUrl: "https://openrouter.ai/api/v1",
       reasoningEffort: null,
@@ -117,7 +165,7 @@ describe("AssistantSettingsView (real DOM)", () => {
   test("reports a blank base URL as absent so the default endpoint applies", () => {
     // Given
     view.setSettings({
-      apiKey: null,
+      apiKeyStored: false,
       model: null,
       baseUrl: "https://openrouter.ai/api/v1",
       reasoningEffort: "max",
@@ -134,7 +182,7 @@ describe("AssistantSettingsView (real DOM)", () => {
   test("reports blank background context as absent instead of empty text", () => {
     // Given
     view.setSettings({
-      apiKey: null,
+      apiKeyStored: false,
       model: null,
       baseUrl: null,
       reasoningEffort: "max",
@@ -146,14 +194,14 @@ describe("AssistantSettingsView (real DOM)", () => {
 
     // Then
     expect(view.settings().background).toBeNull()
-    expect(view.settings().apiKey).toBeNull()
+    expect(view.pendingKey()).toBeNull()
     expect(key.readOnly).toBeFalse()
   })
 
   test("keeps a newly typed key, model, base URL, and background for the next save", () => {
     // Given
     view.setSettings({
-      apiKey: null,
+      apiKeyStored: false,
       model: null,
       baseUrl: null,
       reasoningEffort: "max",
@@ -168,8 +216,9 @@ describe("AssistantSettingsView (real DOM)", () => {
     background.value = "팀리더: 하빈"
 
     // Then
+    expect(view.pendingKey()).toBe("zai_typed")
     expect(view.settings()).toEqual({
-      apiKey: "zai_typed",
+      apiKeyStored: true,
       model: "openai/gpt-5.6",
       baseUrl: "https://openrouter.ai/api/v1",
       reasoningEffort: "max",
