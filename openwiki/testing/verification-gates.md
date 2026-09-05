@@ -5,14 +5,14 @@ description: The per-runtime verification commands, the three-job CI pipeline, t
 tags: [testing, verification, ci, architecture-fences, bun-test, cargo-test, unittest, happy-dom, clippy, ruff]
 verified:
   - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
+    at: 2026-09-05T11:36:27.677Z
 sources:
-  - id: openwiki-source-38c9363b476c5e76a0e836c5
-    resource: repo://.agent-harness/testing/overview.md
   - id: openwiki-source-164e2da859b5277df81c7d94
     resource: repo://.github/workflows/ci.yml
   - id: openwiki-source-4d1d392666be6dfdd7a91a2e
     resource: repo://.github/workflows/release.yml
+  - id: openwiki-source-bfe5cb5ac7b61e3287b5de31
+    resource: repo://.issueops/testing/overview.md
   - id: openwiki-source-8037e2358a2c4f9b2c722a11
     resource: repo://AGENTS.md
   - id: openwiki-source-59f729b67c0a733dbed55b7f
@@ -51,6 +51,8 @@ sources:
     resource: repo://src-tauri/src/domain/worker.rs
   - id: openwiki-source-0abfee918aaf0d7e3ea712fc
     resource: repo://src-tauri/tauri.conf.json
+  - id: openwiki-source-32b1436ab88629bf4d2b19ec
+    resource: repo://src/adapters/tauri-backend.test.ts
   - id: openwiki-source-fff472dbc21c5a69b7ebf8ec
     resource: repo://src/application/job-machine.test.ts
   - id: openwiki-source-5287e43e907a4cd49cf15e33
@@ -61,8 +63,12 @@ sources:
     resource: repo://src/styles.test.ts
   - id: openwiki-source-ceeecad49efa8c95400cde24
     resource: repo://src/ui/app-view.dom.test.ts
+  - id: openwiki-source-a07dfb0ffed16e950d316497
+    resource: repo://src/ui/controller.test.ts
   - id: openwiki-source-3912e7c689846fd3b4e941c5
     resource: repo://src/ui/recording-controller.dom.test.ts
+  - id: openwiki-source-ef1bd159c6c83e73f487bd8c
+    resource: repo://src/ui/settings-autosave.dom.test.ts
   - id: openwiki-source-98d5ddb014a0fd4d678f6f2a
     resource: repo://tsconfig.json
   - id: openwiki-source-5aa7727d6cfdf1e12afc11e6
@@ -75,7 +81,7 @@ sources:
     resource: repo://worker/tests/test_core.py
   - id: openwiki-source-e82676118198cdf74313a8e0
     resource: repo://worker/tests/test_qwen3.py
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
 ---
 
 # Verification Gates & Test Architecture
@@ -105,10 +111,13 @@ supported driver — `npm test` is not a valid gate in this repo.
 | `bun run check:all` | `check` → `bun test` → `check:rust` → `check:worker` |
 | `bun run vite:build` | `tsc --noEmit && vite build` — type check then emit `dist/` |
 
-`bun run check` covers architecture, lint, and types only; `bun run check:all`
-adds the Rust and Python gates. When working on a single runtime, run just that
-runtime's gate plus `bun test` (or the fence alone for a layering change) —
-the goal is the quietest command that proves the behavior changed.
+The practical rule: **run `bun run check:all` before declaring a change done** —
+it chains all four gates. While iterating, each runtime's gate is independent,
+so pick the narrowest command that proves the changed behavior: a worker-only
+change needs `bun run check:worker`, not the full ladder; a frontend change
+needs `bun run check` plus `bun test`; a layering change can start with `bun
+run architecture:check` alone. `bun run check` covers architecture, lint, and
+types only — it says nothing about Rust or Python.
 
 ## CI: three jobs on the platform they describe
 
@@ -225,8 +234,9 @@ an error, and recording elapsed time follows wall clock (a single tick after a
 minute in the background shows 60 seconds) and stays monotonic against
 backwards clock steps.
 
-**Real-DOM tests.** DOM suites import `Window` from happy-dom and construct
-the real `AppView` over a real DOM element with the real `styles.css` injected
+**Real-DOM tests.** `*.dom.test.ts` suites import `Window` from happy-dom and
+construct the real `AppView` (and, where interaction is exercised, the real
+`AppController`) over a real DOM element with the real `styles.css` injected
 as a stylesheet, so selectors, `hidden` flags, `data-state` attributes, and
 `aria-current` are exercised against actual markup. The suites cover the stage
 rail flow (`app-view.dom.test.ts`), settings autosave, the participant picker,
@@ -241,6 +251,13 @@ Cross-cutting frontend test practices:
   whose every method rejects, proving the no-native-runtime shell shows the
   visible Korean error banner and keeps the settings sheet reachable instead
   of dying silently.
+- `settings-autosave.dom.test.ts` pins both halves of the autosave contract:
+  a committed field change persists with no save button (the view reports
+  자동 저장), and — the rule the suite exists for — a stored assistant key is
+  never rewritten when an unrelated field changes; the key travels only on its
+  own `saveAssistantApiKey` command. Edits made while a save is in flight
+  coalesce into the next save, and a failed save keeps the user's edit with a
+  retry message instead of discarding it.
 - `tauri-backend.test.ts` pins the adapter's normalization fallback: an
   unrecognized host event payload becomes a frontend log line attributed to
   its job rather than a thrown error, and a non-object payload degrades to an
@@ -403,12 +420,22 @@ New behavior arrives with its test as one change set; `docs/ARCHITECTURE.md`
    fence (the forbidden lists change only with an explicit architecture
    decision).
 
-Test quality rules from `.agent-harness/testing/overview.md`: verify
-observable behavior through public contracts (port methods, view selectors,
-reducer outputs), not implementation details; keep tests deterministic (no
-wall-clock dependence, sleeps, real network, or ordering coupling); one
-behavior per test; and never weaken production behavior — for example,
-loosening a Zod schema — to make a test pass. Failure output is evidence:
-preserve it completely rather than summarizing, and prefer the narrowest quiet
-command (`bun test`, a single `cargo test` filter, or one unittest module)
-that proves the changed behavior.
+## Test quality rules
+
+The good/bad test criteria live in `.issueops/testing/overview.md` (the
+testing family of the issueops project docs, routed from
+`.issueops/TESTING.md`), and `AGENTS.md` repeats the operative rule: prefer
+the narrowest quiet validation that proves the changed behavior, and preserve
+complete failure output.
+
+- Verify observable behavior through public contracts (port methods, view
+  selectors, reducer outputs), not implementation details.
+- Keep tests deterministic: no wall-clock dependence, sleeps, real network, or
+  ordering coupling.
+- One behavior per test; regression tests encode the recurring input and the
+  expected result.
+- Never weaken production behavior — for example, loosening a Zod schema — to
+  make a test pass.
+- Failure output is evidence: preserve it completely rather than summarizing,
+  and prefer the narrowest quiet command (`bun test`, a single `cargo test`
+  filter, or one unittest module) that proves the changed behavior.

@@ -1,10 +1,9 @@
 ---
 type: "Reference"
 title: "System Overview: Three Runtimes, One Dependency Rule"
+description: "Top-level map of Galpi: a TypeScript webview, a Rust/Tauri host, and a Python sidecar that all repeat one inward-pointing dependency rule, joined by a seventeen-command Tauri IPC boundary and a versioned JSONL worker protocol."
+tags: [architecture, hexagonal-architecture, dependency-rule, tauri, ipc, python-sidecar]
 openwiki_generated: true
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
 sources:
   - id: openwiki-source-8037e2358a2c4f9b2c722a11
     resource: repo://AGENTS.md
@@ -48,7 +47,10 @@ sources:
     resource: repo://worker/galpi_worker/core.py
   - id: openwiki-source-86d977239657f28cd09e2c22
     resource: repo://worker/galpi_worker/protocol.py
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
+verified:
+  - by: openwiki/0.4.3
+    at: 2026-09-05T11:36:27.677Z
 ---
 
 
@@ -161,7 +163,7 @@ flowchart TD
     end
 
     subgraph HOST["Rust Tauri host - src-tauri/src/"]
-        CMD["adapters/inbound/tauri.rs - 16 Tauri commands"] --> APP["Application facade - use_cases.rs"]
+        CMD["adapters/inbound/tauri.rs - 17 Tauri commands"] --> APP["Application facade - use_cases.rs"]
         APP --> REG["JobRegistry - single active job slot"]
         APP -->|"Arc dyn ports"| OUT["adapters/outbound/ DesktopAdapter - NativeRecorder - LocalSettingsStore"]
         OUT --> PROC["process.rs run_process supervisor"]
@@ -179,7 +181,7 @@ flowchart TD
     EV -->|"job-event and recording-event"| TB
 ```
 
-*The request chain: TypeScript `invoke` enters through the 16 Tauri commands;
+*The request chain: TypeScript `invoke` enters through the 17 Tauri commands;
 worker events return through the `TauriEvents` bridge; the JSONL protocol
 connects the host to the Python sidecar.*
 
@@ -209,8 +211,8 @@ downstream sees `BackendPort`.
 bridge, then a single `DesktopAdapter` whose `Arc`s are upcast to five port
 handles, adds `NativeRecorder` and `LocalSettingsStore`, registers
 `Application` with `.manage(...)`, loads the dialog and opener plugins, and
-lists all sixteen commands in `generate_handler!`. It is the only file allowed
-to do any of this.
+lists all seventeen commands in `generate_handler!`. It is the only file
+allowed to do any of this.
 
 **Worker — `worker/galpi_worker/__main__.py`.** An argparse parser defines the
 three subcommands (`prepare`, `transcribe`, `refine`); `main()` constructs one
@@ -220,7 +222,7 @@ injected. CLI flags carry the request: `--num-speakers` and `--speaker-range`
 are mutually exclusive and map onto the `SpeakerHint` value object; an absent
 flag means `auto`.
 
-## The ingress boundary: sixteen Tauri commands
+## The ingress boundary: seventeen Tauri commands
 
 Every command in `adapters/inbound/tauri.rs` is a one-line delegation from
 `State<'_, Application>` to a facade method — no business logic, no port
@@ -233,6 +235,7 @@ knowledge, just translation of the wire call:
 | `hugging_face_token_stored` | `hugging_face_token_stored` |
 | `save_hugging_face_token` | `save_hugging_face_token` |
 | `load_assistant_settings` | `load_assistant_settings` |
+| `save_assistant_api_key` | `save_assistant_api_key` |
 | `save_assistant_settings` | `save_assistant_settings` |
 | `save_engine_preset` | `save_engine_preset` |
 | `refine_transcript` | `refine_transcript` |
@@ -253,9 +256,11 @@ populated the cache.
 
 Secrets never round-trip through this boundary. The frontend can only ask
 *whether* a Hugging Face token is stored (a boolean — the sheet shows a mask
-either way, and reading it would trigger a keychain prompt on every open), and
-the assistant API key is read from the keychain at the single moment a
-refinement actually needs it.
+either way, and reading it would trigger a keychain prompt on every open), the
+assistant key has its own `save_assistant_api_key` command so the settings
+autosave never carries it, and the assistant API key is read from the keychain
+at the single moment a refinement actually needs it (`ASSISTANT_KEY_MISSING`
+otherwise).
 
 ## The egress bridge: TauriEvents
 
@@ -294,6 +299,10 @@ safe in practice:
 - Cancellation flushes pending logs, sends `SIGTERM` to the process group,
   waits 3 s, then insists with `SIGKILL`, always reaps the child, and returns
   `AppError("CANCELLED", …)`.
+- The JSONL protocol is only negotiated when `ProcessSpec.worker_protocol` is
+  set: a transcription/prepare/refine run parses stdout through
+  `parse_worker_event`, while any other child has its stdout forwarded
+  verbatim as `Log{stream:"stdout"}` events.
 
 The protocol is a **one-commit change set**: `worker/galpi_worker/protocol.py`
 ↔ `src-tauri/src/domain/worker.rs` ↔ `src/domain/job.ts` (with the Zod schemas
@@ -346,11 +355,10 @@ the JSON keys of the wire format. The frontend's `errorMessage` surfaces an
 `AppError`'s Korean message directly and substitutes the stable Korean
 fallback for anything else, while `errorDetail` keeps the raw diagnostic for
 logs. A consequence worth knowing when reading old text: `docs/ARCHITECTURE.md`
-(dated 2026-08-21) still cites 14 commands, 8 port traits, and a four-port
-`DesktopAdapter`; the current source has 16 commands, nine traits, and five
-`DesktopAdapter` impls. Treat the document as normative for *principles* and
-change-set rules, and the code plus the architecture fence as authoritative
-for counts and boundaries.
+(dated 2026-08-21) still cites 14 commands and 8 port traits, while the
+current source has 17 commands and nine traits. Treat the document as
+normative for *principles* and change-set rules, and the code plus the
+architecture fence as authoritative for counts and boundaries.
 
 ## Deliberate non-refactors — do not "fix" these
 
@@ -369,7 +377,7 @@ code without adding a boundary:
   a second storage medium exists, a repository abstraction is cost with no
   payoff.
 - **`BackendPort` is one integrated interface.** Its single consumer is the
-  `AppController`; the 22-method interface — 16 IPC calls, two event
+  `AppController`; the 23-method interface — 17 IPC calls, two event
   subscriptions, and dialog/opener conveniences (`chooseAudio`,
   `chooseTranscript`, `chooseOutputDirectory`, `openModelAccessPage`) — is one
   cohesive contract, so an ISP split would buy nothing. The frontend has no
@@ -390,7 +398,8 @@ code without adding a boundary:
   schemas, `job-machine.ts` reducer.
 - **New IPC command:** add the `#[tauri::command]` in `tauri.rs`, register it
   in `composition.rs`'s `generate_handler!`, extend `BackendPort` plus the
-  Zod schema, and update the architecture doc's command table.
+  Zod schema, and update the architecture doc's command table — exactly the
+  path `save_assistant_api_key` took.
 - **New external capability:** declare a trait in `application/ports.rs`,
   implement it in an outbound adapter, wire it in `composition.rs`, and extend
   the `FakePort` doubles in `application/tests.rs`.
@@ -413,4 +422,5 @@ depth behind these gates is covered in
 - [Rust host architecture](rust-host.md) — crate layout, ports, adapters in depth.
 - [Python worker](python-worker.md) — sidecar modules, ML pipeline, purity rules.
 - [Worker protocol](worker-protocol.md) — the JSONL contract, event by event.
+- [Jobs and cancellation](../concepts/jobs-and-cancellation.md) — the single-slot lifecycle, cancellation flow, and error codes.
 - [Verification gates](../testing/verification-gates.md) — every check and what it proves.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e210d7e9f91b7f1b607b22c14520a474798834272bc53e01e08973fcacde7a23",
+  "pageVersion": "sha256:01813e8d048b85ebbbc92ec55fcc9b9aad8de8ab7b694ee1cd089c20010f59fc",
   "claims": [
     {
       "id": "claim_0927a8547f95490f80c091ab48f85e1d",
@@ -187,11 +187,11 @@
       "statement": "Recording failures reach the UI as recording-event Tauri events emitted by TauriEvents' RecordingEvents implementation, and the frontend subscribes via TauriBackend.listenToRecordingFailures, which Zod-parses the payload into a RecordingFailure before handing it to the controller.",
       "evidence": [
         {
-          "resource": "repo://src-tauri/src/adapters/inbound/tauri.rs#L172-L178",
+          "resource": "repo://src-tauri/src/adapters/inbound/tauri.rs#L182-L188",
           "version": "repo-lines-v1:sha256:822fa890c304b5309ede3623ba86c34f64f84bf5abb6d321e510e1f297d41d46:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmRkODBmODJhOTFlNWUwODU4NDU3YTMxYjM2NDE0OWRjNGRjYmZkOWNiYjQ2MWJkYzRkYTRkZDc1ZGVkMTc1NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTllNzYzNTVjZjExOTk0ODBjM2Y5OTgzNmIxNDg2Yzg0MWQ4OTFmYWFkOTA0YzYwOGUwOTMwMjJkMzc1N2FlZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         },
         {
-          "resource": "repo://src/adapters/tauri-backend.ts#L228-L232",
+          "resource": "repo://src/adapters/tauri-backend.ts#L232-L236",
           "version": "repo-lines-v1:sha256:c8949d1d5461786ec93d8729b0ac165aaa9a96bdfe199244da42b524c6c147a4:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWQ5YTY2MGJiNzM2YjY3OTgwNWNjOGQyNDU2NjI2ZTVhYWFjMmQ5MDlmYjExMjE0NTEwZWE3M2YxYjZlYmNhNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDZlYjE2NDdjNzNmZDUyOWU4OWQ3M2QyOTYxNmQxN2IxZDNkOTVlM2U4MGMzZDNlZjYzNzNkYTM3ZGU0MWZhNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGM3ZmU3NzI0ZjBmN2E1OTdjNDYzOWZhMzliN2YxNTAwNWU2ZTYwZGQ0YzI3Mzc1ODk0MzFkYzNkMDI5OTAyOCJ9"
         }
       ]
@@ -347,10 +347,94 @@
           "version": "repo-lines-v1:sha256:98cd4530da6ce3adedcc6e9caed8c781255bac846fe2ea34288097402fd8caf0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZTZkYmZiNzg1NTYyNDQ3YWExODQxOGEzYmY4M2YwZmY2NzAzNjJkZjJlYWNiNWM0MDFiYzhiM2YzZTUwZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0MWRhYzhmNWJlMWFmNTJlZTQyODI0NTJjOWNjMjhhZDA5MGRlYjJmZDMyOGM1NGY0MjI2NDA4OTUzYmJlOTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwZDczYjQzZjZmNjJmZDE3ZGUxYmNkNTE5M2JiNDU3ZjgwYmQwYmUyMTQxOTZiOGQwYTNmYjZkOTFlOWZiYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI3NjQ5NDNhMmU1MTFiZjY5ZWE5NDhjZWY2MGI0YmZlODEwN2QzMzljMWJlYjhhOTNkNGIyYTIyMzhlMDY4NWYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_c115da43e0f0401f81ba88b049d80b3f",
+      "statement": "Recording never touches the job slot: Application keeps active_recording beside the JobRegistry (whose single active-job slot and BUSY error belong to engine jobs), and start/stop/cancel_recording operate only on the recording mutex, so a recording can run, stop, or be cancelled independently of any engine job at the host layer.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/application/jobs.rs#L45-L53",
+          "version": "repo-lines-v1:sha256:371dcaeb4e3cc03aba3da8ec04bff6f8121ee5002e2b395acfa61fd72748df0e:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDMxODM1OTZlMTVjZTI0MGQ2ZGZjNzRmMGZiNDdiMGZkZmZhY2EzZDcwZWY1N2Y3ZWVlMWE2MDQzNWY0YTgyNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTllNzYzNTVjZjExOTk0ODBjM2Y5OTgzNmIxNDg2Yzg0MWQ4OTFmYWFkOTA0YzYwOGUwOTMwMjJkMzc1N2FlZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2UxNmNhNzBhZDMxMWJjYzJiODEwMjM1MTg4ZjdiNmY4NzU5MjU2ZTVjMDMxNDNmZjViYTdhYjBlMDA1M2IzMCJ9"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L27-L32",
+          "version": "repo-lines-v1:sha256:306a0965115f673c77c1faea7a3eee3107906f07e7ed5556bf60c27425bd0789:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ4MTA4NDE1YjgxMDZiZTkzYTZiNDRlNDcxYzY0NDI3ZTRjYzNiOWYwOGEzMGE1MzBiMjA3NTY4MDNmYWE0YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTRkYjcxZmRjYzI0NjJjNDFiYjhiODgwNjBlYjNhNDI3OGM3MDZlMTE1NzhhMWVlOTZmYzM5ODIzY2JhNzU5ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzM4YTMwOWI4OTNkMThmZjRiMzAzYjg0MzExMWUxNmEyYjVlMDUxOTM4Njc0OGNkNDMxMzFlZjIyYTg5M2VjMiJ9"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L298-L331",
+          "version": "repo-lines-v1:sha256:a779b47a716db609e6566373ead3addbc1fe59b3c9428c5fc63d79876637b488:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxNDY1NWM1NzE2MTQ5YWIzNTU2NjFmYmI4MjUzMDg2OWQ0MDhlNmRmNWMzNGIxNTBjYjgwOWNlOGYzODNmYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRiNjA3MzhjOTNkMWViZmNkNzhkNGRlYTU0ZmVlYmVkMzA2ZTkwZDRiODY0NjY3Njc0ZDQwN2I0MTM1M2EwOWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYyMmY1YjI2MDZjNDQzNmEzYzljMWY5MDA2NzAzYTgxMDhmMWRkNTI0MTVmZjUwMGJiZTgwMjQ0OWY1NzI2MzcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e96a405cdd634af1af85b9eb2bf61830",
+      "statement": "A start that fails after the writer exists never leaks the partial file: if capture::build fails or stream.play() errors, start_sync drops the stream and runs cancel_and_remove — cancelling (and joining) the writer and removing the .wav.part and the empty meeting folder — with any cleanup failure merged into the original error via with_cleanup.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/cleanup.rs#L49-L70",
+          "version": "repo-lines-v1:sha256:96d94ef31ec6eea5f243d6c05389767c9f615d42d29b1832f5e6207075b59c83:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViOGQwMDJlMTA0OWMzNmNiNjNhZDE1OGE2ZDAzZTAyODJmZDU5MTNjYTI1NWZiNzkzNTUzNDRkM2E4OGI0M2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/mod.rs#L121-L149",
+          "version": "repo-lines-v1:sha256:f2425dd242c3f0d6305ebf410796b07a2316b9f890020aa115078b6f76a7bfa2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxZmEzMjlmNzQ0NmQ1M2ZjNjExN2RjN2M2Y2IwMzIyYWZlYTJmODNmZGY2YTg3ZDU5NDUzMjBjZDQxNzExZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE4YmMyMzk1MzgwYmM0MmE4ODg3NWRlODEyYjUxYjEwMzM4ODQxZTM0OTY5MTY5YzMxMjJiNGRmYjgyY2E5YmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmZTNiODZhMWY0NTcxNGFkMDM1OTBlMmJlM2ZmMWNhZTc0OWRiOTMxOTcwYjdkNDkxMjBkNTkwNDYzOWMyNzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_22052238a379427cb88342a148b99eb3",
+      "statement": "The capture callback detects a dead writer without emitting: a Disconnected result from try_send means the galpi-wav-writer thread has exited, so enqueue records WAV_WRITER_FAILED via the audio-thread-safe record_failure (no IPC on the realtime thread) and returns, leaving the failure to be surfaced by the stop path's take_failure drain.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/capture.rs#L147-L156",
+          "version": "repo-lines-v1:sha256:4a467059337e3c058e5526f77f1e5c217f6014f1a84708caf2edd43c7b0679ac:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiYjM3ZGFlNWExYWEzMGJjNGIzMTMyNGEzOWMxNWUzOWExMzIxYzk2ZjE0ZTQ0YTcwNWZlMWYxOTc1OTUyYmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA1YWU5NTllM2JiYzg4OWNjY2E5MzNlNzJiM2RlNzJjNWQwYTJkNmFjNGU3YThlZTBjZDgwNjZlZGY3ZWVkYTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0YTM2NWE5MGVjMTFlOTA0MzI3NTJjZjkzNzZlYzVlZDM2YjgwYmE1ZThlNjg1NGZjZjk4OTcwZDMwNDQ0NjkifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/failure.rs#L45-L51",
+          "version": "repo-lines-v1:sha256:b1cffdf4cba7c6033e172b459ca15eccce37bbaa57462369d7ed9905683b1452:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTljZjBmNDFhNWFkYmY2ZTQ1YzY5ZTJhZWYwZWJiYTJjMWRiNjRkN2YwZTg3YjEyYWU5NGRiNThlMDhjMzU3ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTllNzYzNTVjZjExOTk0ODBjM2Y5OTgzNmIxNDg2Yzg0MWQ4OTFmYWFkOTA0YzYwOGUwOTMwMjJkMzc1N2FlZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODc2OThkZTVkYmE2YWY1ODQwMGNiODQ2MTg3NzFkODE0NTkzNmZlZDcyMjgwMjExZWE2Y2VlZmY2ODcxZjU3ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_56b309b3078f4be6be582ecab920416b",
+      "statement": "The recording state mutex converts a poisoned lock into a STATE_ERROR AppError via state_lock rather than propagating a panic across the audio boundary, and take_failure similarly maps a poisoned failure-slot lock to RECORDING_ERROR.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/cleanup.rs#L24-L28",
+          "version": "repo-lines-v1:sha256:e58ccf1a0f688fbc7f95be054a6688e692fb826171b22c27aa3c0ccfa6470133:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDhkZjViZjI5Nzg3M2UxY2MyMGQzNGNhNDQ5ZGVjYWI5Yjc5MTExOWI3OTdhYjkyNjliZWIwNWVkMGEzYWEyMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTllNzYzNTVjZjExOTk0ODBjM2Y5OTgzNmIxNDg2Yzg0MWQ4OTFmYWFkOTA0YzYwOGUwOTMwMjJkMzc1N2FlZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWI2YmQ2NTMyOTQxYTc0NjljNjczZGMyODQzOTU3MWYxZWM0YTAyZTI2NzNhNzkzYWFmMGQwMTg2MzQ1NmQ3YyJ9"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/failure.rs#L70-L77",
+          "version": "repo-lines-v1:sha256:a12e324f31271e61944cdf291a404638bff9ed2cea72e9b8d18a99e42cebcdb4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjYyMzkzNjI2NDJjY2YwODc3MzRjNTMwYjc0NjE1YzJiZjFhYmU5Nzc4NzU0NTM1NTUwMDYxNjQxYzU0NGQ1NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWZjMDA3MDJlMmZiZGNjZDgwZGVhZmNmZjQ5YThmODEzZDczYTM0YzE1MWNlZDcwOTVkZmU3M2I2MjJmNzZiMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZWMyODgyY2JhZmYwYjcwNGRmMzU3MWNiYTQ3NDk5ZmU3OTEwNWJiMjVhMDcyMmMzNzFkOGE0OTViOTc1YjZkYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_933777a664d741f2bbd5a14fd6da1387",
+      "statement": "While a recording is active the shipped UI serializes the workflows: AppView.setRecording marks recordingActive for the starting/recording/stopping states, and refreshActions disables transcription start, audio and transcript selection, output-folder change, prepare, attendees, and refine so no engine action can race the capture.",
+      "evidence": [
+        {
+          "resource": "repo://src/ui/app-view.ts#L201-L222",
+          "version": "repo-lines-v1:sha256:00a019b732f7938503b18f43c3a3644deb75ed94a95471918b8b6edb0ca2371e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwM2IyMWUzMDdlNWQyNzFhNjVlMmFkZDg0ZmNiZGNhODUwNmFkOGUzNjEwY2VlYWY2MTUzMmI5NjllODQ3MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzMjMwZDU0OTkzMTg5YjRiYmNlZmQ2NWQ1M2VkYTllNjNkNTEwNmMzZjJmMzUwNzQyZWY0OTY5ZjA5NzJmZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmNzdkZDZjZTI5NDMzMDRjMmQwYjU2NjI1YTAxNzBmMTBlNTVlYjk2OTA2YzZkNjcwZDYyMWY2YmI1ZGYzZmQifQ"
+        },
+        {
+          "resource": "repo://src/ui/app-view.ts#L413-L428",
+          "version": "repo-lines-v1:sha256:a8d0ef063041f1c6f97027b5f594090012932fa870c5640d42bc4ed49f21b1e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyMWZlYzY1YzhmNzJjYjk1ZjliMWFlZjk5YzljOGNlYTE2OWQ4ZjE2MjNmYTQ3NGI5YWVlYmFmZDJiY2UyYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhMzVjYjcwYWVhYTI3OTFjNGViZDVlNDI1MmQwZWUzMDg5YWE0MWM5NWQ1MjQ4MGNiOTBiMjJiYTNkNTcyMWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY2ZmMwMmUyNjVjZDUyYTRkNWQwY2IwZmQ3YWEzOTcwMWM3MDgzNmQ4ZDIxN2YxNmQ4YjA1YjU3ZDMwNTlkMzkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0e4aa372bc3b49999d5699938ba46efe",
+      "statement": "AppController installs the recording-event subscription at app startup — before any recording can start — forwarding each parsed RecordingFailure to RecordingController.handleFailure; this pre-existing subscription is what allows a native failure to arrive while start_recording is still in flight.",
+      "evidence": [
+        {
+          "resource": "repo://src/ui/controller.ts#L38-L56",
+          "version": "repo-lines-v1:sha256:7821d3d0ff08faa5092ad2c194571fb13674c1dd747a6d1771889d62b7f5e8ad:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmNjA1OWY2MTEyODMxNzViNjEwZTY3YzA3YzdhZDNmNDI4ZDNiYjBjZTNiNjViZGI2NTdlZjQyYjBmZTFiN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljNzlmNjZkZTFhMGY2NmIwZWU2MzVhNDc5OTI2MTJhMzZkMjA2YWEyMzcxODY0M2E4ZTFjMDQxYzM5YTNkZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEyM2RhZGQ5OWJhZTBjODllZjdkNjE5ZDM5NmZmZDQ1NDI5NWU1Y2I0MzViNTUwZjFjY2JmNTU5ODQ4OWMxYzcifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.4.3",
-    "at": "2026-08-29T12:09:06.549Z"
+    "at": "2026-09-05T11:36:27.677Z"
   }
 }

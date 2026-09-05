@@ -5,7 +5,7 @@ description: The single-active-job model with the drop-safe JobGuard, the onesho
 tags: [jobs, cancellation, job-registry, jobguard, state-machine, error-codes, tauri, ipc, recording, frontend]
 verified:
   - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
+    at: 2026-09-05T11:36:27.677Z
 sources:
   - id: openwiki-source-fe0a13273ee7842e377fb6d7
     resource: repo://src-tauri/src/adapters/inbound/tauri.rs
@@ -13,6 +13,8 @@ sources:
     resource: repo://src-tauri/src/adapters/outbound/process.rs
   - id: openwiki-source-61b8ed0147cf740f3c73a68c
     resource: repo://src-tauri/src/adapters/outbound/process/guard.rs
+  - id: openwiki-source-dd32238005e8c198ef2e511b
+    resource: repo://src-tauri/src/adapters/outbound/process/tests.rs
   - id: openwiki-source-2452ca055a13a74e08841276
     resource: repo://src-tauri/src/adapters/outbound/recording/cleanup.rs
   - id: openwiki-source-a2eb5989fa751c658b9cef90
@@ -53,7 +55,7 @@ sources:
     resource: repo://src/ui/recording-controller.ts
   - id: openwiki-source-4864e3151e272babf5559f75
     resource: repo://worker/galpi_worker/refine.py
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
 ---
 
 # Jobs, Cancellation & State Machines
@@ -72,9 +74,9 @@ instant and progress feel honest.
 This page documents the registry and its guard, the end-to-end cancellation
 path, the error-code contract, and both frontend machines. The wire format the
 worker uses to report progress lives in
-[worker protocol](../architecture/worker-protocol.md); the run walkthroughs are
-<!-- openwiki: broken internal link [../workflows/transcription.md] file "../workflows/transcription.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-in [transcription](../workflows/transcription.md) and
+[worker protocol](../architecture/worker-protocol.md); the prepare and
+refinement run walkthroughs are in
+[engine setup](../workflows/engine-setup.md) and
 [AI minutes](../workflows/ai-minutes.md).
 
 ## One job at a time: the JobRegistry
@@ -303,6 +305,13 @@ for the log disclosure.
 `INVALID_SPEAKER_HINT`, and `ASSISTANT_KEY_MISSING` are the three pre-flight
 gates the use cases decide themselves.)
 
+When a job fails on its own — the child exits non-zero rather than being
+cancelled — `run_process` reports `PROCESS_FAILED` with the worker's *last*
+buffered stderr line as the message (falling back to the exit-status text when
+stderr stayed empty), so the cause the user sees is the worker's own final
+diagnostic, not a generic exit code. A pinned test asserts the tail, not the
+first line, is what surfaces.
+
 ## The frontend job-machine
 
 `src/application/job-machine.ts` is a pure reducer, `(state, event) → state`,
@@ -333,8 +342,9 @@ yet.
 
 ## Recording: a second single-slot resource
 
-Recording does **not** claim the job slot — a user can record a meeting while
-a transcription grinds — but it has the same single-slot discipline.
+Recording does **not** claim the job slot — the host happily runs a capture
+and a transcription at the same time — but it has the same single-slot
+discipline.
 
 On the host, `Application` guards `active_recording: tokio::sync::Mutex<Option<Uuid>>`.
 `start_recording` mints a `Uuid::now_v7()` and fails with `RECORDING_BUSY` if a
@@ -348,6 +358,12 @@ derives `duration_seconds` from the frames actually written; `cancel` discards
 the partial file (and the folder if it is left empty). A `NativeRecorder` drop
 also cleans up any still-active recording, so app shutdown cannot leave a
 dangling capture.
+
+One presentational nuance sits on top: the webview itself serializes the two
+resources more strictly than the host does. `AppView.refreshActions` disables
+`#record-button` while any job is busy (`jobBusy`) and disables the transcribe,
+refine, and file-picker controls while a recording is active — so in the UI the
+buttons, not the underlying slots, are what keep actions from overlapping.
 
 ```mermaid
 stateDiagram-v2
@@ -427,9 +443,9 @@ so closing the window stops the microphone.
 
 - [Worker protocol](../architecture/worker-protocol.md) — the JSONL events and
   stderr batching that feed the job-machine.
-<!-- openwiki: broken internal link [../workflows/transcription.md] file "../workflows/transcription.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-- [Transcription workflow](../workflows/transcription.md) — a full run from
-  audio pick to artifacts.
+- [Engine setup workflow](../workflows/engine-setup.md) — the prepare run,
+  whose job slot, progress phases, and cancellation behave exactly like
+  transcription's.
 - [AI minutes workflow](../workflows/ai-minutes.md) — refinement, whose job
   slot and cancellation behave exactly like transcription's.
 - [Recording workflow](../workflows/recording.md) — capture, writer, and the

@@ -1,11 +1,11 @@
 ---
 type: concept
 title: Engine Presets & Environment Readiness
-description: How Galpi models its two transcription engines (Qwen3 default, WhisperX legacy), lays out per-engine virtualenvs and model caches under the app data directory, and decides readiness through build-time requirements fingerprints checked against marker files and manifests.
+description: How Galpi models its two transcription engines (Qwen3 default, WhisperX legacy), lays out per-engine virtualenvs and model caches under the app data directory, decides readiness through build-time requirements fingerprints checked against marker files and manifests, and re-diagnoses the moment a preset switch is saved.
 tags: [engines, environment, readiness, uv, virtualenv, whisperx, qwen3, mlx, fingerprint, tauri, setup]
 verified:
   - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
+    at: 2026-09-05T11:36:27.677Z
 sources:
   - id: openwiki-source-6229fc7315005e295371fb06
     resource: repo://scripts/stage-sidecars.ts
@@ -49,13 +49,15 @@ sources:
     resource: repo://src/ui/controller.ts
   - id: openwiki-source-e2187f531b128035d6432652
     resource: repo://worker/galpi_worker/__main__.py
+  - id: openwiki-source-dd10e6ab6c457cde762a7c35
+    resource: repo://worker/galpi_worker/engine.py
   - id: openwiki-source-89fa3a838065f5a48e8e8147
     resource: repo://worker/galpi_worker/preparation.py
   - id: openwiki-source-a20d388d29fac330d11b928b
     resource: repo://worker/galpi_worker/runtime.py
   - id: openwiki-source-756f49236467f760abc5144f
     resource: repo://worker/requirements-qwen3.txt
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
 ---
 
 # Engine Presets & Environment Readiness
@@ -107,7 +109,11 @@ transcribes on Qwen3 and follows a saved WhisperX preset afterwards.
 Note the deliberate asymmetry: the worker CLI's argparse default for
 `--engine` is `whisperx` (the bundled CLI predates the candidate stack), but
 the host always passes `--engine` explicitly — for prepare and transcription
-alike — so the saved preset, never the CLI default, decides the engine.
+alike — so the saved preset, never the CLI default, decides the engine. Inside
+the worker the same flag does the routing: `engine.py`'s `transcribe()`
+dispatches `engine == "qwen3"` to the MLX pipeline and otherwise runs the
+WhisperX pipeline, so one bundled CLI serves both stacks and the flag is the
+only selector there is.
 
 ## App data layout: one root, two engines
 
@@ -410,13 +416,11 @@ ready.
 ## Related pages
 
 - [Python worker architecture](../architecture/python-worker.md) — the prepare
-  and transcribe pipelines these environments run.
+  and transcribe pipelines these environments run, i.e. what happens after
+  the readiness gate passes.
 - [Rust host architecture](../architecture/rust-host.md) — the hexagonal layer
   that owns `EnginePort`, `SettingsPort`, and the setup adapter.
 - [Engine setup workflow](../workflows/engine-setup.md) — the user-facing
   setup walkthrough.
-<!-- openwiki: broken internal link [../workflows/transcription.md] file "../workflows/transcription.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-- [Transcription workflow](../workflows/transcription.md) — what happens after
-  the readiness gate passes.
 - [External services](../integrations/external-services.md) — Hugging Face
   access, gating, and offline behavior.

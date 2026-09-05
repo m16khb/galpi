@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9314c409eb4c86ef2029423020d233f911310f9c609e3c014a2e1786d93fc0d9",
+  "pageVersion": "sha256:de21a68db0593b14617cbe920a7c6d29ad104512166443c68721674f3e540345",
   "claims": [
     {
       "id": "claim_39fb10f5528d4753b09fc29fc4ce090f",
@@ -40,11 +40,11 @@
     },
     {
       "id": "claim_c959b50fa40e4e9e98dccf15c89d9c53",
-      "statement": "Application (application/use_cases.rs) is the single use-case facade: it holds the seven capability ports (EnginePort, TranscriptionPort, TranscriptImportPort, ArtifactPort, RecordingPort, SettingsPort, RefinementPort) as Arc<dyn ...> fields plus the JobRegistry and an active_recording tokio::Mutex<Option<Uuid>>, and each public method is one user intent composing those ports.",
+      "statement": "Application (application/use_cases.rs) is the single use-case facade: it holds the seven capability ports (EnginePort, TranscriptionPort, TranscriptImportPort, ArtifactPort, RecordingPort, SettingsPort, RefinementPort) as Arc<dyn ...> fields plus the JobRegistry and an active_recording tokio::Mutex<Option<Uuid>>; ports.rs declares nine traits in total (those seven capability ports plus the JobEvents and RecordingEvents event ports) alongside the RefinementJob parameter struct.",
       "evidence": [
         {
-          "resource": "repo://src-tauri/src/application/ports.rs#L15-L124",
-          "version": "repo-lines-v1:sha256:9276a08e34ceb0c5767d56210692c9f59add55ba04f00d49cda08346df0f7ccc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2ZTRjMzVjNGUyZGEyMDE3M2I5ZGMwMTM4M2Y0NTZlM2ExMWRiYmQ4YmNiOWUyZjQ3NmNhMWY2OGE4ZTA2MDFiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0NGUzMjEyZjkyNTI5NjQxNGViNGNlNDVmMjhlOWYxNDYzMWRiZmYwYmQxMmE3MzZiYTUzZjMzYjE2NzAwY2MzIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://src-tauri/src/application/ports.rs#L15-L126",
+          "version": "repo-lines-v1:sha256:913a0ca6e220ecb2fb0f179e433758374c31ca33ac8e8873aa25f1472c73d767:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2ZTRjMzVjNGUyZGEyMDE3M2I5ZGMwMTM4M2Y0NTZlM2ExMWRiYmQ4YmNiOWUyZjQ3NmNhMWY2OGE4ZTA2MDFiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0NGUzMjEyZjkyNTI5NjQxNGViNGNlNDVmMjhlOWYxNDYzMWRiZmYwYmQxMmE3MzZiYTUzZjMzYjE2NzAwY2MzIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         },
         {
           "resource": "repo://src-tauri/src/application/use_cases.rs#L22-L55",
@@ -54,15 +54,15 @@
     },
     {
       "id": "claim_69f29f7b21d64811b404246d9d2b2983",
-      "statement": "adapters/inbound/tauri.rs registers exactly sixteen #[tauri::command] functions that map 1:1 onto Application methods (diagnose_environment, prepare_environment, hugging_face_token_stored, save_hugging_face_token, load_assistant_settings, save_assistant_settings, save_engine_preset, start_transcription, import_transcript, refine_transcript, cancel_job, open_artifact, reveal_output_directory, start_recording, stop_recording, cancel_recording), and the commands are thin: deserialize camelCase input, call Application, return the mapped error.",
+      "statement": "adapters/inbound/tauri.rs registers exactly seventeen #[tauri::command] functions that map 1:1 onto Application methods (diagnose_environment, prepare_environment, hugging_face_token_stored, save_hugging_face_token, load_assistant_settings, save_assistant_api_key, save_assistant_settings, save_engine_preset, refine_transcript, start_transcription, import_transcript, cancel_job, open_artifact, reveal_output_directory, start_recording, stop_recording, cancel_recording), and the commands are thin: deserialize camelCase input, call Application, return the mapped error.",
       "evidence": [
         {
-          "resource": "repo://src-tauri/src/adapters/inbound/tauri.rs#L17-L143",
-          "version": "repo-lines-v1:sha256:ebd7328fc0054a97d2cabdec3ddfabc41cfa7f73fa767858838b0662f53aa7f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5ZTFlZTMzZWU5NWZhZWUxYzEwZTllYmYzZDNkZTQxYmIxOTI1MTVjYWQ3N2NkYTIwNWU1NDZkYTE3MDAxYTY0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI5MTBmMjk0NzRmYTRlM2ZiMmQ5MDBmMDlhZmY0OThmZDRmZWMzMmY0MzNmNGE2Yzc0MWU2NmNhNDdiOWU0OTY1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmMTYyYjllMmUxOTdjYTZiYWVjY2NjZWY4OGQ5MWIzMGI1NWI2M2Q5NDI4ZWZjZDBlOGQzZTcyOGQ1YzQ4OGQxIn0"
+          "resource": "repo://src-tauri/src/adapters/inbound/tauri.rs#L17-L153",
+          "version": "repo-lines-v1:sha256:aeef2507e348c3344128e99d82087381ff084141499127ae04fab123819fd4eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5ZTFlZTMzZWU5NWZhZWUxYzEwZTllYmYzZDNkZTQxYmIxOTI1MTVjYWQ3N2NkYTIwNWU1NDZkYTE3MDAxYTY0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI5MTBmMjk0NzRmYTRlM2ZiMmQ5MDBmMDlhZmY0OThmZDRmZWMzMmY0MzNmNGE2Yzc0MWU2NmNhNDdiOWU0OTY1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmMTYyYjllMmUxOTdjYTZiYWVjY2NjZWY4OGQ5MWIzMGI1NWI2M2Q5NDI4ZWZjZDBlOGQzZTcyOGQ1YzQ4OGQxIn0"
         },
         {
-          "resource": "repo://src-tauri/src/composition.rs#L40-L57",
-          "version": "repo-lines-v1:sha256:9b938255156bf6008df37d958c25310182543fea572c59d4449e0722cb41b037:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhM2I5NWFlMzgyMWJjZmZjNDQzYjQzOWUxZjY5Nzc1MmUxNjA1ZDdkNTVmZjA2OGY4ZDk4NzE2MzFhMjRkZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyNzZjMWQxZjk3ODVlNTU2MGQwYmI1Zjc5YzJlOTc5OTk3YjcwY2RlZDFmM2I2OGVlYjBjZDE5MTBhZTIyN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0ZGFiZmI2NWFkM2NkYzdmNjBkZGY0NDNhMWU3NTAzNmIyMzEwYjBiMzk5NjQzYWM1YjgzMGMxYTEwZGM5ZTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEyZjc1YzQyZGI3Y2RjYjBiNTEwMzdiZGIwNDg5NWUxMjRlMGFiMGJhMGIyM2NlYzY0ZjdhNGY5NzM1MTI5OGYifQ"
+          "resource": "repo://src-tauri/src/composition.rs#L40-L58",
+          "version": "repo-lines-v1:sha256:8dbe1a32b5bb0d43c1add0c352015707d071cc340163919a9fd18847f30bee43:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhM2I5NWFlMzgyMWJjZmZjNDQzYjQzOWUxZjY5Nzc1MmUxNjA1ZDdkNTVmZjA2OGY4ZDk4NzE2MzFhMjRkZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyNzZjMWQxZjk3ODVlNTU2MGQwYmI1Zjc5YzJlOTc5OTk3YjcwY2RlZDFmM2I2OGVlYjBjZDE5MTBhZTIyN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0ZGFiZmI2NWFkM2NkYzdmNjBkZGY0NDNhMWU3NTAzNmIyMzEwYjBiMzk5NjQzYWM1YjgzMGMxYTEwZGM5ZTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEyZjc1YzQyZGI3Y2RjYjBiNTEwMzdiZGIwNDg5NWUxMjRlMGFiMGJhMGIyM2NlYzY0ZjdhNGY5NzM1MTI5OGYifQ"
         }
       ]
     },
@@ -79,8 +79,8 @@
           "version": "repo-lines-v1:sha256:ec5d139f5b99f3e4167467aac140dbcc90eb0d2f9ae9bd43baca47397e4b6136:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4ZTUwZGRhZWNhNzIwZmRiMGE3YWFiMDMzNDRiNjJkYzcxODA4YjI4NTFlZjMzNmM4NTkxNDJhYmQ5Y2E0ZTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3NmVlNDkzNjE5ZjQ3ZDk5YWE0ZGNhZGViN2EyMmUyZWEwZTI5MDZmMWNkMDU0Y2E4MDNmNTNjMmQ2ZjEzZDgifQ"
         },
         {
-          "resource": "repo://src/domain/backend.ts#L16-L44",
-          "version": "repo-lines-v1:sha256:755ce648e6ec936bbb75ce18355f3378194d252b2343af15b42f3b959eb2b743:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiMmU2OGMzYTdmZjM1MjU4NTBjZGE4Njk2MDA3N2Q3MzQ5M2NlOWUxYjVmODAzOTI2ODU0MWFiYjUwNWViNDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4M2I2OGVhNzgyN2VmN2ZmNTFjYjQ3MTk2M2M0YjFjNTljZTdlMzBlM2IzMmRkYzY3MjgxNGVlZjMxMzZmMzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzZTY0Y2M4OGMyZGE3MGUwMTIwNjY0Mjg1NmZiOGU5MTQ5ZDZhMGVkZmU3MzQxODViZDJkMmE1ZDhmYzc0ZmYifQ"
+          "resource": "repo://src/domain/backend.ts#L16-L46",
+          "version": "repo-lines-v1:sha256:f37c008a07844de6d96ff7f24de7b9f9f9f0fbd45e15b2b092ca99c11d3964b7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiMmU2OGMzYTdmZjM1MjU4NTBjZGE4Njk2MDA3N2Q3MzQ5M2NlOWUxYjVmODAzOTI2ODU0MWFiYjUwNWViNDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4M2I2OGVhNzgyN2VmN2ZmNTFjYjQ3MTk2M2M0YjFjNTljZTdlMzBlM2IzMmRkYzY3MjgxNGVlZjMxMzZmMzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzZTY0Y2M4OGMyZGE3MGUwMTIwNjY0Mjg1NmZiOGU5MTQ5ZDZhMGVkZmU3MzQxODViZDJkMmE1ZDhmYzc0ZmYifQ"
         }
       ]
     },
@@ -93,8 +93,8 @@
           "version": "repo-lines-v1:sha256:48bb8e8eccebfe36f49fbbd8b3331bdae2f06e14dff53a0161a63e367672bf3b:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjMDgyYTAwNWE5ZDI1NzU2NGJhMTJmOGQyOGQ3NGI2NjcyNTlhMzk2NzZlZGRkZjNhOGM4N2ZkMDJiOTgxZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2MmEzMGYyOGY3NjMyMGMwYmM1NDVlYzEwYmY0YmVjNTBjNTczMGRiOWNiZDAzMWQ3MTk3ZWFhMTJlMzk3ODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MDUzNmY3OTY0YWJjNjc5MmY2YzMwMGFhZWFmNzE5ZDdlZTUyNjA2OWNmNDU5N2E5MjFjNzhmMTMxMDNhMjUifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L456-L471",
-          "version": "repo-lines-v1:sha256:41c2eb45c31bea4803fb452ca41d7bbace70a4358487986dc1c5d63a78f1da89:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmODI4ZThhZTA4NzNlYjQyM2Y4NmEwZjg5OTJhNTJlODQzOWM3MjIzOTlkNDY3NzA0YzkwYTA0MDQ2MzhjZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3NzJlOTI3NWNiNmEyNGZmYTg5NTJjY2E3N2U2YTRhNWEyYWRlNjNjZWQ0MzUxYzZiYzU4NjBhYWZlNTIyZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkYWYwZjEyN2Q2ZWQ4ZGU3YWM1NTk5MjBlMjMzODAyYmE5MGIxM2E2Njk1ZTY0ZmUzMzBlMWM1N2RmZTM4YzUifQ"
+          "resource": "repo://src-tauri/src/application/tests.rs#L464-L480",
+          "version": "repo-lines-v1:sha256:98f8c82c7eae89c372ac465200776211aa3d3557aa0a18e3ee2de6da3e4c447a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkYWYwZjEyN2Q2ZWQ4ZGU3YWM1NTk5MjBlMjMzODAyYmE5MGIxM2E2Njk1ZTY0ZmUzMzBlMWM1N2RmZTM4YzUifQ"
         }
       ]
     },
@@ -117,12 +117,12 @@
       "statement": "Worker-process cancellation escalates in the supervisor, not the use case: process.rs selects on the cancel receiver while reading the child's pipes, sends SIGTERM to the whole process group, waits three seconds, then SIGKILLs and reaps, returning CANCELLED; the ProcessGroupGuard also SIGKILLs on Drop if still armed, so group teardown holds across panics and early returns.",
       "evidence": [
         {
-          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L164-L181",
-          "version": "repo-lines-v1:sha256:c644ab2a54f46f8abb7dbd06b62168d55046ead96a188258dabd86fbc31ae81f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiMjg3YzA3MzI4YjYyZDgwMTkzOTNiNDAwMGJiM2IyM2Q1Nzk5ZDU0MmE2ZTBjNWFjYjViYzk2OGRlMjk2ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjYjdmZTJlMGUyYWIwMTI1MzdhMjBmZjA1MWZjM2I1MjBkZWUwZGRkYzE4MGI3Y2M5ODRmZjE4NzE2N2I0YmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxM2ZlMTJiMjZjYjYxYTUwYTM4NDJlYWVlZTBjZjE2ZDQ2MTdiYzM3MjdkNWQyMzI0MmUwYjUzZDg3MzNmNTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI0M2I0NTY5NTNmYjY2MzQzZGNmZDQwYTk4Njk1ZGExM2E2MzI3OTM0Yzc1Y2Y4N2RjYTgyNTIwNDdiNzhmZGEifQ"
+          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L160-L180",
+          "version": "repo-lines-v1:sha256:4a091ebf59dfb9b4acbc4b198331dfa0478d3ba2d850ccf0b818be524a0981c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMzIyNGRhMzRlODg5ZWQ2NTY4ODI3NzI5ZDI1OWE0MjcyMmY2OGM3ZDI5NzUyZGQ3YTcxZjAwZGFjODE0Y2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2MDQxZTFmNzdkMDE4YjJkZWQwMDdhMjM1MDYzNDg2MWU4ZDE1MWYzM2NkYTVlMTA2NDVjMTQ1YWUzZGI1NWMifQ"
         },
         {
-          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L42-L54",
-          "version": "repo-lines-v1:sha256:ea2f4473c276ff7e970ad7c1a18e888f4d13d3b9ef2766fe7ff456405300461f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4ZWY0OGI2YTg2MDVjZWJmOTExMjBmOGFlYjIyZjFlYzI0MzhlYTQ3MDAzOWJjZDJiNTZmMTc1YThlMmNjZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxNzc3YWZlMmViNTMxMjAxZjQwNmQ1OGI4YzM3YjEyOWY2NjJmM2MzZjU5YjgxNWM2Y2Q3NmI1NzIzNzZlOWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ0NTZhMTA2Mzg2YjE0NzhjNDhlMTA3ZGE2NmExYzNiMTY5YzI0M2U1YWNhZDNmN2E2ZmQ1YjdiYjhlZDA1ZmEifQ"
+          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L38-L54",
+          "version": "repo-lines-v1:sha256:67455f56224a4b42a6c7b30a81f15c477264e084f801bd3714e31225fee50002:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NDNmNjQ0MmY5MTkyMjhhNjE5YzZiMTI4OTIyYTdjN2ViYjE1YzI1NzFmZjM1ZGQxZjRiNDA4MmUwOWNhNDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxYjU3NzcwNzU1MDY5NjU4MGU3Mjc1MjdhMDI4ZjJhYzcwZmY1YzMxODdhZmViNmQ3Y2VlMjViNTA1NWUwYTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ0NTZhMTA2Mzg2YjE0NzhjNDhlMTA3ZGE2NmExYzNiMTY5YzI0M2U1YWNhZDNmN2E2ZmQ1YjdiYjhlZDA1ZmEifQ"
         },
         {
           "resource": "repo://src-tauri/src/adapters/outbound/process/guard.rs#L18-L38",
@@ -135,16 +135,16 @@
       "statement": "Every IPC failure is AppError {code, message} with a stable ASCII machine-readable code and user-facing Korean message; AppError::io wraps raw io::Errors as IO_ERROR, adapters add codes such as WORKER_PROTOCOL_ERROR, PROCESS_FAILED, PATH_ERROR, SETTINGS_INVALID, and EVENT_ERROR, and the frontend's errorMessage() trusts only objects carrying both a string code and string message, falling back to generic Korean copy while errorDetail keeps the raw diagnostic.",
       "evidence": [
         {
-          "resource": "repo://src-tauri/src/application/error.rs#L4-L30",
-          "version": "repo-lines-v1:sha256:7057ec740d76340438f44b950457f4038ace4368f93f11007698960054c18bd4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkZDY5NmU0ODJlYzM3NDJlOGQ1ZGNiYzE3ZWZiYzdhYTIzZGIxMWM3ZmJlN2M3ZmYyNDQyNTQ2MDkxMDlmYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZTZiODU0MTkxYmY4MTBiNjhlMjM0NzIzNTlkMTlkYTcwZjk4OTE5MjU3MWZhYTExNGY1YWU0MzkxOTM1NGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhNDZmZTJiYmMxMWJhZWJkOGFmNWEzZDE5NmM1MDIxNGI0NTMwNTc0ODBmYWYwODIzYWYxZDRkNGUxN2JmNDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src-tauri/src/application/error.rs#L4-L28",
+          "version": "repo-lines-v1:sha256:59ab38e4b86d4b3e258ea52a81b3dae2132330e105e57e18b11f60514c470667:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkZDY5NmU0ODJlYzM3NDJlOGQ1ZGNiYzE3ZWZiYzdhYTIzZGIxMWM3ZmJlN2M3ZmYyNDQyNTQ2MDkxMDlmYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhNDZmZTJiYmMxMWJhZWJkOGFmNWEzZDE5NmM1MDIxNGI0NTMwNTc0ODBmYWYwODIzYWYxZDRkNGUxN2JmNDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdhNDc5M2IwMzg1ZmEyZTE1MjczNjhjYWY2NTRiNDgwMTRkOTAxZTk3NjVmNDViZjYzYTcxMjZmZDUwZDg2NTUifQ"
         },
         {
           "resource": "repo://src-tauri/src/application/jobs.rs#L52-L57",
           "version": "repo-lines-v1:sha256:70a608687db32f4ac7ba1603efd61ae1b5327a77dfd62ac9974f3a4a81551f79:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFiNDFiNGJiOWUzY2JmYmY4ZjM2YTA4ODFiODk3ZmUyMWQ5OGUyODc4MTExZWFiOGNkMWZiZGE3MWEwNGM3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjczMTk5YWZmZTY0M2VlYzYyNzY3Yzg1MGIxN2VkMDk2ZTY4MGNlODFlODY5NWM3ZmFjODBiZWYxNzYyY2MxOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDYzODM2NjhlZjJkZWQ4Yjg2OTUyOGI2YTI0YTJjYTA2NDBiNmE3ZmNlYjQ1MWI0ZTEzNTM0OTNmMWZlNWM4ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDA4NGU5N2QzOTNlYmM2NTM1N2IzNWIxMTQ1ODc5YTQ3NTYxZTIyMTQyMmRkOWNkMjYxM2E2Zjc4MjQ2ZjgwZSJ9"
         },
         {
-          "resource": "repo://src/domain/backend.ts#L96-L114",
-          "version": "repo-lines-v1:sha256:2546b70c0b91981ee532d82090dcbc60097910e258a9757f38630bbf7dc1e09d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhN2JjY2FmMDNkYjQxYjVjZGZiMjYyMjg0MTY0MjAzYmEwMmRhNGMyMDE3ODRiZDQwODI2Yjg5NjQzNmE3YWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM0MGM1ZDNkYzNhNzczMDc5M2M4OTI3OTQ4YjU1OTY2NDIwN2Y3OWJhODc3NzNjMjE1MDA0NDMxOTYyZmQ0ODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src/domain/backend.ts#L87-L116",
+          "version": "repo-lines-v1:sha256:6471234e6dba776034d677ba8719354ed85c00f9245f0464f5d1bea3a1016632:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4ZWYwY2E1ZTM2MzUyYWMxZGU1M2JiZmU2MGVmNDk2YTBmZGZkYjgyYjljODM3MGIzYThiYjQ3M2JhOWJjNTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0Y2EwNzExODI0ZjAwNGIyNDE3NzZiYzUyMmMzYzMzOTc2YzBkYTU5NjUwMTM3ZjEwOGM4MDhhMTMyNGIzMTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -153,24 +153,24 @@
       "statement": "Application enforces three use-case gates before adapter work: transcribe validates the speaker hint first (INVALID_SPEAKER_HINT, asserted to touch no workspace on rejection), transcribe refuses to run unless EnginePort::diagnose reports the saved preset ready (SETUP_REQUIRED), and refine_transcript reads the assistant API key only at refinement time, failing ASSISTANT_KEY_MISSING when none is stored.",
       "evidence": [
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L375-L390",
+          "resource": "repo://src-tauri/src/application/tests.rs#L385-L400",
           "version": "repo-lines-v1:sha256:c510592c486a5db1790977b6748fb89e683dbc6f29515ca7208427f1845470f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ0Zjg3ZWQ2NzQ5MjcwZGViZjIyMWNlYTk2MjZlNTk4MTg3NmQ2YTk2NjU2NTFmN2EyYWZhZmM0YzAwOGZlNzYifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L587-L608",
+          "resource": "repo://src-tauri/src/application/tests.rs#L596-L617",
           "version": "repo-lines-v1:sha256:373339a590d9d3c06c4972d9d03ea601f296fb8dad68fd29babe42caa4ec32eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzMmE2YzA0MDczNmQ1YWNhMTM1NTQyZjBkNmJjNDFhMjhjMjMyMWE3OWFlZjg3Zjk1ZGVhNTZkYWNhNzFmY2MifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/use_cases.rs#L126-L138",
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L134-L146",
           "version": "repo-lines-v1:sha256:c686f5581a11c12edb456218a1a99b0f4e9bc385f6ef9b9015dba8c9f06d5186:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4ZGU3NWIzMjA5NTQ4NDlmZjAzN2VhYmNmZDMxNTU1YmNiYzA4NjdkZWVlNDNlZDMwYmE2OGQ1ZmMxYWU0YzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzYjNjOWFlYTQwNjJkMDYyMjgxNzk0OWU0MjBiODdjMjA0YzMxZGE2MmJkZWUxZjEzNWU3MDMwNWQwYTE5MTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0NTg2YjJkZDRiOWRmMjI4ZGY4ZDQ1ZDdhYjRhNGRkZWMxYTIyNWUyNWYxODFlNzdjMTFiOWI1NjJlNmFhZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5M2VjMmEwMzg0YmE2ZTE4MTNmNjY4ODU1MGY4ZDU2NTJiNGZkYTg2ODJlOGU2YTliOGE4YjczNTM4YWY5MDMifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/use_cases.rs#L169-L178",
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L177-L186",
           "version": "repo-lines-v1:sha256:dfa49fd9263be3c89e89eb4c63e7ec2291b8a5bae3174eb95d81a791c34d737a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1NDJhZTZmZGZiYTBjMTk2MzZkMGEwNjg3ZDBhMDFjODJjMTkzZTg4NGMwNGU2MmNjMDVmYTI3YTg2ZWIwZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViOWEwOGJjMjlmNmViZWJlOWE1ZjAxOTAzZDk4NDVkYmNiNTg0MmE0NTVmMDdkNWY0MDAyZGFjMzJhNWM2MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1NDlmYTc0ZWNjNzQ1MDllNGFiYmU1ZjExNThlNTg1OTI1ODU4YTQ0NmU0ZGI4MjQ2ZjY4ODlmYmNjZjA0NDMifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/use_cases.rs#L204-L216",
-          "version": "repo-lines-v1:sha256:987fad2873040cdf10e82c140be83a96288f3763688119d5a0548e1f9e57451d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzNzJkMjc4YjcwNDY4ZWJlMDNiYzQ1M2QyNTVjNWY5ZTQwMWQ1MzZkOTRhNTc5ZTNmYzI5ZjU2NzEwNjAxMWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViOWEwOGJjMjlmNmViZWJlOWE1ZjAxOTAzZDk4NDVkYmNiNTg0MmE0NTVmMDdkNWY0MDAyZGFjMzJhNWM2MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY2MDY0YTBiMGNkNzgzNzRhYjJiODI4ZTIwYmYzMmI2OGQwNDdhNzg3OTgwMDNhYTAzOGZiYTQzNGY5MDEzNWYifQ"
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L217-L224",
+          "version": "repo-lines-v1:sha256:3c5b6f21d8b3247fe50b3a662a1d1a2bd01cbe8bdf7abbcaf0767d295ccadf6c:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzNlNzZiNTRmMmRkZjMzZmRiZjE1ZmRkNWJiNTJiN2U4YTYxZTNiNDNlNWNiZWJjZmZkZDI2NjExODM0YzYwYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWViNTA3N2M4MTAzNmFjN2I0ZDUzNGYzMWE2M2I0ZjVmMmYzMzcyZDA4M2EyZDJkMzg5YWNhMDZjZjkxNDNmYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjYwNjRhMGIwY2Q3ODM3NGFiMmI4MjhlMjBiZjMyYjY4ZDA0N2E3ODc5ODAwM2FhMDM4ZmJhNDM0ZjkwMTM1ZiJ9"
         }
       ]
     },
@@ -187,8 +187,8 @@
           "version": "repo-lines-v1:sha256:85a7fb42a563bcbebc789b4b299def4fef2154b4a8fee65f07a2fd4cc8d103cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2YmRkNjdiNDJhOGVlMTE3N2FjZGQzZDA3OWJmMmZlMzQyZjFkMDZkM2IxNTg2ZTcxMmYxZWM3MTEwMjM0NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmMGMxZDBlYjZlYThiMTk1ZWY3N2VjNWQzOGFjZmFiMjI4MTdmYzg0M2Y2YTg4ZTJlZjA3YTg2ZGUyYjdkODkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyYTU5NzMxNTFlYWY5OGRlOGNkNzRkN2Y2OGY5YTFiODc5OTg1Y2JiZTY3MTdhM2ZkNWRjNTdhZjczMzg2NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM1MDc2NTU5MjA5YmNmMGUzZGE4MzkyZWQ4MzEwODQ0Y2U0N2EyYjRjZGMyMDYxM2NmYWI2NzAyMzkyMDU3ODQifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/model.rs#L1-L94",
-          "version": "repo-lines-v1:sha256:a6d7e06eba1ae5fc7b687c4dccd84e99a58c91d908c2ce269421465a2113cc1b:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2MWIzYWRhMWY1ZDVjOWM4NzE1YmEwZGQxNzE3MzFhNTQzMTNiNDNlYTAzNDhhOWFjM2QwMGIyMjFjMWRlNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MjY3YjhkODdhZWI0ZjI0NWZkY2FjMzU4ZDJjNjZhMjZhZmJkNGExNzdlYjhmZDkyYTc3OGZkNGNkOGMxM2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4NWNjYWQ2ZWE1MDVhMjM5ZTBiY2FkMDZiYmJlYzRiM2ZiMWUxNWYyMmI0OThhNGExYzZiNTgxYjI3MTlhZDQifQ"
+          "resource": "repo://src-tauri/src/application/model.rs#L1-L97",
+          "version": "repo-lines-v1:sha256:95b5539105693a2a3c707c4b55636bfa938f21937db06cd8adca5770cea0b9c8:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2MWIzYWRhMWY1ZDVjOWM4NzE1YmEwZGQxNzE3MzFhNTQzMTNiNDNlYTAzNDhhOWFjM2QwMGIyMjFjMWRlNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -197,20 +197,24 @@
       "statement": "AssistantSettings, Participant, and GlossaryEntry each carry a trimmed() rule: every string field is trimmed and blank becomes None, nameless participants are dropped entirely, blank aliases vanish, termless glossary rows vanish, and reasoning_effort is lowercased and kept only for low/medium/high/max; Application persists the trimmed form on save and reads through trimmed() on the refinement and ASR-context paths.",
       "evidence": [
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L542-L545",
-          "version": "repo-lines-v1:sha256:ac1439d7b41c8827ff11e4e573571eeff2fe4cd629f602625e5fb4c36b1263ea:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjY0OGFhYTc4NmFkNmIzODY1ZmUzOWQzMGZjYmIyOTQ0MGU4YjE5NWNkMTFkZGU4ODk0NjkwOTc3NzVkOGYzNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzU5ODJjZGE5NjZmNDg1YWNlNWQyOTNjZTE1M2ZmZGUzOTI1ZjZhZWRmOTg3MGE2ZGVhMzkxNmY1MWViZTI2ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTNiYWI1ZGJlMWY1NTI0YWUxMDgyOWZkMzJlZmI4YTc3M2IyNDI4NmRhY2VlNGRkMTg3ZTc2ZDFkODg5ZTk5NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjk1N2VlYzNhZmZhMjE3YzEwNjg3NzE3MmZlOWRhZmI4OTFlNjg5YWQzMzcwM2E0NzM1ODRkMDc3ZTgxNzA4OSJ9"
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L108-L113",
+          "version": "repo-lines-v1:sha256:5e4cf39a113d5bcd65c7e87bf3fa751bafb4b880c8ba786f819eb7712b309869:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjIwYjEyOTQ2OWRkZDRhNGViZmMwYmZmNjMzYjYxNmY1MzNmZWFmZjczMDY1NjhlMWE3NTM4YjVmNDFiNDBhNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmIyMGU3OGI4ZGUyYjVkMGVjNGU0ODA3YjRlM2E4MWZjMjJiNzMxNDgzODZlZWY3MzVmNmNjMWUxMjJiNGRlYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzdkZTdmOTMzMjRmYjQ5ODc5ZjIyMTM3MmRhMTA3ZDAxNzlhNzAxNTQyY2FmOTE0ODdmYThmM2Q5Y2FiYjM2OSJ9"
         },
         {
-          "resource": "repo://src-tauri/src/application/use_cases.rs#L100-L105",
-          "version": "repo-lines-v1:sha256:5e4cf39a113d5bcd65c7e87bf3fa751bafb4b880c8ba786f819eb7712b309869:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjIwYjEyOTQ2OWRkZDRhNGViZmMwYmZmNjMzYjYxNmY1MzNmZWFmZjczMDY1NjhlMWE3NTM4YjVmNDFiNDBhNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWE2MDlhOWVmOWMzMjg0YzUyMmVjNjVlNDM0NDRmNTI3MWZjZTg1MmMyNjQ2M2Y1Yjc4NTk0N2M1YjYzN2UyNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzdkZTdmOTMzMjRmYjQ5ODc5ZjIyMTM3MmRhMTA3ZDAxNzlhNzAxNTQyY2FmOTE0ODdmYThmM2Q5Y2FiYjM2OSJ9"
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L119-L126",
+          "version": "repo-lines-v1:sha256:0424c1271e5b0415f2ea6d30f1f8f58956e4e7fc578ca57928aeeee110a2a1a1:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTVkMmVkZjk4NjAzY2MzM2Y0MjQ2MDI0ZjFhY2RjNzNmM2EzMzVkMjg3N2NiMTZmMzRlYWQ4NmZmZTZlOTAwNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGYwOTU2Y2ViNmNhYmYyYTZhZjYwZTQ5MWE4MGIyNzc0ZTllZWM4NDQzYzUyOWI1N2Q2MWNhYjAzOTg5OTIzNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODM1ZDEyMjQ4ZjMxOGMxNGViNmJmNWE3NWZjMDY3NjUxNmM1MmNmOWNkOWRhZjU2NDY2ZDgwNWFkOThjYjliMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTgzNzk2Mjg3NDc2MjE4ZWUwNjM0MjcyYzRiZmUxYjMzNTI0NDBmYzVkYmNmYjE0MGE4MzdmOTA5ZDQ3MTYzOSJ9"
         },
         {
-          "resource": "repo://src-tauri/src/domain/roster.rs#L18-L35",
-          "version": "repo-lines-v1:sha256:9763da345ba3c8c9f4e88c433f47c206422a9a28166df43e2c30b2dd31503b63:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhYzAxNzcyZGQyNjVjZjM5NDI1ODk3MjI2NzYxODIzM2QzYzc0NWY4NzU2Y2Q0YmYzODQwYjZhZmU0YmYyMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiYzUwMmU0YzkzYTAxYzQ3NWVlZDBmMWEzZGFjZGNjZmNiYWI0ZjIyNGUxZmVlODhlODQzYjY1Mzc4YmNjNzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjM2M4Y2Y3MWZmZmVjYTA5NDQ5MzMwZmIxMDUwMjc3MjU5NDg0MzcxNDlmZTE0OGVjMzViMmY0Y2Y2ZmIyMDkifQ"
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L265-L283",
+          "version": "repo-lines-v1:sha256:2a84b063098708475e9f94b869f9a68de7dd8627f723161af1d365e0d142dd0d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3OWNjYWJkYWFhNjM1ZGRiODI1ZDEzZjk0MDAwNWExZmM4MmM4NTZlMmM0MGFiZjlmZTc4MTg2ZjQ4NmJiZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlNjY4ODllOTA1YWFmYjEwZmQxYmVkYWI4ZDM4NjM1Mjk5ODE1MTU5ODRkNDI4MGQyNDE5Mzk0MDc5OGRhMGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM5ZWU4NDI5Y2Q0M2Q2ODY1NTdmOGZiYTc5MDkyZDMxMzkxOWJmNmVjMWNkZTdiZTFhYThiMmIzOWI1YTI0ZTgifQ"
         },
         {
-          "resource": "repo://src-tauri/src/domain/roster.rs#L82-L114",
-          "version": "repo-lines-v1:sha256:812cfdd046d12bd8ad39192afd99fcd812a6c824e8c694665125fbcb2193ee95:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5OTE2ZDNlYmQzMWE0MjkxNjEwMjliNDZmZWQ3NDYwYzdiNWJkNzE3YTliN2U2MzQxY2ExYjJkYWRjNjg4M2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVhMDJiMDQ1ODZmMzQ0NGE3ZjViNjExNjI1MTlmYjY5YWE1ZDJjN2U3YzgxNjQ3YWIxMzhjYjUxOGQzYzhjZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiYzk4ZDZiMGRjNDkyYzUwMTZkZjEwODA1YTNhNTRlYjljMTg0YTVhNjEzN2U3ZjRiZWNmYTBjMjIwNTUwZDAifQ"
+          "resource": "repo://src-tauri/src/domain/roster.rs#L132-L198",
+          "version": "repo-lines-v1:sha256:2d9a4c5d3aa00e609778771306fe0c613917e51bb3e6bfa18caf55cdaf9130ec:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyYjVlZGY1OTQ5Y2ZlYTY3ODIyY2Y2OTExMzIzNjNkNjhkNmYxZTE2OWY1ZTBkNGY3YzE0ZTVmYTFlNmQ0ZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/domain/roster.rs#L85-L115",
+          "version": "repo-lines-v1:sha256:7b177c6e704f5e8c5f94a63685e5f95847eb2a2432189dc08a9858b6110a6732:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5OTE2ZDNlYmQzMWE0MjkxNjEwMjliNDZmZWQ3NDYwYzdiNWJkNzE3YTliN2U2MzQxY2ExYjJkYWRjNjg4M2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVhMDJiMDQ1ODZmMzQ0NGE3ZjViNjExNjI1MTlmYjY5YWE1ZDJjN2U3YzgxNjQ3YWIxMzhjYjUxOGQzYzhjZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiYzk4ZDZiMGRjNDkyYzUwMTZkZjEwODA1YTNhNTRlYjljMTg0YTVhNjEzN2U3ZjRiZWNmYTBjMjIwNTUwZDAifQ"
         }
       ]
     },
@@ -237,7 +241,7 @@
           "version": "repo-lines-v1:sha256:a662fc77d79399c82986a0bbc238348eaf95956c1cd24c9b370410c4f158c66e:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTg5Y2ViNmE1M2ZhNzZkZDJhZGZmNzQyOTZmZGZiOGY3OGM4ZGFlODhjODBhODg2YWVhYWI1OWViOWYyZTcwMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWQ5ZTEyNTQ2NDI1NTc2ZDNkZWFlOGM5YjlkYmYxMjhkNWQ2ZGRhZjVkN2ZlODU3OTM0OTI3ZGVmZmEzYjlkZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDQxMjFiYWYxZDdlZTY4N2JiYTQ5ZmJiNDkwNWFmNGZlYWI1MmU2NmE5MzhlNmIwMzE1MDRiMDEyYTdmYmYwOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTM4NzRkZjNmYTIyZjYxNDZjMWU1MWFkMzEzNTgxNDNlMWJhODk3YjQyNGJmNmJjMmM3YWZkOTNkN2JlY2EwZCJ9"
         },
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L701-L730",
+          "resource": "repo://src-tauri/src/application/tests.rs#L710-L739",
           "version": "repo-lines-v1:sha256:6a2bbf19d1b817ca834093beb4b0c08c31866de2b56f12ea6768d85406d42b5f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4NWRiZmUzYmFiMjlhMDg3MDI2ZTUxNDNiNGZlOWI1ZGFkMjBjY2FiNDU0YmExNDIyMDZhZThjOGFlZjQ0NjYifQ"
         },
         {
@@ -255,7 +259,7 @@
           "version": "repo-lines-v1:sha256:229ec85e18f01d2dbc50190878f78007ec2f471b96a261119fe9894f19b3f92f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjIyYjRiYmNlMzlhNjY0ZGQwODU0OTA0ZDYzNmU0ZTNkZmExNGZlYTQ2YmZmMzJkZDI2Y2ViMzlkMDY5NjNmNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ3NWU5NGE5MDRhYzQ5YjMxNTRkNDY3MmE2NmU4NjI5Yjg2ZGFjNzRlM2UyOTM3YmU2OTI3YWUzZGExMWM1MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmQyNDU5NmU2N2VhNjJjYjJlYjM3NTU5MjYzZmEyODhkNjc2MzUxMjY5ZmZlZjA1NGU3NTRlNzdjYjIzMzFhMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzI1MjI1YjVjMDc5YTMxZGViZTUyYjczMjQyNGJlNTZiMjk5Y2ZhMmYzNjc2ZWVkM2RiNTY5YjgyNjViMjU5OSJ9"
         },
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L669-L699",
+          "resource": "repo://src-tauri/src/application/tests.rs#L678-L708",
           "version": "repo-lines-v1:sha256:6785b88c96dbf772404db46e7d4db5d707d0c119644e35345e0e5a502af524f0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzNjY1ZDU3YTM5Mjc4MzkzM2M3ZWViMjc3ZTVhZDI5ZWU2MTRjMzA5NTI0YmIzNDBhNDg3YTJkZWJlOTUzZjAifQ"
         },
         {
@@ -295,7 +299,7 @@
           "version": "repo-lines-v1:sha256:4af2d90869fa580814c1099923a8fb4fa0e926095216fcd0223e278b0729a544:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkNTI0ZmUwZTZlMDZjMmQ0YjgwZjA0ZTIwYzUwNjJiOGNiYTc4ODBhMGE1M2U3OGFiYTllMWEzNTNhMzU3YWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3NDM5YmYyNGNiMzM3NGIxZWI3OTM3YmI5MjExMGMwMDU2YmM4MDI0YjJjMjI4MGI5OTIwMTAyZTFmNWQ3MDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhNmY5NDllYzk4MmFmOGEyNjNhMmZjN2Q0MWM3YzdlM2FiNjI1YmYzMTI1NmY5NTIwZTVhYzc3YjNlMGRkZmYifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/use_cases.rs#L257-L275",
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L265-L283",
           "version": "repo-lines-v1:sha256:2a84b063098708475e9f94b869f9a68de7dd8627f723161af1d365e0d142dd0d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3OWNjYWJkYWFhNjM1ZGRiODI1ZDEzZjk0MDAwNWExZmM4MmM4NTZlMmM0MGFiZjlmZTc4MTg2ZjQ4NmJiZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlNjY4ODllOTA1YWFmYjEwZmQxYmVkYWI4ZDM4NjM1Mjk5ODE1MTU5ODRkNDI4MGQyNDE5Mzk0MDc5OGRhMGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM5ZWU4NDI5Y2Q0M2Q2ODY1NTdmOGZiYTc5MDkyZDMxMzkxOWJmNmVjMWNkZTdiZTFhYThiMmIzOWI1YTI0ZTgifQ"
         }
       ]
@@ -404,11 +408,11 @@
         },
         {
           "resource": "repo://src-tauri/src/adapters/outbound/settings.rs#L285-L302",
-          "version": "repo-lines-v1:sha256:982add9034592b76a1d9aa262c6cd916f7120a1267a5eea203bdfcab1b974663:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwYmRhOGYwOGYzZGVlZTRmZmY1Y2I1MTFhMjQ0NDJmZTEwZTY1YjBjMjliYWNhMTU1MzY1YzViM2I2NjkzYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkZTlkNjZkYWU4OGZmZmJkOWI4OTYxNTE1ZDcwYThhMDFlNzE0ZTE4ZGJlNDY5OWE1OTkyNmU4M2FmYTE0YjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYyMmNkYjc1YjYxYTczZTViYTMyOTA3MzZhNDBmODczNTQ4NzcwODU1YmQwNzBlMjQxYjQ3MzI4Yzg3ZTlhYjMifQ"
+          "version": "repo-lines-v1:sha256:ad2af7cff505d22f310c30f21e109ad4cd6aa4a4b2dde961921f184d444c4d34:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwYmRhOGYwOGYzZGVlZTRmZmY1Y2I1MTFhMjQ0NDJmZTEwZTY1YjBjMjliYWNhMTU1MzY1YzViM2I2NjkzYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1ZjY2M2Y5YmJkNmMxNWJkOWU2NjRlYWVjMjJkMDAwOGRhODQwYWY5ZTJiOWU4YmE0ZjVmNDhjNGE5ODRhOTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkZTlkNjZkYWU4OGZmZmJkOWI4OTYxNTE1ZDcwYThhMDFlNzE0ZTE4ZGJlNDY5OWE1OTkyNmU4M2FmYTE0YjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjNGNlNmMzZGVjODdkMmEzOTMyMmY0MjVjZmZkZWRjY2JlOWJiM2U4MmZkMGQ0NzVjOWRmYTZjY2Y5OWUwZjkifQ"
         },
         {
-          "resource": "repo://src-tauri/src/adapters/outbound/settings.rs#L320-L335",
-          "version": "repo-lines-v1:sha256:e670abc9a45cba260f38f4beb0d1e0f2fbd9a0e131bc0046b28aa9df138df616:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlZDBkMzZiZGE4Y2Y2OTkyYThhY2ZkNzQ0NjVlOGFlYzhkNmVjZjZlMzQ2MWE3OGQ1MjJlYWQyOWJiMmY0YTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiMjk5NGZkZjk0ZTU3NTI5MmI0NzgzNjgwMTc3OGQ2MDk5NDQzMzcwMGIxN2Q1Y2JlZGU5NTJmMzM0NjBjMmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0Mjc2NTkxOGYwNGM3NjQ0ZWQ1OWQ1ODc5YWEwZDEzZTMxMTRkMDVlY2I2NTYyZjY2Yzg1ODU4YmIzOTYzMTAifQ"
+          "resource": "repo://src-tauri/src/adapters/outbound/settings.rs#L325-L343",
+          "version": "repo-lines-v1:sha256:00c54f99ebd9c10b4de9525fd9aeef724b3824a73e261fa043a8f76cd456f564:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlZDBkMzZiZGE4Y2Y2OTkyYThhY2ZkNzQ0NjVlOGFlYzhkNmVjZjZlMzQ2MWE3OGQ1MjJlYWQyOWJiMmY0YTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRhNjA0ZDEyN2JhYzY4ZWU5MGVkMWRhZmU0ODIwYjkxYzdiY2U3ZTk4MTNlNWRjODdjYjg3MTdlOWI1MmUxNWYifQ"
         }
       ]
     },
@@ -457,7 +461,7 @@
           "version": "repo-lines-v1:sha256:f5a8258a844b8f59542ecf686d7d8810193767e3bc9920ccdb6e3c488e2e2656:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/use_cases.rs#L290-L338",
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L298-L346",
           "version": "repo-lines-v1:sha256:9e3539f69f745d1f5cfface39a53aacde18583a65abd94c5b636e037fccbccd0:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxNDY1NWM1NzE2MTQ5YWIzNTU2NjFmYmI4MjUzMDg2OWQ0MDhlNmRmNWMzNGIxNTBjYjgwOWNlOGYzODNmYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRiNjA3MzhjOTNkMWViZmNkNzhkNGRlYTU0ZmVlYmVkMzA2ZTkwZDRiODY0NjY3Njc0ZDQwN2I0MTM1M2EwOWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0MzQ1NWM4ZDZmY2VmOGYyZjE3NmI5NTYwMWJlODBhZjEyM2Y3ZjUyNzllY2FkZWJjZWZhNmNkOTUwNWM0MWUifQ"
         }
       ]
@@ -471,18 +475,26 @@
           "version": "repo-lines-v1:sha256:598301f861151aacf4f46a1c9f354b0cf2eb2c5493c261d6ac7932acf41ac540:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjJkMGZlNjliNWI4NGM5MDZjMDZmMGJmNzU5MjFjMWFmMDZiNjAwZmIzMjkxNWY0MzFhZTYxMTUzYzc4M2YwMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGJhZDcxMzM4ZDI4ZGEwNDdkZWFjNTE0NDhmNWE3YjYwOTY4MWE4M2U4YWVjZWFiNDk3Y2FkYzNmZGVkYTBiNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjlkNTY2NzNmODgxMTFiNzcwYjcwZGJlNzQyNzkzMDc0NjRlMDFmNGM0NTFiZmViZDY5YTMyZGIzMDY1ZmU4NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTVhYzRmYzFmMmQ2OTJhODg4ZDk4N2VlZjExYTZmM2UxM2Q1NTljNGM2NGRjYWVjZGUzNTVlYTEwYTBiOGVkNSJ9"
         },
         {
-          "resource": "repo://src-tauri/src/adapters/inbound/tauri.rs#L145-L178",
-          "version": "repo-lines-v1:sha256:571cb45082672c10e25da54e0e54679b2a80634a7c3e49449ac47fa505171a22:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwN2RlNzNjMjY2MmNjZjJhZTU0NmE3N2Y3ZjIyNDk2ZTcwYmUzYjkzNTI5ZDY0NWYzNzI2YzIzNTE1MmYzNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzYjkxYmJmYmI2MmMxMDBiOWZhMjA0MTYyMTEyYTczNmEwOGNhYjA5M2NiNGYxM2U3NDQ2ODAzNjkyOGM0NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src-tauri/src/adapters/inbound/tauri.rs#L155-L187",
+          "version": "repo-lines-v1:sha256:8994b1500be45f4149bbaa225ecdade3828ce50f05aaf88ecc42314c361f6b9b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwN2RlNzNjMjY2MmNjZjJhZTU0NmE3N2Y3ZjIyNDk2ZTcwYmUzYjkzNTI5ZDY0NWYzNzI2YzIzNTE1MmYzNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzYjkxYmJmYmI2MmMxMDBiOWZhMjA0MTYyMTEyYTczNmEwOGNhYjA5M2NiNGYxM2U3NDQ2ODAzNjkyOGM0NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
           "resource": "repo://src-tauri/src/composition.rs#L17-L27",
           "version": "repo-lines-v1:sha256:26fcb3e48983ac7fa5d646300b004c69076ea1a12459cd3726e16839e2817d92:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxN2MxYTA3MGVjNGVkYWE4MWExZTdkNDA2ZWZjMDYzZDcxMWFmMDgxYmUyNjFhZTI1ZThkNGQ4Yjc3ZjJhY2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0MWRhYzhmNWJlMWFmNTJlZTQyODI0NTJjOWNjMjhhZDA5MGRlYjJmZDMyOGM1NGY0MjI2NDA4OTUzYmJlOTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYzMDQ3MTk5MzAzYTVjNmM0NDUxMDI5YTliZTZiMjdlMzkzOWE2ZDM5Zjc0ODkzYWIzN2Q2NmIyMmFiMjNhMTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI3NjQ5NDNhMmU1MTFiZjY5ZWE5NDhjZWY2MGI0YmZlODEwN2QzMzljMWJlYjhhOTNkNGIyYTIyMzhlMDY4NWYifQ"
+        },
+        {
+          "resource": "repo://src/adapters/tauri-backend.ts#L232-L236",
+          "version": "repo-lines-v1:sha256:c8949d1d5461786ec93d8729b0ac165aaa9a96bdfe199244da42b524c6c147a4:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWQ5YTY2MGJiNzM2YjY3OTgwNWNjOGQyNDU2NjI2ZTVhYWFjMmQ5MDlmYjExMjE0NTEwZWE3M2YxYjZlYmNhNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDZlYjE2NDdjNzNmZDUyOWU4OWQ3M2QyOTYxNmQxN2IxZDNkOTVlM2U4MGMzZDNlZjYzNzNkYTM3ZGU0MWZhNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGM3ZmU3NzI0ZjBmN2E1OTdjNDYzOWZhMzliN2YxNTAwNWU2ZTYwZGQ0YzI3Mzc1ODk0MzFkYzNkMDI5OTAyOCJ9"
+        },
+        {
+          "resource": "repo://src/adapters/tauri-backend.ts#L272-L276",
+          "version": "repo-lines-v1:sha256:5cbc01d4402550970510b3c8f23aaddee0b580f12133834ea4dc0a3706951549:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmQ0YjBmNWYwMTc4YzI4NTNlOTY0NmQ2YWE5MGJiODA1ZmM2NWRkZGZjODVlYmQzYTQzZWM2YjBkOTA2OWM2OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWQxZmJhNDMxZmRiZGVkZWE0YjI2NzZjZmE3OWI2MjU2OTMwYzY5ZGJjYTFkYzBlNzEzYmE1ZjZjMjFkYTAwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzc5MjllOTFlMGY5OWMzZTgyNWRlNjliNDM1ZmI2NDg0ZDFiMGExZGYyZjQ2NTYxYWJmMWEyOWYwNDE4OGI4OCJ9"
         }
       ]
     },
     {
       "id": "claim_74366b6363b446699e62913f31994c38",
-      "statement": "composition.rs is the only place concrete adapters are constructed and registered: it initializes the dialog and opener plugins, creates one TauriEvents shared as both event ports, clones DesktopAdapter into five port trait objects, wraps NativeRecorder and LocalSettingsStore behind their ports, app.manages the assembled Application, lists the sixteen handlers, and exits with status 1 on a failed run; Cargo lints deny unwrap/expect/panic across the crate, and the release profile keeps panic=unwind deliberately so a panic in the audio writer thread fails one recording instead of aborting the process.",
+      "statement": "composition.rs is the only place concrete adapters are constructed and registered: it initializes the dialog and opener plugins, creates one TauriEvents shared as both event ports, clones DesktopAdapter into five port trait objects, wraps NativeRecorder and LocalSettingsStore behind their ports, app.manages the assembled Application, lists the seventeen handlers, and exits with status 1 on a failed run; Cargo lints deny unwrap/expect/panic across the crate, and the release profile keeps panic=unwind deliberately so a panic in the audio writer thread fails one recording instead of aborting the process.",
       "evidence": [
         {
           "resource": "repo://scripts/check-architecture.ts#L100-L108",
@@ -493,8 +505,8 @@
           "version": "repo-lines-v1:sha256:0addfbe7a48a0ea4db24744f08a4ed912995636a8322a0c4996f6ec7248b9ffd:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlNzVkOTY2MzZhMzUxYWEwNzFlYjZhODQxNjFiNGMyNDA1ZDQyODcwNDJlYTk0MDQwYjNhOTdjY2Y0MTIxNGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmOGZjYTZhODkzMGMyYWRmNDdjZDlkNGUzZjdhZjQ0ZjE2YTEwNWZkOThjNGM2ZTA4N2E4ZGYxYTdjOGU1ZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3ZjQxNTE5NzExYWM5ZjgwNTY5YzBjYmVhODQ2N2Y3NGMxYTFlMmU4MGRkYzZmZmNmNzliMDc4MTE5Zjg2OGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://src-tauri/src/composition.rs#L13-L62",
-          "version": "repo-lines-v1:sha256:637beb0e792ddaf7a17f161dc8151dcd34a2e26610e93e324d28a5b3a4e180e3:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5YTQ3MDBkMzEyMmE3ZGIyZjIxMGVlZjRlOTMxNmQyZDVmZmQwNDkzMjhlZTllMDYyMTk4ZTJjOTkxNzgyNTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YzEzNTkwNjY1NjMyM2QxYzVlYTQxNjU0ZWU2NmFmYjU4NWFjZGNmYWVhY2ExMjFkNWUzMGJmMTkzZWVkZDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5MWU0M2Y1ZWE0ZGMwOGQzMTI5YjY2ZDRmNGI2M2IwYWFkOTBiNzVlNjBkMmYxNWY2YjMwMTY5N2QyNTAyZTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+          "resource": "repo://src-tauri/src/composition.rs#L13-L63",
+          "version": "repo-lines-v1:sha256:0fbe1b4ea451f517053f60ca718d1ee0ee508bf928363f30c5ec27f7c949638c:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5YTQ3MDBkMzEyMmE3ZGIyZjIxMGVlZjRlOTMxNmQyZDVmZmQwNDkzMjhlZTllMDYyMTk4ZTJjOTkxNzgyNTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YzEzNTkwNjY1NjMyM2QxYzVlYTQxNjU0ZWU2NmFmYjU4NWFjZGNmYWVhY2ExMjFkNWUzMGJmMTkzZWVkZDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5MWU0M2Y1ZWE0ZGMwOGQzMTI5YjY2ZDRmNGI2M2IwYWFkOTBiNzVlNjBkMmYxNWY2YjMwMTY5N2QyNTAyZTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         }
       ]
     },
@@ -511,8 +523,8 @@
           "version": "repo-lines-v1:sha256:30daf395477804745b93b547dc7642e7c23f5adbffd83e383c5cba319f632d99:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjY1MTg0OWVkNTEzNTFiYjQzZWVlYTY4MTY5ZmMxNWU0N2UxNDA4ZWQzMjZiZjM4OGYwNzRjYjE5YmYxNDA1NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGJhZDcxMzM4ZDI4ZGEwNDdkZWFjNTE0NDhmNWE3YjYwOTY4MWE4M2U4YWVjZWFiNDk3Y2FkYzNmZGVkYTBiNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjcyN2YwZDkyODViODE4ZWJkOTBhOWJmZDMwYzcwOTI2Y2UyZjZmZTYxN2QwNGYxYjA1NGY4NzI4MGM2NzJmNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTVhYzRmYzFmMmQ2OTJhODg4ZDk4N2VlZjExYTZmM2UxM2Q1NTljNGM2NGRjYWVjZGUzNTVlYTEwYTBiOGVkNSJ9"
         },
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L57-L108",
-          "version": "repo-lines-v1:sha256:425e33b248cfb6523f63432f9b1337add0556fb9fb9c68420f5f26b7b9829601:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1M2NiNjNjNTcwMmVmMTVkNGEwZjRjYTU4ODQ0ZjZmMzBhMTg1NWM4YzIxZDY3ODY3OTIxYzRhMjBiMjcyN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlZDYwYzZjZDY4ZWM3YmFmOTlhOTI5ZjcyNGFiZDNmMWY0NTEyY2I2YzZiMzI3MzllYTFmOTQ1YzdmNjE5MmYifQ"
+          "resource": "repo://src-tauri/src/application/tests.rs#L57-L109",
+          "version": "repo-lines-v1:sha256:37f14654c86061eb74a83ee792778c49ec12de488a211f925ac4ef3ab2261265:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1M2NiNjNjNTcwMmVmMTVkNGEwZjRjYTU4ODQ0ZjZmMzBhMTg1NWM4YzIxZDY3ODY3OTIxYzRhMjBiMjcyN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0MzMwZDNjNTNhOTY5ZTRmNjM5M2U2N2UwNTA0MzhiYjIzNmI3NDc3ZmM0MzViN2YwZWUzODc4ZmJlMzNhMGEifQ"
         }
       ]
     },
@@ -521,26 +533,44 @@
       "statement": "The application test suite pins end-to-end use-case behavior against FakePort: glossary/roster reach the worker as ASR context and nothing is sent when both are empty, cancellation reaches a running port producing CANCELLED without timing waits, refinement sends the saved key/model/background, filters attendees to the selection in roster order while always sending the global glossary, publishes minutes addressable as an artifact, imported transcripts refine without transcription, and the Hugging Face token is trimmed on save with whitespace meaning clear (prepare then uses the saved token when the request omits one).",
       "evidence": [
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L334-L373",
+          "resource": "repo://src-tauri/src/application/tests.rs#L344-L383",
           "version": "repo-lines-v1:sha256:ae6bd467fceb0427dca5b2af1f86b572ed694773ffa48f7a242cd19818414184:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxYzQxYzU3ZDM0MDVlZjdhMDliNzg5M2E4YjUyZjgyNTQ1ZmYwZWMyM2I1Y2E5N2I5NTkyOGYyMTU4OTRmZGYifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L392-L453",
-          "version": "repo-lines-v1:sha256:b3c188a16a950aa025d147f5275b359773a35e0fc3c89a90d606d5f28c330ce5:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjYjZhMDI4YTU3YzYwODlhYmE0OTQzMDgwZWY0Mjk0NmE5ZjYxMjI5NjdiNzNkMGQ2NTM4ZTQ2YWVlZDU0MmMifQ"
+          "resource": "repo://src-tauri/src/application/tests.rs#L402-L462",
+          "version": "repo-lines-v1:sha256:ae6f50745e385c85c62bc6c514bba5fcd0f947c77a667ed85ef0650ccc9f2af9:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjYjZhMDI4YTU3YzYwODlhYmE0OTQzMDgwZWY0Mjk0NmE5ZjYxMjI5NjdiNzNkMGQ2NTM4ZTQ2YWVlZDU0MmMifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L492-L585",
-          "version": "repo-lines-v1:sha256:fa91fc3f106991b7b893a67fe04dda32f01f0435003ead436cec786dcafcb0ea:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhMWY2MzllZjZkNDAyNGRmOTA4MDg1MTAyYzM3OWU0ZWY2MTQ5MzJiM2IwMmUyZTI1ZjZlNTU1YWI4MDg3ZmYifQ"
+          "resource": "repo://src-tauri/src/application/tests.rs#L501-L526",
+          "version": "repo-lines-v1:sha256:b35b17e38609707aec54a4e3b15c892bc35b35565acf02b37ee177868214d09c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNiNzQ1MzI5NDUxZWQ2Y2JlNTMwNjM1NTY3YWUwNmY3ZGZkMmVjNGM0NzhlNzM1N2ZlYzBjMzJlYjgyZjdiZjAifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/tests.rs#L634-L667",
-          "version": "repo-lines-v1:sha256:be66e1bc6272f52ab04ca0e39560265364cec9d77809389a22d1eb6afd55c1cf:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwNWIwOGFiM2Q2MjQwODg1NDU4MzcwM2Q2NDQ1MThkN2ZmZjk4MTNmZDYxOWJjMTVhNzI5YTZlZjJhNDQxMGYifQ"
+          "resource": "repo://src-tauri/src/application/tests.rs#L528-L617",
+          "version": "repo-lines-v1:sha256:a465f61a6cad1aa5fa19ca7ef9e1f5387ad0aae0cccf4334172c9ea06c62fdda:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzMmE2YzA0MDczNmQ1YWNhMTM1NTQyZjBkNmJjNDFhMjhjMjMyMWE3OWFlZjg3Zjk1ZGVhNTZkYWNhNzFmY2MifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/tests.rs#L643-L708",
+          "version": "repo-lines-v1:sha256:5002371e95da2d8e2141f47fcb33a9f8f23dc1132dd9fe501ea7d6e3586eaca6:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzNjY1ZDU3YTM5Mjc4MzkzM2M3ZWViMjc3ZTVhZDI5ZWU2MTRjMzA5NTI0YmIzNDBhNDg3YTJkZWJlOTUzZjAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fb4a8f4a333741058efa4b9a85ad04b8",
+      "statement": "The assistant API key has a dedicated write path: Application::save_assistant_api_key trims the input and clears the stored secret when it is blank, and the settings-autosave path LocalSettingsStore::save_assistant writes every roster/model/background field except the key, whose only entries are save_assistant_api_key and load_assistant_api_key — so an untouched stored key is never rewritten by a roster edit and an autosave can never erase it.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/settings.rs#L281-L322",
+          "version": "repo-lines-v1:sha256:f90e96546fc13b871230cb11bb34ac10cb7a16af46326a36b840a1c8a4ede061:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhODY2ZTY0ZGZkN2I3Nzg5MDg1YTg2NjJhMjA2OGQxZDE0OWU2Y2ZhYmFmZWY2NGE4MTNlZTE1NDVmZDMxYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZiMjBlNzhiOGRlMmI1ZDBlYzRlNDgwN2I0ZTNhODFmYzIyYjczMTQ4Mzg2ZWVmNzM1ZjZjYzFlMTIyYjRkZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhYzAyMjRlZmRiNGM1ZWYxNzFlOTNlNTZkN2QzN2ZlMmMwYjU4YWMxZGQwOTQ0MGU0NGI2ZjY3NTE5MTgxYTQifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L100-L106",
+          "version": "repo-lines-v1:sha256:85285bfb768d8312b56ff3b84d4eb33dbbeb51584eaf7d1f6271168403eba22e:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2M0NGZkN2NiOTZlYzdkMzg1NTdmNDE4NmZjN2VjMDAyZGI3YThhZDVjNmY1MjU5MTFiMWIzMmM2MmM0N2NmYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWE2MDlhOWVmOWMzMjg0YzUyMmVjNjVlNDM0NDRmNTI3MWZjZTg1MmMyNjQ2M2Y1Yjc4NTk0N2M1YjYzN2UyNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2Q3YmFjMDEyNzk2YTI2YTEyZjY2NTJkZmZhNDhhMWFkMTI5NTAxZGY1YzI5ZGEyMmY1MTNiY2FmY2U2YmYzYSJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.4.3",
-    "at": "2026-08-29T12:09:06.549Z"
+    "at": "2026-09-05T11:36:27.677Z"
   }
 }

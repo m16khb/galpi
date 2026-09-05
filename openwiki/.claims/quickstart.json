@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:876b6b21e6158848e7c73ce45d1a54552e1010d41b47113a93fbeb35bcce831e",
+  "claims": [
+    {
+      "id": "claim_b139a3a7659946eabf1a1cc6b53ca962",
+      "statement": "Galpi is a local-first Apple Silicon macOS desktop app that records Korean meetings, transcribes them locally with speaker diarization, and optionally generates AI meeting minutes via an OpenAI-compatible API; one codebase spans a TypeScript webview frontend (src/), a Rust Tauri host (src-tauri/), and a bundled Python worker sidecar (worker/galpi_worker) offering a Qwen3 default preset and a legacy WhisperX preset.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L9-L11",
+          "version": "repo-lines-v1:sha256:6894706dc29ce2a6241bf200b2fee70cb43eb4441aa0128fe1eeccd7fdd78078:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjAxMTE0ZjZlZDE2Njk3NjUzMGYzNjQ2ZGU0YmVkMmJhM2JjYTg3ZmY4M2I4OTQwNzcxN2VjYTQ1YmU2ZTM1NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGE1ZDY2ZWNhZWFjYzczZjJhN2JlZGRhNmQ2M2ZmMDJhYjRjNmFjNzZlZmYzMGU5MWY3MTNhZDNiY2NjY2ZkYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODkyZWJmY2U3YjA1MTY5NDgzOTlkNzk0ZWYyODg0NjdhNzljY2E1OGNjNjk3M2NhNDE4MjFhMTA2NWQ1MDdiNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGRhN2Y4M2ZiY2QzMjMxNmJmY2U5NTQyOTc1MGQ1YjkxZTUyMTFjYmQwYzE4MDdiY2FiMjRlNmNkYjc1OWM1OSJ9"
+        },
+        {
+          "resource": "repo://README.md#L22-L35",
+          "version": "repo-lines-v1:sha256:a474bb166c52504722d31632f14fe6e33093b734f9bb02d4470286b8f5de8150:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmZWVkYzk0ZWRjNzg3ZmQ1YWM4M2JjMWZjNDVjYjAwNzY2MDVhMzNlNmQ4Y2M0ZTc1OGRlNDM4Y2FlOGE3YTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ2ZmNmZjQ3ZDQ5MTk4NGJjNzFlZGQwZjQ4ZDc5ZjE0NWFkZTRlYTdkYWYzOWZhZTg2NmYyZGJhMDZkZGJmNDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmNDJiYTI0OTRmYjViYzg5OGZlMDRkMTAxZDcwODYzNjY2NWEwMDViYjlkYmYwZDYzMTdhMGYzMzc0ZWJkMmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0OWFiOWFhNjcxYjhkMDJiNjliYjMzMmNlMGJjZjlkNzM0MmRiODQwODBiYzkzZTZiMmJlMmJiZGMwNTk3NzYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_df7f200c1f1e46638fa6a6b48fdcd65d",
+      "statement": "Supported toolchain: macOS 14+ on Apple Silicon (tauri.conf.json sets minimumSystemVersion 14.0 and build scripts hardcode aarch64-apple-darwin), Rust 1.88+ (rust-version = \"1.88\" in src-tauri/Cargo.toml), Bun 1.3+ (engines >=1.3.0, packageManager bun@1.3.14), and Tauri CLI 2.11.4 installed via cargo install tauri-cli --version 2.11.4 --locked.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L42-L53",
+          "version": "repo-lines-v1:sha256:597a656e282cbbb995bc0cd92456647744910f92a2beb923d00e4b46ba90e6d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzYzU2MTMyYjllNGQ3N2IxMmQ2MGVjNDJkMmJmMGMwOWVhMDdlZWFjN2JkOTIxZGI3Njg4NjliYmRkYzBhY2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNWU3MDdmMjYwODg1NzU2NmE0MmNlMTA0YWM5ZmE1NmQ1NzNkMWIxZmE2MzcxMGI4ZDcwOGE4MDE3ZmVmYjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjYTIyMzAzZmJmZGNkZjE3NDUxNWFkZDBkMzE2NGZkMzBiOWE1ODg1MWFjMThjNDc3NTBmMmJmOWU3ZDI2YzMifQ"
+        },
+        {
+          "resource": "repo://package.json#L8-L11",
+          "version": "repo-lines-v1:sha256:32d9f17db1fb36d69520adbe2856287b5a7816cc9a12ea5d4c64476558ee05dc:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2I0ZTAzMjBhYWI5NjhiZjg4YjlhNjgxZWUwODhlZTcyM2FiZjdmNTczNTk4ODZhOWE0ZGI5YzViZjM3ZTJlYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGQ1Y2QyZmI0ZjNkZjg4NDUxNTI1NWIzOTUyM2YyZjhiNTQ3MmJlZWE5ZjU2NmZmY2EyMDRkYjgwMjU2MTA0MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjEyM2M2Yjk1NGYwNzYyNjIwNWY5N2ZjMzEzYWM0YzhiZTY5ZmZkMjJlZGRlMmQzZTkzODA5OGFhNGVjODcwNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDkxMDgxYWEzYTJlODA2MTc0ZmVmZWFmY2FjNWQzMzU3YjJlYWRhODQ4OWI3NGI0YjllYzc4MTAyY2QyODg1YiJ9"
+        },
+        {
+          "resource": "repo://rust-toolchain.toml#L4-L7",
+          "version": "repo-lines-v1:sha256:1f08c7b1a58b47f76e6fe3580e02b2bec85de95b66d8b04d30ee7d03167ecb87:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTMyMDRhMDcyMDNmZmI4M2MzYTUwZTgwZjE2YmQ1NTY3YTU2YTIzOTA0NDcwY2U2ODAwMmZiNDQ0MGQzMjM2OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTI2ZjExNWQzOGEyNTExN2MxMmM2ODAxNzhhZGE5ZWI2ODM2M2FjMTMwYzg5NDlhMTllZWRhMzcwN2ViODkwZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2IzMzBiNmZkMTAzZWYzNTYxODI1YjcyODhmNzViMjMwZWQ0OGIyY2Y0ZDM2NTA4ZTZmMzcyODdhYjVlNTE3OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://src-tauri/Cargo.toml#L1-L7",
+          "version": "repo-lines-v1:sha256:8837c320d7a8b104ae7cbdd79cb74889e3e1a9bc248bb0a11169a4cc1fe87fd4:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGEzY2Q1YTgxYjNmOWE2MjFhYTQ5M2Q5MGM0NWY0MmFiNTcxZDRlNDJiOGFlNWFmZjM1MWNiMGEwMmQwNmQ4MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWZhODY4NDBhOWFkZTE5M2U2NmJlZjk4NzcxODA3YzExOTdlOWE4YmFmYWE0MjIyMmQ1NzZmODU2YzUyOGQ1ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGM3YmNjOGZmMTU3MTRiZTZjZGZmNDg3ODVmZjNkYzNhOGI4ZmQ3MDUyYjgxN2M0ZGYyZjE0ZjZjMjU3ZWRkYSJ9"
+        },
+        {
+          "resource": "repo://src-tauri/tauri.conf.json#L41-L46",
+          "version": "repo-lines-v1:sha256:ba8bcbafefed2f61891f9aaab67e3c6ca58c1d3620e92a61b8073bbe72a847f8:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTM3MTY0YTgzZTVhMmViNGYyMTMyYzFlODE3ZjhlOTQ4MTU2Njc1YmZkNjQ2MGNjODg0MTk4M2E0NjNmYTc4MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTkyMmM1ZWM5YjI1OGIzMTNlOGU3NWQxZDYzZTNmN2ViODBlYWU5MWNkNjI5OGMzMTJkMTMyZDg2M2Q1ZWQ2MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3950fb6c64554a0989da2aae53710438",
+      "statement": "uv/uvx must be on PATH only for the Python verification gates (bun run check:worker); the app itself never requires a globally installed Python, ffmpeg, or WhisperX because dev/build staging downloads a checksum-pinned arm64 uv binary and the app installs its own Python 3.12 environment on first engine preparation.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L200-L204",
+          "version": "repo-lines-v1:sha256:3c19307a228970a66d905259995f346c53066f6261003e4d0d72a313b9537e77:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDdjMDZjNTYxZDVjMzI3MzQzNjg1MjY4YTQ2YjMzOTFmMzk5OGVlZTg5MGQyYmU1MWYwZDIxY2M0YTUzYWU2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGMwYWRjY2YzYmIxMThlY2U2NzYzYWVhOTk5MjhlZDc2NjY1ZWM5MWJjMjRmMjU3Mzk2ODdmMGM3MjE0YjdiMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjRjYTMyMTg5NmU5YWJjYzYwYjZmMmI2N2VkYWY0MTBjMjkzYmZlNWM1ZTNhOTc3YzI2NDg3MDYzNTM0NjY4YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjc1ZmY4YWQzY2M3YjEwZjRhYjkxNjJiYjlmZDU1MzgyNDBjNmQ2NjVlZGZmOWMyM2E3Mjg0ZGJhNTU4MTdkZCJ9"
+        },
+        {
+          "resource": "repo://package.json#L24-L24",
+          "version": "repo-lines-v1:sha256:e3aa86a2ea1311160e9f9f544a65da5a7fdd11dfdf8810afa652c1232e411d1f:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNhYTg2YTJlYTEzMTExNjBlOWY5ZjU0NGE2NWRhNWE3ZmRkMTFkZmRmODgxMGFmYTY1MmMxMjMyZTQxMWQxZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNhYTg2YTJlYTEzMTExNjBlOWY5ZjU0NGE2NWRhNWE3ZmRkMTFkZmRmODgxMGFmYTY1MmMxMjMyZTQxMWQxZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzE2MzljMWYwZDQ5ZDRhN2E3NmNhNjc1MWNiN2Y4NWNkYzM1ZmQwN2RhOTBiM2Q2YmZhYjM4Yzc4OGFhMzI5MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzQwMzQ1NTE4ODMxOWVkMGMwZTAzOGE5OGEwOGYzNjFlYjY4ZDhiOTgzNmI1Mjc4NTBiNzg0MWVmMjRkNjQzZCJ9"
+        },
+        {
+          "resource": "repo://scripts/stage-sidecars.ts#L6-L13",
+          "version": "repo-lines-v1:sha256:df1d37c1896d0ba8e858a062d80b87e25c8c93b5eb293200901c5618a30881d2:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzMxNTZjYzU1YzQ4ZWFhZDM1ODEwOGY2OWU4MDM1YmY1ZDM0ZmM2NmZjZjBjNzk1ZWU4NWVhYzY5OGQ3NGRhZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjllYjNmOWYxNjU3MDJmYzVhYmUyYzVhZmQ5ZmIzNjkzMWMxMGZjYjdlMWM4ZDgwYzNhODMzZTk3OGIyYTMxYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmU3NWViYzlhMTljNmI1Y2NiNjA3YTM2NmQ0NWZlZDA4NjQ4YTRjYmMxYzY1YjdlZGFjMmUwMGMyODM5ODA1ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzBjOTc5NjhlZTk4YjA2MGEwOGIyZmVmZTgyNjU4YWJjN2ViODUwY2U5Yzc4MzJjZDM0MjgxMTVhYTFiZDJlMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1c265d85fa5c4a23bc3ce4a5db7ce687",
+      "statement": "bun run dev executes cargo tauri dev; Tauri's beforeDevCommand chains bun run sidecar:stage && bun run vite:dev, which stages the pinned uv binary and a fresh worker copy, then serves the frontend on http://localhost:1420 with strictPort before the Rust host compiles and opens the Galpi window.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L17-L17",
+          "version": "repo-lines-v1:sha256:51dbeaa9ff42bdf8c4e834062b0db0e92538a1531136f16825dec914a543b46e:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTFkYmVhYTlmZjQyYmRmOGM0ZTgzNDA2MmIwZGIwZTkyNTM4YTE1MzExMzZmMTY4MjVkZWM5MTRhNTQzYjQ2ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTFkYmVhYTlmZjQyYmRmOGM0ZTgzNDA2MmIwZGIwZTkyNTM4YTE1MzExMzZmMTY4MjVkZWM5MTRhNTQzYjQ2ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmZmZjEyYzJiZjc5ZGRmMmRhNjM0ZjVkYTRhZWYwNDE1YmE1NmFjODUzMjI3YjkwNGRhYzg0MzhiYzQwOTFhZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDE0OTYzOGJkOGQ5M2M4MTc3ZmY5MjljMDZjZjU2NDk1YmM2YTViYmM1MDQzMTBkMWE4ZDVhZjc5YWMwOTk2YSJ9"
+        },
+        {
+          "resource": "repo://src-tauri/tauri.conf.json#L6-L11",
+          "version": "repo-lines-v1:sha256:30d29efeeff6bb1d6edbb7c864f6b6fb502e4b051bb48f75f86ce8d8a0eeb739:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2IwNzIwMWJkYjZiYzA1OTIwODQ5NjM2ODE4NjFhNGZhMTRhZmRhNTkxYjZkNTY2MWI3NDU4ZDkyMWQ1ZDBlYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGQ1Y2QyZmI0ZjNkZjg4NDUxNTI1NWIzOTUyM2YyZjhiNTQ3MmJlZWE5ZjU2NmZmY2EyMDRkYjgwMjU2MTA0MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmFjZGVmNDVjMTkwNWM1YTE4N2MxNzgzNjMwM2UyNGVlMTk1M2YwZjg4OTBjOGEzNzk0ZmNhZGY0MDIyNjNiMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzMwZWM2MGVlOWU5MDU5NDg3M2M3ZThmZDdlN2M2MWFlNmZhNTNlNDkzOTFkY2U1YThlZjAyZWJhMjYxY2JmYiJ9"
+        },
+        {
+          "resource": "repo://vite.config.ts",
+          "version": "repo-file-v1:sha256:ce6fa7aa3e83b1020666104da8c30b024b27ba2d49a5eb325b7baa83e5d169fb"
+        }
+      ]
+    },
+    {
+      "id": "claim_9a6d147b6ddd46889d792c8a1a76deb0",
+      "statement": "The frontend entry src/main.ts composes the TauriBackend adapter, AppView, and AppController, awaits controller.start(), stops the controller on beforeunload, and fails fast if the #app root element is missing.",
+      "evidence": [
+        {
+          "resource": "repo://src/main.ts#L1-L14",
+          "version": "repo-lines-v1:sha256:e807905504bcb999cda2ce106b78df10592be18249b721c1fe91aa7f352f324b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3M2FmOTliZjg1NzMwMDhkZTBjYmZmOGM5MDM0ZmRjMzMwMjdmYjA2NTg3Nzc3MDgzOTliZWViYjE4OTU1YjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0ZGRmMDNhMzMzZmFjOTllNWJhYzA2NjQxNDNjZTIzODA0YTIxOTM1ZGMzNWQ2YWEyZDZiZGM1N2Q5OWQ4OWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b76d4bf25f1f4f1ea10f774e5baf15c8",
+      "statement": "First engine preparation happens in-app via the 로컬 엔진 준비 (Prepare local engine) button: it installs an app-specific Python 3.12 environment and downloads multi-gigabyte models (the Qwen3 preset is roughly 6.6 GB of ASR plus aligner models); a Hugging Face Fine-grained Read token is needed only the first time the pyannote diarization model downloads, and a failed prepare is safe to retry with the same button.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L254-L262",
+          "version": "repo-lines-v1:sha256:982f418f378ffb974a758f13fedb83963aeb2bf4bc676c7d50457f8b4e69feb6:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODRiZjQzMWZkZDFkNTFmOWRhYTI3MmYzNzRjNGVlMTg4OWM0MjM1ZTFjODNjNDY2OTk2MmJmODBhZDEyNmQyNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2U3ZjEyYTc0ZTIzYjg2MjgyYWY1YzQ2NzU1MzYxNmEzNDNmMjUxNmQ1NzRiMWIwMmFkYWM4ODg4NjY2MTY5NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjNjZTc3YTc2M2Y2YzJhYTliZjc1Mjg2MzEzNzhkNzAxZmZlYzEyNjllNDg0M2RmZGU0NDRhYWQ2MTNhYTA3ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjQ2YjIyYzU3NDcwMTA0MTI2OTRhZmMwOGMzMTkzMTc1ZjIwMTUzYWQ3YTUyOWFlNzc2NWNhZTNmNDQ1ZWI1ZiJ9"
+        },
+        {
+          "resource": "repo://README.md#L57-L75",
+          "version": "repo-lines-v1:sha256:de0d2939a3e548a61c06ad32f8d2a1605af5cf03aeccc2aadee87e03782130c4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlMDg2NGI5MGVhZjk3ZTVjZmUyM2VlNjJiMTk3ZjE4YWViNTZlN2E5NTYzOGIxZWJlODQ3MjcyNDM2YjlmZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhYTNhM2QzOWYzNDJhNDM5NzhjN2U5MzZkYzRjYTIwMzgxNDYyZWVmMWMxMWZiNWY3OWEwNjIxMDE3ZjNkYjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjYTIyMzAzZmJmZGNkZjE3NDUxNWFkZDBkMzE2NGZkMzBiOWE1ODg1MWFjMThjNDc3NTBmMmJmOWU3ZDI2YzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMxZDcxYmVjMjJhNDRhMmQyZjNiNTk4YmZiYzk3MjliYmFjYmFhMjkyYjBiODk4OTI5M2E5NDdiNTAwY2YyMzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e209365ebe9a41418fc167c639cfcfdf",
+      "statement": "package.json defines the canonical verification gates: bun run check (architecture:check via scripts/check-architecture.ts, then biome lint, then tsc --noEmit), bun test, bun run check:rust (cargo fmt --check, clippy -D warnings, cargo test --all-targets), bun run check:worker (uvx ruff check, uvx ruff format --check, PYTHONPATH=. python3 -m unittest discover -s worker/tests -t .), and bun run check:all which chains check → bun test → check:rust → check:worker.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L145-L150",
+          "version": "repo-lines-v1:sha256:944322e1fbb274ddc3d13e4e2988a3d08805d7129f2246cff7e8ff805e3a1660:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ4YmM1MWJhMDkyYzVkZDc2ZmFlN2E1ZTNhNjNiNGQxNzdhODE5ZWU3OTJmMGE1MWZkNThhMDEyNmY2NzhiMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjA5YjQyODIzNGU4OTg1YmUzNTRkMDE2YTM4MjIwZDUxMTA1MjUxNzFlZjNjNWRkMDUwYjQ4MmEzMDliYzE3MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmNmYzAwN2Y1M2JkNTczYTQzZjdkMWViZGRlODVhODljMmExZWMwYzE0N2EyNDQyZWU0OGUzZDg3NzZlMGQyNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGQ1MDkxNDY4OTdiNzUxNDM3OWViMDJhNjgxMDA3MjUxN2IyMzAwZDg2ZWI3ZDA3MDFmN2EyZDgxNjRhYTk0ZiJ9"
+        },
+        {
+          "resource": "repo://package.json#L16-L28",
+          "version": "repo-lines-v1:sha256:9992f9f84ce4e43ccdf07753f63016696a20ed8b1e6a8c75ad0beee90d512878:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyMTlkYzAwYmZkNmRiMGY3NTI5MTY1YTJhYjFkYTZjMTFlMmIwNTFkMjM4MjE1NTM3ZmRlYTk5ZmRlZjExNTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2NjgwOTExNzg1YjI3OGE5MjFjODVjYmFmYjFmNzE1OWM3YjlkNmM0MTgyZjM1ODAzYTg0M2RkM2MzZjBkMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0MTkwOTQ2YjRlNDQ1ZGUzYzI4NGIwZWZhMzcxYmM1MDNkNGQ2Y2YwMzMwMTZkODZkNmI1YjU5YjgzMmE2NWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_121a55a3a60a47fc8bdaa6a07e8cf7b5",
+      "statement": "bun run check covers only the architecture fences, Biome, and TypeScript; Rust and Python gates stay separate and are only combined by bun run check:all, which is the practical all-green-before-commit command.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L146-L147",
+          "version": "repo-lines-v1:sha256:0ed8432d31450a1568310e93e820f84cff3dcb85595cf0e66731b7d1a696c59c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDUwOWY5ODkwZTVkY2JkMjhiZGIxNTkzZGUwY2ZmYmI3MDg3MjdlNWM1YzU3ZGZhZmZiZDBlNTVjODU1MzQwNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTA2MzRjOGY1ZTRiODNkMTBkODk3MmJlN2Y2MWQ5MzQzZGRhY2ZiNjhlYzYzNzczYWNlZDA2ZmNkYmI4ZTFhNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzRkMjY0NjI0MjY0OTEyYWQ0NjNmM2Q4YzZhZTMyNGY4YmJjOThlYTg5YzhmN2MyM2FkZjA0ZDExNDFmMmE5ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWEyNDdiYzdmNTkwOTVlN2NmNGQ5NmIwNGQ3Zjg2Nzg0OTc3NDU3MDg3YjFlNDMzYzkyMTk5OTg2NmU2ZDQ2ZSJ9"
+        },
+        {
+          "resource": "repo://package.json#L22-L25",
+          "version": "repo-lines-v1:sha256:01bd64b05901a1c10ab9fecedbb9fb9debb8d9b8e80375129e2fc18f857c2f1c:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTllNjc4MDdkYTIyMjA4MzA3YTZkNzg5NDI0OGUwN2JhMzM2Zjk0NTFkMzE4NmQ2MzAwMWU2OWE5MWVmZGQwZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjA2MTBkMDExM2E5OGIxYjdhY2U1ZTMzNzEwYTZjOTM5MmYwYWUyOGI2ZWMyZjU3NTc2MTc5YmFkYjU4MThlMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDBiMDdhNTY2NGUzMjhiZTk1MDEzODUxZjliYjJmMjdjMWMyOGM1MWI4NjlkODc0NjE0NGE1N2MyZmZiYWI4YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzE5MDM5OTllMmYwZmI2MzFiYzQzY2EwOWRlOGQ2NmNkMjM5NDJmYTkwYjdlOTQ5NjUwNWE5MmU1ZTMxMmNkZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e550011ea7fc4e28aaeb34b5e7114dad",
+      "statement": "Rust tests run against a FakePort implementation of the application ports so cargo test needs no Tauri runtime, and the Python worker's unit tests are pure contract tests that never import the ML stack.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/ci.yml#L51-L52",
+          "version": "repo-lines-v1:sha256:f755a778d5c4502ffb211774b618859997281d42a336a04d8b2a3484f384ee7e:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjVlOGNjM2FiYTE4MjIzNWJjZWU3NjdkNjBhNDBhNDcwZDQ2MmI2MDE5N2M4YTQwOTQ0NWE0YTFlN2Q4ZmFiZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDk4NzBiNzU5NjIyMmY0ZmEwZjI2MTU4YWFiMzFjYzAwODdkMDRhOTc3YjI4MGZjYTIyMzg4MDFlNzk5ZDc5ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTIxN2Q5MTc1NGY1NDkwYjlmNjcwMjg3MTNjMGQ0N2U3YzU4N2Q3ZTk5YjQxMTc1NDkzOWE0OTIyOWYyZmI5ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://docs/ARCHITECTURE.md#L100-L101",
+          "version": "repo-lines-v1:sha256:0f3391e024efbfb28551c25201d37560d1529f474c4be620b8ce838d52178fc5:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmE1MmQyMDBiZDlmNDk5ZDE5ZGFlYTRlNDk4ZDRiNTU2NjQ4MWE2ODZlZDczYjFiNWE2ZTY2N2Y2MThlYTk2MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODcwYTc2YzVlOTExZTk1OTY2MTk1YTFmNTNmNDQ1N2JmNTQzYzEyZjc3NWEyZmQ5MjlhMDc5ZmYxNDYxNDIyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzViY2Y5MDQ3OWNkYjY3ZDcwMzY2NTA2ODBmMmRhYzQxODVkOGZlNWRlYTc1NjAzNTA4YWEwYTU0ZTgyN2Y0ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGQ0YjcwMjhkZWUzNDhiYTA5ZjliY2RhZjU1MjJkOTg5NjE2M2ViYjc3ZGRlMDY1ZGY2NjA3YTI1OGYyOTU2NiJ9"
+        },
+        {
+          "resource": "repo://worker/AGENTS.md#L30-L31",
+          "version": "repo-lines-v1:sha256:354df74a8a5b52cce64c44c9163725b9575b09111906e6b8d653937085eabdc1:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDJiMjU5ZTRlNjUwOTI0Yzc2OGY5YjBiMTljZmIyY2YyY2ZlZmM5NjBhYTExOTJhM2MzNDZhZTMxZGVlYWE1OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTQ0ZGRkMGQyNDM4NmQ0OWNlYjhjZDBmNDQ0OGJkZDVjNWMwM2JiMDlhNzM1YjQ1ZTE1OTM1Yzc3NjhhMzkxZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDNhNzM5MjA5MGY5NTM0YjlmMzRmMTk5MWI1YTUwMmFjM2MxZTg5YTdkYmI4MmFiZTIxMGQ4OTA5MjA2MzZmMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzhlNTBkZGFlY2E3MjBmZGIwYTdhYWIwMzM0NGI2MmRjNzE4MDhiMjg1MWVmMzM2Yzg1OTE0MmFiZDljYTRlNyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d69459386ff0463b864e5d42fdaf820f",
+      "statement": "bun run build runs cargo tauri build --bundles app --ci && bun run dmg:build and produces src-tauri/target/release/bundle/macos/Galpi.app plus src-tauri/target/release/bundle/dmg/Galpi_<version>_aarch64.dmg; scripts/build-dmg.ts reads the version from src-tauri/tauri.conf.json and shells out to macOS hdiutil, so the DMG step only works on a Mac.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L218-L229",
+          "version": "repo-lines-v1:sha256:da1773ac53a845f45873a90fb55468ff50f8337377e196d9a9647d9fc728c266:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkZTJmNTMyOGVlNmU4MDUwZThhYWZkOGRjODY5YTA2OWNkOTU4NGVkYWFmNTRmZTU4OWQ3M2MzYjdkY2Q3OTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxMzc0MjVkNTBiNzliMTI2YTk2MWZiZTFmNjZhZWQ1MDc4ZGFiMTAzNzQzZjI4MzJkZWNlNjM1OWI3YmQ1ODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2YWJiMDI1N2JhNGRkNjQxZTljZjBiNmFlODM1MjcyZWI5ZTZiYmY0YzM4MjEzOTA1ZGE4ODlkYzM2MjBkZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkZDAzOWZhZmUxZjU2NzhjMmY4YjcxMjBjMGE4NGI5NmQ5ODA2NmU1N2U4NmQzZmYyZTQzNmNlMzhmODEwZmIifQ"
+        },
+        {
+          "resource": "repo://package.json#L18-L19",
+          "version": "repo-lines-v1:sha256:d3de7f404d7459fb474e6cecbf5dea96f84d94da1662bfe3cdb627275b19eaba:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODAwNjJmZDE1MjY3Yzg1MTMyNmE4MTk5YmI3YTFmYWJhODQ3YmQ3NjZiY2IwNDY2ZGQ2ZmZkZmFhNWRlMjhlMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFlYjBlNmQxZmNhYWJlMmE2OGNhNTE5YjIyZDhhN2JhYWZiNTQ2MzExYzliZTIwNmUzOWE2MzYwMzQ0ZDE4NyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmI1NTY5NjA1YTJiNDBiZDM4NThiZDNlYmVhNTA1NzBkMGJhOWU1NTdhNGRmMTkwZDhhZjBkODk1OTE2NTM4NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTg2NzdjNjFiNDczYzUwNTVhZjQ3ZmE2NWMxM2ViZTNmYTU5ZTIxMWY5M2U5NzVlY2ZiNThhYWMwM2Y0OGU2MiJ9"
+        },
+        {
+          "resource": "repo://scripts/build-dmg.ts#L15-L26",
+          "version": "repo-lines-v1:sha256:ab35b91139d29ed869807005cf4e332137c2b26129b528d3ce94c0eb4986b0e6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwZGVmZjc2NGNkODZkYjI1ODhlYmJiOTE3ZTlmN2M2ZTIzMjA2MWQyMzNkNzBhNWY3YzkwODg5ZWZmZjk3NTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdmMDhhMjk4NjNhNDI3N2ViMzhiYTYxZDU3OWU2ZTA1ZjFmOTRmYjZjYjY2MjllY2RlNWRkYTE0M2MzMDY4ODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4ZTg2MmM0ZTU2YjgxYjUzMGMwNGY4ZjYxNTFlZjAxNjI1ZDBlZGNlZjA1NjU4YzVmZjRkMDI3ZDQ2MmI3MjQifQ"
+        },
+        {
+          "resource": "repo://scripts/build-dmg.ts#L43-L73",
+          "version": "repo-lines-v1:sha256:704cbb54a9fc78822127878c54cd2f7f11af6e5819ca6455adcb278d945c3b48:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyOWViYjQ0YjM3M2NmNzhiMzY2MzI1NDNiNTE2NzU5NDhkMTJkOGYwYjU2Y2Y0ZjUzMjc3YzBmYmY1YWRhZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4N2JiZDBmOTNiY2Y1ZmE4ODAwYjFlYTkxMTJjZDIxNWQ1ZTk4YmYyY2VlZTBkMWEzMTlmNGM1ZTI5MzViMGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxYTMzODk4OWU0NTk1ZWY1OWExMDg2ODQ3NDg2NjczYzgzZjUyZjY5YjVjYzE3NzI0ZjFmNTkzNjUyYjcyY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFmMjgxN2YxMjRjM2UwZDE2NzY5YzBhZjc2NjYyODUzY2M2M2ZjNzEzMjhhYWZlYzY3ODZlYmQ5ZmU4ODJlODQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f9a694f84eef442cbbb96ccd35654e75",
+      "statement": "Shipped builds are ad-hoc signed (signingIdentity \"-\" in tauri.conf.json); Developer ID signing and notarization are separate and are performed by the release workflow on v* tags only when the Apple signing/notarization repository secrets are configured.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L231-L246",
+          "version": "repo-lines-v1:sha256:31aa82e4e2b03ca694e416d0a205a6e2672e7e671c9a9fca17240f35933f804c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzMmZjMmIxYTUxNWZjMmIzMjZjMjdmY2U0YjM1NDQwZDZmMTY4NGY0Yzc3OTI4ZDM2OTQwYWVhNGM0NWM4NTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlZDhhMzMyMGFjZGYxMmYwMTExNTAzMTc2OGYxOWQyM2I1NmEwMzFmY2UyZTFjNTEyN2QzYzE2OTQ3NzBhZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhMmRlY2Y4OTNiNTY0NDBkMDViZjdjYzMyMDU0ZDNhY2VkYWE1NzQ2ZTNiNmY3ZTZiY2Y0OGY5YTQwMGVjZDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRiNDM2YzNiYWMwZWJiNjVjYjkzNzNkN2YzM2E1YjJlNjE5MDNiZjU1MzI2NjcxZTEwYjk1N2RmNzU2ZGY4ZjMifQ"
+        },
+        {
+          "resource": "repo://src-tauri/tauri.conf.json#L41-L46",
+          "version": "repo-lines-v1:sha256:ba8bcbafefed2f61891f9aaab67e3c6ca58c1d3620e92a61b8073bbe72a847f8:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTM3MTY0YTgzZTVhMmViNGYyMTMyYzFlODE3ZjhlOTQ4MTU2Njc1YmZkNjQ2MGNjODg0MTk4M2E0NjNmYTc4MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTkyMmM1ZWM5YjI1OGIzMTNlOGU3NWQxZDYzZTNmN2ViODBlYWU5MWNkNjI5OGMzMTJkMTMyZDg2M2Q1ZWQ2MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7e86f6f5cf814fb29ac7e98f7b28ff98",
+      "statement": "One dependency rule spans all three runtimes, quoted from AGENTS.md: \"One dependency rule across all three runtimes: dependencies point inward (domain). Ports are owned by the consuming inner layer; adapters implement them. Framework code (Tauri, Zod, CPAL, tokio::process) lives only in adapters and composition.\"",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L81-L84",
+          "version": "repo-lines-v1:sha256:e0767a656a51e089df4da38a1e2763d0daa5797ba264591433b78d4cefc76b2a:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGY0NThjMDMzYTliMjg5NDM4ZWEyMDU4YjVkYTNkM2NhODY2OGRjMTA2NzJhMzE3ZmU1YWM5MGRlOWM1ZTZjOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiY2QyMzcxY2YxYzJmOGQ1YTc3YzA3OTFhM2YzZmNlYWEzNDYzOTZkNGI3ODE3NTRmZWJhZGVkMDQ4MjkxNGRhYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjM4ZjMwZTlmMTkwZDEzNzk1NjliZjg4ZTY1MmMzYTAyN2IyYzBhMmMyYWM0OWY3N2FkZWI0ZDk2OWM5ZGM0ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTExZWQyNWQ1NmE1M2U3YWJhMjY3ZWUxZDNkNTMxNTYwNjA4ZjVkNzQ4Nzg0ODE3MjAyNzk5MmE5MjA5NmQ5YSJ9"
+        },
+        {
+          "resource": "repo://docs/ARCHITECTURE.md#L43-L47",
+          "version": "repo-lines-v1:sha256:d2cae53bdd5cc8d4c784ced1806eedba72bdbad1a9e3b48f66adaf0f049c6e85:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODY0M2NlOGYzODQzYWY0MWQyYzI4Y2NhNjI5ZjNhMzU0ZDY5MTdhYjA0ZmYxMzVmMDNmYjg4OGNkMzRjNjNmMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjJiOWQyNDhjNzUyNDZmNjVlMjU0NDI3Nzg5MjZhNmM0ZTVhZTUxNmIyNjA3OGNhNzU5YjEyMTgxNGUzZDFlNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjE5MWNjMDlmNTkyY2JlYTJhOTEyZDQ5N2FlZjgwMTBiZDZlN2Q2ZWY2NGE2NDUyYWRmOTM5YjBiMTgyOGMwNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTBmMGIwMDQ0NTQ0OWM4NTI5MmVlMTNlYTYyM2JjMDIyOWU0ZThkNWU2NWI0ZTU3MWQ4M2EyY2IyYzM2MDgxMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_dfc05a87c69440818e9e057ba03e3c42",
+      "statement": "bun run check enforces the dependency rule executably: scripts/check-architecture.ts forbids application/adapters/composition/tauri:: imports in Rust domain, adapters/composition/tauri:: imports in Rust application, inbound↔outbound adapter imports, and the TS mirror (src/domain may not import application/ui/adapters; src/application and src/ui may not import ../adapters/ or @tauri-apps/), plus framework locality — #[tauri::command] only in adapters/inbound/tauri.rs, generate_handler!/.manage(/.plugin( only in composition.rs, and tokio::process/nix:: primitives only in the process adapter.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/check-architecture.ts#L14-L118",
+          "version": "repo-lines-v1:sha256:c98379ed6ca9a8ca399555e94fc608eea0ad872203b9a79f687cd45376563466:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4OGM2NDVjMzExOTAzYjRjZjlkMTZhY2QwOTRkYmMyNmI3ODFlMjE1M2MyN2QxYmEzYzM2NTJiNDdkYTE4YmM5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjNTY3ZTA5ZjMyYzUxMDZkMDQzNTk5MzA2MWMyYzA5NGUyZjRiYzU1YWMxNzkwNTVhZTczMjMyZDFlNjIxMTQwIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhODQ2ZGIzOGEzMmYxMjU4Yjc4YmYyOGM1MjNlM2E4MzNjNjg0MDQzMzBjM2Q2ZmNkOWE5M2ZhMzM2ZjY3YjUwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiYzM2ZDlkNDUxYjllNDQ2M2MyN2E3OTE4YzkxYmRkZDE1ODNkZjg3MjNmZDY2NzlkNGUzMDhjMzYxNGMxODNjIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_384b5b61cd5e4c43b09f47e0c608dcbe",
+      "statement": "src-tauri/src/composition.rs::run is the single wiring point: it constructs TauriEvents, DesktopAdapter (implementing five ports), NativeRecorder, and LocalSettingsStore, hands them to Application::new as Arc<dyn Trait> ports, and registers the seventeen Tauri IPC commands.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/composition.rs#L13-L58",
+          "version": "repo-lines-v1:sha256:be55f3cd6a97b2870d199ae56ba882d0a9ef672930a67b53582fb7ddb8f64fdf:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5YTQ3MDBkMzEyMmE3ZGIyZjIxMGVlZjRlOTMxNmQyZDVmZmQwNDkzMjhlZTllMDYyMTk4ZTJjOTkxNzgyNTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyNzZjMWQxZjk3ODVlNTU2MGQwYmI1Zjc5YzJlOTc5OTk3YjcwY2RlZDFmM2I2OGVlYjBjZDE5MTBhZTIyN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5MWU0M2Y1ZWE0ZGMwOGQzMTI5YjY2ZDRmNGI2M2IwYWFkOTBiNzVlNjBkMmYxNWY2YjMwMTY5N2QyNTAyZTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEyZjc1YzQyZGI3Y2RjYjBiNTEwMzdiZGIwNDg5NWUxMjRlMGFiMGJhMGIyM2NlYzY0ZjdhNGY5NzM1MTI5OGYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6a6b5ad0a0f04f9abd68d4c4e9ca8e17",
+      "statement": "node_modules, dist, src-tauri/target, src-tauri/resources/worker, and src-tauri/binaries are generated trees, not source: tooling produces them on every dev/build run, and edits belong in src/, worker/, and src-tauri/src/ with staging copying them onward.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L113-L114",
+          "version": "repo-lines-v1:sha256:f78c01b74060c8d6c80ab4dc86a6b993e44b048a3c6f0f00f9561db0bb512dd1:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTE4YmQyYTkxODE4ZTcwYzM0MDZhOWUxMDY0NmQ4OTkwMzcyMDg4YmQxNjlkMDNjYTc1ZWNlNDdkYzRjN2Q3ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTMxMmQ2MjJmNzdiMTc4NGZjMzU1YzAyYWExNGI1M2Q5NjhjOWVjMDcyMTA1MTA4YTNkOGVmZjdiYjcxYWQ5MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTFhYzY5Mjk1ZDk0YjEwOTgyMzlmMmNmYmQ1MDk2NDQ1Nzk0Nzk5OTI3NDA4ZGM2NzljZGE3MTA2NGEwYzliYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmJiNjIwZTMxZjFjZDMwNzhiOWExYWQ3YTAyOWZjZjQ2NmZlOTIxODkyYmUyMTViMjI5MmYzZmFkNWQxNjMwMSJ9"
+        },
+        {
+          "resource": "repo://AGENTS.md#L33-L34",
+          "version": "repo-lines-v1:sha256:e155ed48851061d0f09cdb18baf6122b1a2510b9b4fc3110849d6b33169e10d3:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmJlZmQwZWNiOTQ1YmRjZDEwNjE4ZmZiZDRlODY1OTZiNmE1OGNjZjE1NDgyNDlmYTIzMjZkOWZlYTU0NGQ0MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2FkMDA2Nzc4ZDZiMTZkYTkyZTVmMDZkZjYxZDdlMDJiZjJjNDA0NjUwYzcyZjJjNDgxODZkY2RmYTNlYThiZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGY3MjBhYzNmZDgyNzM1MDgwNmQyZjVlNmY3MzFmZjA5MTk0OTgxZmNmZDcyNTU2ZjAwZTczN2E4YjJkNTZkMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjJmODU3MjZjZWU0MTg4OGUyYTA1NmE4NzMzZDhkMGFlYzc2YjAxNzA4NWE4YzkxYmZjOWRhMzc1ZjJlY2RiOSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-05T11:36:27.677Z"
+  }
+}

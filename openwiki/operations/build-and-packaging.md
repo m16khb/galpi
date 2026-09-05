@@ -3,9 +3,6 @@ type: operations
 title: Build, Staging & Packaging
 description: The Bun/Tauri build pipeline for Galpi — checksum-verified staging of the uv sidecar and Python worker, Tauri bundle configuration, custom hdiutil DMG assembly, the tag-triggered release workflow with optional signing and notarization, and the build-time requirements fingerprint that invalidates installed engines.
 tags: [build, packaging, release, tauri, dmg, staging, sidecars, uv, codesign, notarization, ci, arm64, fingerprint, vite]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
 sources:
   - id: openwiki-source-164e2da859b5277df81c7d94
     resource: repo://.github/workflows/ci.yml
@@ -39,7 +36,10 @@ sources:
     resource: repo://src-tauri/tauri.conf.json
   - id: openwiki-source-5e1b077422a94ae165e88e4e
     resource: repo://vite.config.ts
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
+verified:
+  - by: openwiki/0.4.3
+    at: 2026-09-05T11:36:27.677Z
 ---
 
 # Build, Staging & Packaging
@@ -302,10 +302,11 @@ builds exercise exactly what `stage-sidecars.ts` staged.
   `strip = true`. `panic` stays at the default unwind on purpose: aborting
   would turn a panic in the audio writer thread into a lost recording instead
   of a failed one.
-- **Generated trees are not source.** `dist/`, `src-tauri/target/`,
-  `src-tauri/gen/`, `src-tauri/binaries/`, and `src-tauri/resources/worker/`
-  are gitignored; only `worker/`, `tauri.conf.json`, `build.rs`, and the
-  scripts are edited by hand.
+- **Generated trees are not source.** `node_modules/`, `dist/`,
+  `src-tauri/target/`, `src-tauri/gen/`, `src-tauri/binaries/`, and
+  `src-tauri/resources/worker/` are all gitignored; CI and the dev scripts
+  recreate them. Only `worker/`, `tauri.conf.json`, `build.rs`, and the scripts
+  are edited by hand.
 
 ## Bundle metadata
 

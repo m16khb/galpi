@@ -3,10 +3,9 @@ type: architecture
 title: Worker Protocol & Process Supervision
 description: The versioned JSONL contract between the Python worker and the Rust host — the {v, seq, type} envelope and its six event types — the four coupled definitions that must change in one commit, and the run_process supervisor that parses bounded lines, batches stderr, and escalates cancellation SIGTERM → 3 s → SIGKILL.
 tags: [protocol, jsonl, worker, process-supervision, cancellation, ipc, events, rust, python, typescript]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
 sources:
+  - id: openwiki-source-8037e2358a2c4f9b2c722a11
+    resource: repo://AGENTS.md
   - id: openwiki-source-e8e61d605125cac4d909755e
     resource: repo://docs/ARCHITECTURE.md
   - id: openwiki-source-e5b806f9954c297311c26a18
@@ -67,7 +66,10 @@ sources:
     resource: repo://worker/galpi_worker/refine.py
   - id: openwiki-source-e549b3da4bf33233af9b0421
     resource: repo://worker/tests/test_core.py
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
+verified:
+  - by: openwiki/0.4.3
+    at: 2026-09-05T11:36:27.677Z
 ---
 
 # Worker Protocol & Process Supervision
@@ -88,9 +90,9 @@ The supervision half of this page is
 where a child process is spawned, read, and killed. The worker's internal
 pipeline is covered in [python worker](python-worker.md), the host's layers in
 [rust host](rust-host.md), job lifecycle semantics in
-[jobs and cancellation](../concepts/jobs-and-cancellation.md), and the end-to-end
-<!-- openwiki: broken internal link [../workflows/transcription.md] file "../workflows/transcription.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-transcription flow in [transcription](../workflows/transcription.md).
+[jobs and cancellation](../concepts/jobs-and-cancellation.md), the prepare flow
+in [engine setup](../workflows/engine-setup.md), and the refine flow in
+[AI minutes](../workflows/ai-minutes.md).
 
 ## The envelope and its four coupled definitions
 
@@ -119,16 +121,18 @@ The six event types and where each is produced:
 | `prepared` | `engine_version` | `preparation.py` after model warm-up |
 | `refined` | `minutes` | `refine.py` after minutes are written |
 | `error` | `code`, `message` | `EventWriter.fail` on any abnormal exit |
-| `log` | `stream`, `message` | `EventWriter.log` (worker diagnostics) and the host's stderr batching |
+| `log` | `stream`, `message` | `EventWriter.log` (`stream: "worker"`), the host's stderr batching, and non-protocol stdout lines (`stream: "stdout"`) |
 
 **The change-set rule.** These four files form one contract and one commit:
 `worker/galpi_worker/protocol.py` ↔ `src-tauri/src/domain/worker.rs` ↔
 `src/domain/job.ts` plus the Zod schemas ↔ `src/application/job-machine.ts`.
 Changing a protocol version, event, or field in the Python side alone leaves the
 host unable to parse the stream and the UI unable to render it; `docs/ARCHITECTURE.md`
-§7 makes the single-commit rule mandatory, and the Rust `match` on `WorkerEvent`
-turns a missed variant into a compile error on the host side. The same rule
-extends to the emit sites listed above: a new payload field must appear in the
+§7 makes the single-commit rule mandatory. The Rust side has two safety nets: a
+deserialization failure of an unexpected shape fails the run as
+`ProtocolError::InvalidJson`, and a changed enum variant breaks every
+non-wildcard `match` over `WorkerEvent` at compile time. The same rule extends
+to the emit sites listed above: a new payload field must appear in the
 `events.emit(...)` call, the Rust enum variant, the TS union member, its Zod
 schema, and the reducer in the same change.
 
@@ -167,9 +171,11 @@ host, and the architecture fence enforces that: `scripts/check-architecture.ts`
 fails the build if `tokio::process` or `nix::` primitives appear outside
 `process.rs` and its `process/` submodule. The spawn is hardened by contract:
 
-- `env_clear()` plus the explicit environment built by `environment.rs` — the
-  child never inherits the parent's environment, and no caller adds ad hoc
-  variables at the spawn site.
+- `env_clear()` plus the explicit environment the caller builds —
+  `process_environment` in `environment.rs`, extended per run where a step needs
+  it (the Qwen3 transcription pass adds the Hugging Face offline flags). The
+  child never inherits the parent's environment, and `run_process` itself adds
+  nothing.
 - `stdin(Stdio::null())`, piped stdout and stderr.
 - `kill_on_drop(true)` on the tokio child.
 - `process_group(0)` on Unix, putting the child in its own process group so
@@ -294,13 +300,19 @@ sequenceDiagram
     RDC->>RDC: reduceJobEvent
     WRK->>EVT: emit completed with srt txt checkpoint counts
     EVT-->>SUP: completed JSONL line
+    SUP->>SUP: capture terminal event into ProcessResult
     SUP-->>ADP: ProcessResult completed
-    ADP-->>APP: artifacts canonicalized inside job directory
+    ADP->>ADP: canonicalize artifacts inside job directory
+    ADP-->>APP: CompletedTranscription
+    APP->>APP: JobRegistry.register artifacts
+    APP-->>APP: invoke resolves TranscriptionResult
 ```
 
-*One transcribe run: the same oneshot that `cancel_job` fires is selected inside
-`run_process`, and each worker event crosses three language boundaries (JSONL →
-Rust enum → Tauri payload → TS union) before it changes UI state.*
+*One transcribe run: the worker's phase events stream to the webview while the
+run is still going, the `completed` line is captured as the run result and
+canonicalized, and only after `JobRegistry.register` does the original invoke
+resolve. Every event crosses three language boundaries (JSONL → Rust enum →
+Tauri payload → TS union) before it changes UI state.*
 
 ## Delivery to the webview
 
@@ -311,6 +323,13 @@ call `emit(job_id, event)`; the single `TauriEvents` instance in
 under a camelCase job id. The composition root hands the same instance to
 `DesktopAdapter` (as `JobEvents`) and to `NativeRecorder` (as
 `RecordingEvents`), so no other component emits to the webview.
+
+Subscription ordering is part of the contract: AGENTS.md states that a frontend
+must subscribe to Tauri events before invoking the operation that emits them,
+because Tauri does not replay an event published before its listener existed.
+`AppController.start` follows it — controls bind, `listenToJobs` and
+`listenToRecordingFailures` are awaited, and only then does the first
+`diagnose` fire.
 
 On the frontend, `TauriBackend.listenToJobs` pipes every payload through
 `toJobEvent`, which validates it against `rawJobEventSchema` — a Zod
@@ -355,8 +374,10 @@ three lists are empty, `AsrContext::new` returns `None` and nothing is sent.
 wire contract with `parse_asr_context` in `worker/galpi_worker/core.py`, which
 reads exactly those keys, trims entries, drops non-string and blank entries,
 treats missing keys as empty lists, and raises `TypeError` for a non-object
-payload or a non-array value. The Rust-side test pins the serialization against
-the same keys the worker parses.
+payload or a non-array value. This is the fifth coupled pair with the same
+one-commit discipline as the event protocol: moving or renaming a key in
+`into_wire_json` means changing `parse_asr_context` in the same change, and the
+Rust-side test pins the serialization against the same keys the worker parses.
 
 The JSON string is handed to the worker through a private temporary file, not
 the argument vector or the protocol: the transcription adapter calls
@@ -407,6 +428,7 @@ roster reach the worker as context, and nothing is sent when both are empty.
   `JobRegistry` that owns the cancel oneshot.
 - [Jobs and cancellation](../concepts/jobs-and-cancellation.md) — job lifecycle
   semantics in depth.
-<!-- openwiki: broken internal link [../workflows/transcription.md] file "../workflows/transcription.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-- [Transcription workflow](../workflows/transcription.md) — the full run from
-  audio pick to artifacts.
+- [Workflow: Engine Setup & First Run](../workflows/engine-setup.md) — the
+  prepare job whose uv installs and model downloads flow through this protocol.
+- [Workflow: AI Meeting Minutes (Refine)](../workflows/ai-minutes.md) — the
+  refine job, its private context files, and the terminal `refined` event.

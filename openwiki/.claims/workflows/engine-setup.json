@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8d18100c277ca0c522f2d5c5bccce8b756924d10962e72f2385cc1acd27dc56b",
+  "pageVersion": "sha256:3bd811ad3c7b2230aae1509d2bddd8e4181683804f906950d2cae90aaefa486f",
   "claims": [
     {
       "id": "claim_ae597cba0745489983bb7495a8096a51",
@@ -397,10 +397,24 @@
           "version": "repo-lines-v1:sha256:2cef552e2a805dc8b880f4506a1def949fc4398a7f2a5e14051c48e4b2996825:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhMzRlN2UzZDJlNTJiZmY1NjliNDYyZjJiMmFjNTEyZjA4NWVmYjQyN2RhOGJkNTNlMDA1NTQ1MGI5MWQzYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODBiNzY1MThkYWU5NzlmYWViZDAyMzY3YTI5MjkyYTUwZDk3NjA5MjI1MWEzOGE2Y2UzMDg4MGJhNDI4MjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyZmJlZDU4ZTk4MzQ1YzZhMThjYTJiZTI1YmYwZDlmMWZlNzhhZmQ5NzY0NzljYmU0ZWY5ZjcxZmE4ZGMyNTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_f505e0c6df7a44b6a6ceaf1440d8d91c",
+      "statement": "The Qwen3 preset's first-run download is about 6.6 GB of ASR and aligner models in total per the README troubleshooting table — the operational figure behind the worker's concurrent two-snapshot fetch and the retry guidance for interrupted installs.",
+      "evidence": [
+        {
+          "resource": "repo://README.en.md#L250-L263",
+          "version": "repo-lines-v1:sha256:ab6f22b2e2c0e1d71e22c7ef33b1f1622179f9b25742404c38bf81d8c2798d6f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMDgyYWMyNGU4ODk1ZDliZjMyZDkwODkxNTM1ZWY1OWNjMWJmNDNkYTBmNjE4NDU4MzAyZmQxMzJhNDhiMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NjUyZWM3ZDkwOWQ3ZDgxNzZhMGE4ZDQ1Y2I2OTZiNDYzNmI1NjkzMTIzMGQ1NTQwYzVmMDM4NjZlNTIxYTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlOWVhMDMyNjU3NzUwOWRiMzBjMzE3M2QyOTBhZDFhMjVmMGFkZDhhMmZiNTgzZWU1Y2MyNmU2OTQwYTgwY2YifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/preparation.py#L34-L42",
+          "version": "repo-lines-v1:sha256:4c8137a1591eb6e42c5cb5f3cf164e553793aa1b3281229c169ccf847abfd3fc:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGU4OGRmYzM5MmNlNDkwZDM3OTcwZjY5YzYyNmVmZmMwZWQyZDMzNmE3N2YwZTM5ODY0NTM1MGM3ZjM4MDBjYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTgyMTYyNWExODVlZTFjM2VkYWZiOTM1MzljMmE1YWJlMjczYTM2MGQ3ZWJiZDg5YzAyZTRmOGNiMWQyNzY2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzYxNDZjY2U5OGU4YzhjZGY1ZmY3NjEzOGQ2MDU2ZDcwOWE3NTJlM2VmOWYwNmU1ZjdiYTE2Y2VkZDk4NzY3MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGU1OWIyODgwNGIyNzZmZGU0NjQ2N2MxNThmMDA2ZWMzODJmNmFlMDlkNmZmMmQ4Y2I1NWUwN2M5MjVmODZlYiJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.4.3",
-    "at": "2026-08-29T12:09:06.549Z"
+    "at": "2026-09-05T11:36:27.677Z"
   }
 }

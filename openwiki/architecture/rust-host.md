@@ -1,11 +1,8 @@
 ---
 type: architecture
 title: Rust Host Architecture (Tauri)
-description: The Tauri host's hexagonal layers — framework-free domain value objects and worker-protocol parser, the Application facade composing seven ports with the JobRegistry single-job slot, and the inbound command surface plus outbound DesktopAdapter/NativeRecorder/settings wiring in composition.rs.
+description: The Tauri host's hexagonal layers — framework-free domain value objects and worker-protocol parser, the Application facade composing its seven capability ports (nine traits in ports.rs) with the JobRegistry single-job slot, and the seventeen-command inbound surface plus outbound DesktopAdapter/NativeRecorder/settings wiring in composition.rs.
 tags: [rust, tauri, hexagonal-architecture, ports-and-adapters, ddd, ipc, jobs, cancellation, macos]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
 sources:
   - id: openwiki-source-e8e61d605125cac4d909755e
     resource: repo://docs/ARCHITECTURE.md
@@ -73,9 +70,14 @@ sources:
     resource: repo://src-tauri/src/lib.rs
   - id: openwiki-source-99b0214e9f2113a0f6a2cf92
     resource: repo://src-tauri/src/main.rs
+  - id: openwiki-source-b4f288d4cce4fd187da94b04
+    resource: repo://src/adapters/tauri-backend.ts
   - id: openwiki-source-fba06fdd162d496a287ca37b
     resource: repo://src/domain/backend.ts
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
+verified:
+  - by: openwiki/0.4.3
+    at: 2026-09-05T11:36:27.677Z
 ---
 
 # Rust Host Architecture (Tauri)
@@ -94,18 +96,18 @@ The webview counterpart of this boundary is covered in
 [frontend](frontend.md); the supervised sidecar is covered in
 [python worker](python-worker.md) and [worker protocol](worker-protocol.md);
 job lifecycle semantics are elaborated in
-[jobs and cancellation](../concepts/jobs-and-cancellation.md) and the roster
-value objects in
-<!-- openwiki: broken internal link [../concepts/roster-and-assistant-settings.md] file "../concepts/roster-and-assistant-settings.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-[roster and assistant settings](../concepts/roster-and-assistant-settings.md).
+[jobs and cancellation](../concepts/jobs-and-cancellation.md), and the
+settings-and-secrets story (what is stored where, and why the key is not just
+another settings field) continues in
+[settings and secrets](../concepts/settings-and-secrets.md).
 
 ## Layer map and the dependency fence
 
 | Layer | Location | Contents |
 |---|---|---|
 | domain | `src-tauri/src/domain/` | Request types and `validate_speaker_hint` (`job.rs`), `Artifacts` aggregate + `minutes_path` (`artifact.rs`), `EnginePreset` (`engine.rs`), roster value objects with trimming rules (`roster.rs`), worker protocol parser and `AsrContext` (`worker.rs`) |
-| application | `src-tauri/src/application/` | Seven capability ports plus two event ports (`ports.rs`), `Application` facade (`use_cases.rs`), `JobRegistry` (`jobs.rs`), `AppError` (`error.rs`), serialization DTOs only (`model.rs`), port-fake test suite (`tests.rs`) |
-| inbound adapter | `src-tauri/src/adapters/inbound/tauri.rs` | All 16 `#[tauri::command]`s and the `TauriEvents` bridge for `job-event` / `recording-event` |
+| application | `src-tauri/src/application/` | Nine port traits plus the `RefinementJob` parameter struct (`ports.rs`), `Application` facade (`use_cases.rs`), `JobRegistry` (`jobs.rs`), `AppError` (`error.rs`), serialization DTOs only (`model.rs`), port-fake test suite (`tests.rs`) |
+| inbound adapter | `src-tauri/src/adapters/inbound/tauri.rs` | All 17 `#[tauri::command]`s and the `TauriEvents` bridge for `job-event` / `recording-event` |
 | outbound adapters | `src-tauri/src/adapters/outbound/` | `DesktopAdapter`, `NativeRecorder` (CPAL), `LocalSettingsStore`, the `process.rs` supervisor, setup/transcription/refinement/import modules, readiness and path policy |
 | composition root | `src-tauri/src/composition.rs` | The only place concrete wiring, `.manage`, `.plugin`, and `generate_handler!` live |
 
@@ -123,7 +125,7 @@ layering changes that cannot pass it are not safe.
 
 ```mermaid
 flowchart TD
-    FE["TauriBackend - frontend adapter"] -->|"invoke, camelCase JSON"| CMD["inbound tauri.rs - 16 commands"]
+    FE["TauriBackend - frontend adapter"] -->|"invoke, camelCase JSON"| CMD["inbound tauri.rs - 17 commands"]
     CMD --> APP["Application facade - use_cases.rs"]
     APP --> JOBS["JobRegistry - jobs.rs"]
     APP -->|"Arc dyn ports"| DA["DesktopAdapter"]
@@ -143,15 +145,15 @@ inbound adapter, events leave through `JobEvents`/`RecordingEvents`, and only
 
 ## The Application facade: one method per user intent
 
-`Application` (`application/use_cases.rs`) holds seven `Arc<dyn ...>` port
-fields — `EnginePort`, `TranscriptionPort`, `TranscriptImportPort`,
+`Application` (`application/use_cases.rs`) holds the seven capability ports as
+`Arc<dyn ...>` fields — `EnginePort`, `TranscriptionPort`, `TranscriptImportPort`,
 `ArtifactPort`, `RecordingPort`, `SettingsPort`, `RefinementPort` — plus two
 pieces of state it owns outright: the `JobRegistry` slot and an
 `active_recording: tokio::sync::Mutex<Option<Uuid>>`. Every public method is
 one user intent and nothing more; larger intents (transcribe, refine) are
 compositions of port calls ordered by the use case, not by the adapters.
 
-The inbound adapter maps the IPC surface 1:1 onto these methods. All sixteen
+The inbound adapter maps the IPC surface 1:1 onto these methods. All seventeen
 commands are thin: deserialize the camelCase payload, call `Application`,
 return the mapped error.
 
@@ -162,7 +164,8 @@ return the mapped error.
 | `hugging_face_token_stored` | `hugging_face_token_stored` | boolean probe; the value never leaves the host |
 | `save_hugging_face_token` | `save_hugging_face_token` | trims; an all-whitespace token clears the secret |
 | `load_assistant_settings` | `load_assistant_settings` | settings without the API key value |
-| `save_assistant_settings` | `save_assistant_settings` | persists `AssistantSettings::trimmed()` |
+| `save_assistant_api_key` | `save_assistant_api_key` | trims; an all-whitespace key clears the secret |
+| `save_assistant_settings` | `save_assistant_settings` | persists `AssistantSettings::trimmed()`, never touching the key |
 | `save_engine_preset` | `save_engine_preset` | settings write |
 | `start_transcription` | `transcribe` | hint validation, readiness gate, job claim, worker run, artifact registration |
 | `import_transcript` | `import_transcript` | job claim, file copy into a meeting folder, artifact registration |
@@ -179,7 +182,7 @@ The mirror of this surface on the frontend side is `BackendPort` in
 frontend-local capabilities like file dialogs); the Tauri adapter implements it
 with Zod parsing at the edge. Adding a command therefore spans one change set:
 the `#[tauri::command]` in `tauri.rs`, the `generate_handler!` entry in
-`composition.rs`, a `BackendPort` method, a Zod schema in
+`composition.rs`, a `BackendPort` method, a Zod schema (or invoke call) in
 `src/adapters/tauri-backend.ts`, and — if the table above grows — a row in
 `docs/ARCHITECTURE.md` §2.
 
@@ -237,9 +240,9 @@ sequenceDiagram
     end
 ```
 
-*Transcription end to end: validation and the readiness gate run before the slot
-is claimed and the worker is spawned; cancellation interrupts the supervisor's
-select loop rather than polling a flag.*
+*Transcription end to end: hint validation precedes the claim, the readiness
+gate runs between the claim and the worker spawn, and cancellation interrupts
+the supervisor's select loop rather than polling a flag.*
 
 Cancellation crosses the application boundary synchronously:
 `Application::cancel` just forwards to `JobRegistry::cancel`. The wait happens
@@ -409,8 +412,13 @@ app data directory. It keeps two invariants that matter:
   a settings file's existence means "the user changed something".
 
 The store deliberately returns assistant settings *without* the API key value —
-`load_assistant` fills `api_key: None` and only the boolean `api_key_stored`;
-the key is read by `load_assistant_api_key` exactly when refinement needs it.
+`load_assistant` fills `api_key: None` and only the boolean `api_key_stored`,
+composing that flag from the keychain-derived secret state with the file's
+plain fields; the key itself is read by `load_assistant_api_key` exactly when
+refinement needs it. Writing goes the other way: `save_assistant` never
+touches the key — `save_assistant_api_key` is its only entry point, and the
+settings sheet autosaves the whole document on every keystroke, so a key
+carried in that payload would be one absent field away from being erased.
 Both secrets (Hugging Face token, assistant key) flow through the `SecretStore`
 trait. Production currently wires `SettingsFile` — plaintext inside
 `settings.json` — because macOS ties Keychain items to the code signature that
@@ -436,7 +444,7 @@ are ignored, and every failure path removes the partial file.
 
 ## The inbound adapter and the event bridge
 
-`adapters/inbound/tauri.rs` holds all sixteen commands (thin wrappers, no
+`adapters/inbound/tauri.rs` holds all seventeen commands (thin wrappers, no
 logic) and `TauriEvents`, the one bridge to the webview. A single
 `TauriEvents` instance implements both event ports: `JobEvents::emit` publishes
 a `job-event` whose payload is `{ jobId, ...workerEvent }` (the domain event
@@ -454,7 +462,7 @@ it to the app twice (as `Arc<dyn JobEvents>` and `Arc<dyn RecordingEvents>`),
 constructs `DesktopAdapter` and clones it into five port trait objects,
 wraps `NativeRecorder` and `LocalSettingsStore` behind their ports, and
 `app.manage`s the assembled `Application`. The `invoke_handler` lists the
-sixteen commands. A failed `run` prints and exits with status 1 — there is no
+seventeen commands. A failed `run` prints and exits with status 1 — there is no
 UI to show an error in. Two build-level facts back this up: Cargo lints deny
 `unwrap_used` / `expect_used` / `panic` across the crate, and the release
 profile deliberately keeps `panic = "unwind"` so a panic in the audio writer

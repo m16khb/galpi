@@ -3,9 +3,6 @@ type: architecture
 title: Python Worker Architecture
 description: The bundled transcription/minutes sidecar — CLI surface and exit contract, the stdout protocol and ML-free purity boundary, Qwen3 vs WhisperX engine dispatch with the deliberate CPU-ASR/MPS-alignment device policy, atomic artifact publication, and the prepare/refine pipelines.
 tags: [python, worker, sidecar, transcription, whisperx, qwen3, mlx, diarization, purity, protocol, atomic-writes]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -63,7 +60,10 @@ sources:
     resource: repo://worker/tests/test_core.py
   - id: openwiki-source-e82676118198cdf74313a8e0
     resource: repo://worker/tests/test_qwen3.py
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
+verified:
+  - by: openwiki/0.4.3
+    at: 2026-09-05T11:36:27.677Z
 ---
 
 # Python Worker Architecture
@@ -82,8 +82,8 @@ installed.
 The host-facing protocol (event envelope, sequencing, cancellation) is
 documented in [worker-protocol](worker-protocol.md); this page covers the
 worker's own architecture. Engine selection and the two runtime environments
-<!-- openwiki: broken internal link [engines-and-environment.md] file "engines-and-environment.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-are covered in [engines and environment](engines-and-environment.md).
+are covered in
+[engines and environment](../concepts/engines-and-environment.md).
 
 ## Role and supervision boundary
 
@@ -149,9 +149,8 @@ Two mechanisms keep dependency noise off the protocol stream:
 
 The standing rule: no `print`, progress bar, or logging handler on stdout
 outside `EventWriter`. Related pages: [worker protocol](worker-protocol.md)
-<!-- openwiki: broken internal link [verification-gates.md] file "verification-gates.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-consumes this stream; [verification gates](verification-gates.md) runs the
-tests that enforce it.
+consumes this stream; [verification gates](../testing/verification-gates.md)
+runs the tests that enforce it.
 
 ## The purity boundary
 
@@ -435,11 +434,16 @@ Refinement routing: single pass up to the proven 48,000-character limit, map/red
 `assistant_stream.py` implements OpenAI-compatible streaming chat completions
 with stdlib `urllib` — no SDK. The base URL comes from
 `GALPI_ASSISTANT_BASE_URL` (default `https://api.z.ai/api/coding/paas/v4`),
-the model defaults to `glm-5.3`, and `GALPI_ASSISTANT_REASONING_EFFORT` is
-included in the request body only when set to a known effort, so other
-providers see a clean OpenAI-compatible body. GLM models on the default
-endpoint get 131,072 max output tokens (the z.ai budget covers reasoning plus
-the document); everything else gets 32,768. Temperature is fixed at 0.2.
+the model defaults to `glm-5.3-flash` (the host passes `--model` when the
+user chose an assistant model, and the CLI default is this constant), and
+`GALPI_ASSISTANT_REASONING_EFFORT` is included in the request body only when
+set to a known effort (`low`/`medium`/`high`/`max`), so other providers see a
+clean OpenAI-compatible body. GLM models on the default endpoint get 131,072
+max output tokens (the z.ai budget covers reasoning plus the document);
+everything else gets 32,768. Temperature is fixed at 0.2, and each request
+times out after 600 seconds. Streaming progress is throttled: a `phase` event
+fires at most every 1.5 seconds or every 4,096 accumulated characters,
+whichever comes first.
 
 The SSE consumer distinguishes `content` from `reasoning_content`: while only
 reasoning has arrived, the progress message reports the live reasoning length
@@ -461,8 +465,7 @@ their titles with "해당 없음", sensitive strings are masked, and speaker lab
 are never promoted to real names without evidence. Both the single-pass prompt
 and the reduce prompt use this structure, which is what keeps short and long
 meetings' minutes interchangeable downstream. See
-<!-- openwiki: broken internal link [ai-minutes.md] file "ai-minutes.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-[AI minutes](ai-minutes.md) for the product workflow around it.
+[AI minutes](../workflows/ai-minutes.md) for the product workflow around it.
 
 ## Failure semantics across the boundary
 
@@ -494,10 +497,12 @@ host builds:
   the worker root with `PYTHONSAFEPATH=1`.
 
 Dependency pins live in two files, one per virtualenv: `requirements.txt`
-(WhisperX 3.8.6, torch 2.8.0, pyannote.audio 4.0.7, imageio-ffmpeg 0.6.0) and
-`requirements-qwen3.txt` (`mlx-qwen3-asr[aligner]` 0.3.5, mlx 0.32.1, torch
-kept only because pyannote imports torchaudio at module scope). Each has a
-resolved `.lock` the app installs from, regenerated with `uv pip compile`.
+(WhisperX 3.8.6, torch 2.8.0, torchaudio 2.8.0, pyannote.audio 4.0.7,
+imageio-ffmpeg 0.6.0) and `requirements-qwen3.txt` (`mlx-qwen3-asr[aligner]`
+0.3.5, mlx 0.32.1, torch 2.8.0, torchaudio kept only because pyannote imports
+it at module scope — Galpi never calls it, its wave-based IO replaces it —
+plus pyannote.audio 4.0.7 and imageio-ffmpeg 0.6.0). Each has a resolved
+`.lock` the app installs from, regenerated with `uv pip compile`.
 
 ## Focused tests
 
@@ -524,7 +529,7 @@ actually matter:
 Everything that requires the ML stack — actual model loads, real ASR quality,
 diarization behavior — is deliberately outside this suite; it is verified by
 running the product against real recordings (see
-<!-- openwiki: broken internal link [transcription.md] file "transcription.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-[transcription](transcription.md) and
-<!-- openwiki: broken internal link [verification-gates.md] file "verification-gates.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-[verification gates](verification-gates.md)).
+[verification gates](../testing/verification-gates.md) for what CI does
+cover).
+es
+cover).
