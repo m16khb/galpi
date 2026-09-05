@@ -13,7 +13,7 @@ This project-specific constitution should be read at session start. Follow the g
 
 1. Latest explicit user/system instructions
 2. Current repo AGENTS.md or a nearer nested AGENTS.md
-3. .agent-harness/*.md
+3. .issueops/*.md
 4. Current files and command output
 
 ## Normative project documents (rank by topic)

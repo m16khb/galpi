@@ -151,22 +151,22 @@ bun run build
 - Worker protocol, Rust parser, frontend event schema, and job reducer form one change set.
 
 <!-- AGENT_HARNESS:START -->
-## agent-harness project docs
+## issueops project docs
 
-This repository uses agent-harness project docs. Read existing AGENTS.md rules first, then read only the additional documents relevant to the task.
+This repository uses issueops project docs. Read existing AGENTS.md rules first, then read only the additional documents relevant to the task.
 
-- Architecture or large design changes: .agent-harness/ARCHITECTURE.md, .agent-harness/CONSTITUTION.md
-- Testing or verification changes: .agent-harness/TESTING.md
-- Endpoint/DTO/OpenAPI changes: .agent-harness/OPEN_API_SPEC.md
-- Commit or PR work: .agent-harness/COMMIT_POLICY.md
-- Code style or structure changes: .agent-harness/CONVENTIONS.md
-- Dependency or tech-stack changes: .agent-harness/TECH_STACK.md
-- Run, deploy, environment, or local development: .agent-harness/OPERATIONS.md
-- Agent start, verification, and completion workflow: .agent-harness/AGENT_WORKFLOW.md
-- Risky or recurring-failure work: .agent-harness/CAUTIONS.md
-- Structural rationale, alternatives, and decisions: .agent-harness/ADR.md
-- Session start, instruction conflicts, and principle decisions: .agent-harness/CONSTITUTION.md
-- UI, styling, or design-system changes: .agent-harness/DESIGN.md (client repositories only)
+- Architecture or large design changes: .issueops/ARCHITECTURE.md, .issueops/CONSTITUTION.md
+- Testing or verification changes: .issueops/TESTING.md
+- Endpoint/DTO/OpenAPI changes: .issueops/OPEN_API_SPEC.md
+- Commit or PR work: .issueops/COMMIT_POLICY.md
+- Code style or structure changes: .issueops/CONVENTIONS.md
+- Dependency or tech-stack changes: .issueops/TECH_STACK.md
+- Run, deploy, environment, or local development: .issueops/OPERATIONS.md
+- Agent start, verification, and completion workflow: .issueops/AGENT_WORKFLOW.md
+- Risky or recurring-failure work: .issueops/CAUTIONS.md
+- Structural rationale, alternatives, and decisions: .issueops/ADR.md
+- Session start, instruction conflicts, and principle decisions: .issueops/CONSTITUTION.md
+- UI, styling, or design-system changes: .issueops/DESIGN.md (client repositories only)
 <!-- AGENT_HARNESS:END -->
 
 <!-- OPENWIKI:START -->

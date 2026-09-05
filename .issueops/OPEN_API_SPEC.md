@@ -24,10 +24,10 @@ OpenAPI gates below apply only if an HTTP API is introduced later.
 
 ## Gate order (future HTTP APIs)
 
-1. Static gate: `agent-harness api-doc static-check --json`
-2. Agent gate prompt/schema: `agent-harness api-doc review --json`
-3. Agent gate evidence: `agent-harness api-doc review --result FILE --json`
-4. Combined gate with evidence: `agent-harness api-doc check --result FILE --json`
+1. Static gate: `issueops api-doc static-check --json`
+2. Agent gate prompt/schema: `issueops api-doc review --json`
+3. Agent gate evidence: `issueops api-doc review --result FILE --json`
+4. Combined gate with evidence: `issueops api-doc check --result FILE --json`
 
 Default scope is staged API candidate files. Scan all legacy debt only when
 `--all` is explicitly supplied.

@@ -11,6 +11,6 @@ Test strategy and verification gates. This root is the family index; focused det
 
 ## Appending knowledge
 
-- Append new dated records with MCP `project_docs_append` or `agent-harness project append`.
+- Append new dated records with MCP `project_docs_append` or `issueops project append`.
 - Records are written as one file per record inside the module directory, so this index stays small.
 - Revise this index only to add links to new curated modules; keep it within the manifest line budget.
