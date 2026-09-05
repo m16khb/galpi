@@ -5,7 +5,7 @@ description: How Galpi's framework-light DOM frontend is layered into domain con
 tags: [frontend, typescript, architecture, tauri, hexagonal-architecture, state-machines, zod]
 verified:
   - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
+    at: 2026-09-05T11:36:27.677Z
 sources:
   - id: openwiki-source-8037e2358a2c4f9b2c722a11
     resource: repo://AGENTS.md
@@ -13,6 +13,8 @@ sources:
     resource: repo://package.json
   - id: openwiki-source-e5b806f9954c297311c26a18
     resource: repo://scripts/check-architecture.ts
+  - id: openwiki-source-fe0a13273ee7842e377fb6d7
+    resource: repo://src-tauri/src/adapters/inbound/tauri.rs
   - id: openwiki-source-32b1436ab88629bf4d2b19ec
     resource: repo://src/adapters/tauri-backend.test.ts
   - id: openwiki-source-b4f288d4cce4fd187da94b04
@@ -49,6 +51,8 @@ sources:
     resource: repo://src/ui/app-view.dom.test.ts
   - id: openwiki-source-4cd7ade02c7980045548012d
     resource: repo://src/ui/app-view.ts
+  - id: openwiki-source-30db27d75ce8ee15deae1b11
+    resource: repo://src/ui/assistant-settings.ts
   - id: openwiki-source-a07dfb0ffed16e950d316497
     resource: repo://src/ui/controller.test.ts
   - id: openwiki-source-7fce012a6f5ad5b4facc3ac7
@@ -67,17 +71,20 @@ sources:
     resource: repo://src/ui/token-settings.test.ts
   - id: openwiki-source-dd1d1f431266f1ad80818b71
     resource: repo://src/ui/token-settings.ts
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+  - id: openwiki-source-5e1b077422a94ae165e88e4e
+    resource: repo://vite.config.ts
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
 ---
 
 # Frontend Architecture (TypeScript)
 
 Galpi's frontend is a framework-light DOM application: there is no UI framework,
 no virtual DOM, and no state library. The window is one static HTML template
-injected into `#app`, driven by two plain classes (`AppController` and
-`AppView`), two pure immutable state machines, and one adapter that speaks
-Tauri IPC. Everything user-facing is Korean copy; every value crossing the
-native boundary is schema-validated before it reaches frontend state.
+injected into `#app`, driven by a handful of plain classes (`AppController`,
+`AppView`, `RecordingController`, and the per-panel settings widgets), two pure
+immutable state machines, and one adapter that speaks Tauri IPC. Everything
+user-facing is Korean copy; every value crossing the native boundary is
+schema-validated before it reaches frontend state.
 
 ## Composition and entry point
 
@@ -132,8 +139,8 @@ never by importing `@tauri-apps/*` outside `src/adapters`.
 `BackendPort` in `src/domain/backend.ts` is a single interface owned by the
 inner layers and implemented by the adapter. It covers the full native surface:
 environment (`diagnose`, `prepare`), credentials (`huggingFaceTokenStored`,
-`saveHuggingFaceToken`), settings (`loadAssistantSettings`,
-`saveAssistantSettings`, `saveEnginePreset`), work
+`saveHuggingFaceToken`, `saveAssistantApiKey`), settings
+(`loadAssistantSettings`, `saveAssistantSettings`, `saveEnginePreset`), work
 (`transcribe`, `refineTranscript`, `importTranscript`, `cancel`), artifacts
 (`openArtifact`, `revealOutput`), recording (`startRecording`,
 `stopRecording`, `cancelRecording`, `listenToRecordingFailures`), file dialogs
@@ -143,12 +150,20 @@ result DTOs (`SetupResult`, `TranscriptionRequest`, `RecordingStatus`,
 `RecordingResult`, `RecordingFailure`, `ArtifactKind`) and the error-copy
 helpers `errorMessage()` / `errorDetail()`.
 
-Two details of the contract are deliberate:
+Three details of the contract are deliberate:
 
 - The listener methods return **plain `() => void` unlisten functions**, not
   Tauri's `UnlistenFn`. The port was deliberately framework-neutralized so
   `ui/controller.ts` never names a Tauri type (violation #2 in the same
   refactor).
+- **Credentials never cross the border as values.** The port exposes only
+  stored-flags — `huggingFaceTokenStored(): Promise<boolean>` and the
+  `apiKeyStored` field of `AssistantSettings` — plus per-credential save/clear
+  commands. The assistant key rides its own `saveAssistantApiKey` command
+  (a blank string clears it) precisely so the settings payload can never carry
+  it; replacing a stored value means clearing it and typing a new one, because
+  the window never receives the stored value and every keychain read would put
+  a macOS authorization prompt on opening settings.
 - The contract is one cohesive interface for its single consumer
   (`AppController`). ISP splitting is deliberately not applied; the port is
   injected as a type everywhere in `ui/` and `application/`, which is what
@@ -409,10 +424,18 @@ widgets) triggers `requestSettingsSave`. A single-flight loop
 write is in progress into one latest-state write instead of racing or
 disabling the sheet. Within a write, the Hugging Face token is saved **only
 when the user actually typed a new one** — `pendingToken()` returns `null`
-while a token is stored, so a roster edit never reaches the keychain (which on
-macOS means a prompt). On failure the sheet keeps the edited values, shows
+while a token is stored — and the same rule covers the assistant API key
+through `pendingKey()` and `saveAssistantApiKey`, the key's only channel: the
+document sent to `saveAssistantSettings` carries just the `apiKeyStored` flag
+(`AssistantSettingsView.settings()` derives it from host state or a typed
+key), so an untouched stored key is never rewritten and a roster edit never
+reaches the keychain (which on macOS means a prompt). On failure the sheet
+keeps the edited values, shows
 `${errorMessage(error)} · 수정 내용은 유지되며 다음 변경 때 다시 저장합니다.`,
-and the next change retries.
+and the next change retries. `settings-autosave.dom.test.ts` pins the whole
+loop: persistence without a save button, stored keys surviving unrelated
+edits, newly typed keys traveling on their own command, mid-write edits
+coalescing, and failed writes preserving the form.
 
 ## RecordingController
 
@@ -498,8 +521,9 @@ matter:
   in a read-only field; `pendingToken()` exposes only a newly typed value;
   `setStored(true)` reflects host state without ever learning the value.
 - **AssistantSettingsView** masks the API key the same way, defaults the model
-  to `DEFAULT_ASSISTANT_MODEL` (`"glm-5.3"`) when blank, and returns trimmed
-  `settings()` for autosave.
+  to `DEFAULT_ASSISTANT_MODEL` (`"glm-5.3-flash"`) when blank, and returns
+  trimmed `settings()` for autosave — with `apiKeyStored` derived from host
+  state or a typed-but-unsaved key, never the value itself.
 - **ParticipantSettingsView / GlossarySettingsView** are row editors saved
   with the settings sheet. Domain rules keep the stored document clean:
   `usableParticipants` drops nameless rows (a participant without a name

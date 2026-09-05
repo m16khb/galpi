@@ -5,8 +5,10 @@ description: Traces the first-run prepare_environment flow end to end — bundle
 tags: [setup, prepare, environment, uv, virtualenv, whisperx, qwen3, mlx, hugging-face, ffmpeg, progress, retry, marker, tauri]
 verified:
   - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
+    at: 2026-09-05T11:36:27.677Z
 sources:
+  - id: openwiki-source-4e1998b79639c789b2cdeef3
+    resource: repo://README.en.md
   - id: openwiki-source-6229fc7315005e295371fb06
     resource: repo://scripts/stage-sidecars.ts
   - id: openwiki-source-7d9c2c95cd6f848332130fbd
@@ -51,7 +53,7 @@ sources:
     resource: repo://worker/galpi_worker/__main__.py
   - id: openwiki-source-89fa3a838065f5a48e8e8147
     resource: repo://worker/galpi_worker/preparation.py
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
 ---
 
 # Workflow: Engine Setup & First Run
@@ -386,6 +388,16 @@ need a token. The flow keeps it narrow:
   `prepare` claims and the oneshot cancel path.
 - [External Services](../integrations/external-services.md) — Hugging Face
   gating, uv staging, and credential storage details.
-<!-- openwiki: broken internal link [../workflows/transcription.md] file "../workflows/transcription.md" does not exist. Fix the href or restore the target, then delete this comment. -->
+- [Transcription workflow](../workflows/transcription.md) — what runs after
+  the readiness gate passes.
+e details.
+- [Transcription workflow](../workflows/transcription.md) — what runs after
+  the readiness gate passes.
+the JSONL envelope, `run_process` supervision, and cancellation
+  escalation.
+- [Jobs & Cancellation](../concepts/jobs-and-cancellation.md) — the job slot
+  `prepare` claims and the oneshot cancel path.
+- [External Services](../integrations/external-services.md) — Hugging Face
+  gating, uv staging, and credential storage details.
 - [Transcription workflow](../workflows/transcription.md) — what runs after
   the readiness gate passes.

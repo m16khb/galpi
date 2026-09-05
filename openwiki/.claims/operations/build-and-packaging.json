@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:867071bf7faf968724fffce0e668f81a01f1df07992f6dc1b957958788d5a4b4",
+  "pageVersion": "sha256:d0d8b4d6d069b6450f2cddd03103c1f4233b39c2530ed77b4223f9787f58dc18",
   "claims": [
     {
       "id": "claim_343765dc3b7d4551abeb08cc62c5d1c3",
@@ -28,11 +28,11 @@
     },
     {
       "id": "claim_9c25ef0c7bb144eeaab2bfb96679698d",
-      "statement": "`stage-sidecars.ts` deletes and rebuilds `src-tauri/resources/worker/` from `worker/`: the galpi_worker package is copied recursively excluding __pycache__/.pyc, plus the four requirements files (requirements.txt, requirements.lock, requirements-qwen3.txt, requirements-qwen3.lock); both staging destinations are gitignored generated output that must never be edited by hand — worker changes go to worker/ and are re-staged.",
+      "statement": "`stage-sidecars.ts` deletes and rebuilds `src-tauri/resources/worker/` from `worker/`: the galpi_worker package is copied recursively excluding __pycache__/.pyc, plus the four requirements files (requirements.txt, requirements.lock, requirements-qwen3.txt, requirements-qwen3.lock); the generated trees (.gitignore: node_modules, dist, src-tauri/target, src-tauri/gen, src-tauri/binaries, src-tauri/resources/worker) must never be edited by hand — worker changes go to worker/ and are re-staged.",
       "evidence": [
         {
           "resource": "repo://.gitignore#L1-L11",
-          "version": "repo-lines-v1:sha256:cb4fc10cf669ddc62dcb03f852a9b68a4797ec7bfa017da1a94b25fe969dbb62:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMjM3YzdhZmY0NGVmYmU2ZTUwMmU2NDVjM2UwNmRhMDNhNjlkN2JkZWI0MzM5MjEwOGVmMzM0ODE0MzQxN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4MzYxMGYwODk0YWQyYjBhYWFkZTgwMTdkYzFmZjA0Mjg0MDBiNGJmNDZkMWJmNWQ1MmE0M2U2NWU3Mzc0N2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "version": "repo-lines-v1:sha256:5ec03d5756866f198b7cf20966006b3cf378a186d2ff4b993abb26cca42a40d1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMjM3YzdhZmY0NGVmYmU2ZTUwMmU2NDVjM2UwNmRhMDNhNjlkN2JkZWI0MzM5MjEwOGVmMzM0ODE0MzQxN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4MzYxMGYwODk0YWQyYjBhYWFkZTgwMTdkYzFmZjA0Mjg0MDBiNGJmNDZkMWJmNWQ1MmE0M2U2NWU3Mzc0N2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://scripts/stage-sidecars.ts#L56-L78",
@@ -241,6 +241,6 @@
   ],
   "verification": {
     "by": "openwiki/0.4.3",
-    "at": "2026-08-29T12:09:06.549Z"
+    "at": "2026-09-05T11:36:27.677Z"
   }
 }

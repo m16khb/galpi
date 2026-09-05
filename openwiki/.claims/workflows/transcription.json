@@ -1,0 +1,440 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c2d46a88ea07381ebefc5ad4aa2cfb7b43ea34e19a6630bb954fe912d1bae718",
+  "claims": [
+    {
+      "id": "claim_0216828163ee4850b64d586c1c841e4a",
+      "statement": "The transcription request chain runs AppController.transcribe → BackendPort.transcribe → the start_transcription Tauri command → Application::transcribe, with progress traveling as out-of-band job events while only the final TranscriptionResult is returned through the IPC promise.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/inbound/tauri.rs#L93-L99",
+          "version": "repo-lines-v1:sha256:203ec5fc43c3be869b2e54d5b6da5ed553e0601aaaf1dc574b136e748fd38fa7:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWUxZWUzM2VlOTVmYWVlMWMxMGU5ZWJmM2QzZGU0MWJiMTkyNTE1Y2FkNzdjZGEyMDVlNTQ2ZGExNzAwMWE2NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDNjZTliY2NiMDQ3Y2Q5ZWJlNTdjMzdlNDA4ZDUxN2E3YjVkZjUwZWFkYjJlNmVjMGFjMmIwYzEzMjU4OGNlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWI5MTc3YTIxY2FmODk3MjljMTRmN2U1NjM1NjJlM2E5ZDkxN2E1MzMzNzlmMzA2ZDlkZWM4ZDZjYmM4YmJkZiJ9"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L177-L186",
+          "version": "repo-lines-v1:sha256:dfa49fd9263be3c89e89eb4c63e7ec2291b8a5bae3174eb95d81a791c34d737a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1NDJhZTZmZGZiYTBjMTk2MzZkMGEwNjg3ZDBhMDFjODJjMTkzZTg4NGMwNGU2MmNjMDVmYTI3YTg2ZWIwZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViOWEwOGJjMjlmNmViZWJlOWE1ZjAxOTAzZDk4NDVkYmNiNTg0MmE0NTVmMDdkNWY0MDAyZGFjMzJhNWM2MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1NDlmYTc0ZWNjNzQ1MDllNGFiYmU1ZjExNThlNTg1OTI1ODU4YTQ0NmU0ZGI4MjQ2ZjY4ODlmYmNjZjA0NDMifQ"
+        },
+        {
+          "resource": "repo://src/adapters/tauri-backend.ts#L198-L202",
+          "version": "repo-lines-v1:sha256:db1fdb5bcae94ad52e8e10e5b3bb57a05f7e0a2edc1979d2863425c052aad950:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzRlNDY3ZWVkMzk4Y2FhNjlhMDdhYTA4N2UyOWI2MWMzMWExYzY3NTUxYjVmN2ZlMDExYTEyZDY1ZTNjMjRmNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGJmMzlhODcyMzY3MGViMGExYWZiYTEzNmExOTBhMzcyNzM3NmMyYmZkMDExZjBmZWEyMTM1NzU1YjRmOGQ2MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzc1NWZjODg2NjMwMzViMjdhYTdkZDkzZDA5ZjdhZGQ4Y2MyNTU1YTNmYjY4YjFjYTVjODBmMDM0Y2FhODIzMyJ9"
+        },
+        {
+          "resource": "repo://src/ui/controller.ts#L321-L357",
+          "version": "repo-lines-v1:sha256:6b07852bb0279af458715836dfc3a802ba70f70006c40b5f4b90cf77c41d3eaf:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExYzhjNGVkYTI3OGViYmUxMjM5NzY2NThkNzIxZmU5M2VkMzlkYzQyMmUwZWQ2MGMyZmI0OTRlYzA2MzU5N2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3ZDg2MzJlNTRlOTI5OGFiYjk1ODcyN2UyZDUxNDA4YWJhZjEzNjYwMzUzNzkxMDE0MGFiZjY1YjMwYWI2MTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNhMzhlYThjYzhmNjZmMTJmNGVkNWM5ZDhmMzA0NjQ3MjJlYmZjN2ZlNmMyZTEyZjcyM2UyNDgwNjEzMTNiNTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_37b0aa6a80214273995682daa21b148b",
+      "statement": "The webview mints the transcription jobId with crypto.randomUUID() before invoking so the first worker event already belongs to this job, and the job-event subscription is established in AppController.start() before any action can run (subscribe-before-invoke).",
+      "evidence": [
+        {
+          "resource": "repo://src/ui/controller.ts#L339-L347",
+          "version": "repo-lines-v1:sha256:6d5bf2d182a9addcfb79bfab436f64855846d672cf9b563e3bfa5a537dc941ac:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODJjMjNmMzFmYzkwN2JhZDk4YTU3YWI0NjAxNTA3ZDEwNmY2NDFlMzI1OWY5YTc1MjE2MDdiYzQ2YTVjOWNhYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTgzNTUyYWI1NzE0OTRiMzk5YjE4MTk5NjIyZGJlM2IzODI2ZWI2MWZjZDFmNzRjZmIxMmFiY2Y4OGU0ZjcyNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmQ5N2ZmYTA3YjcwOTFjOTE4N2RlYjQxMDJjYmEyY2Q5MjNlYjUwYjY4MDQ5NDc3MTE3ZDk3MWM4YmNhMTlkZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjBlZWY3OGI5YTY1M2Y0NDdjMjRiM2Y2ZjNlZTBkOTQ1Y2U2YTMzOTMyODNhMzYzZTRmODFkZDM1ZTM3ZDk5ZCJ9"
+        },
+        {
+          "resource": "repo://src/ui/controller.ts#L38-L56",
+          "version": "repo-lines-v1:sha256:7821d3d0ff08faa5092ad2c194571fb13674c1dd747a6d1771889d62b7f5e8ad:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmNjA1OWY2MTEyODMxNzViNjEwZTY3YzA3YzdhZDNmNDI4ZDNiYjBjZTNiNjViZGI2NTdlZjQyYjBmZTFiN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljNzlmNjZkZTFhMGY2NmIwZWU2MzVhNDc5OTI2MTJhMzZkMjA2YWEyMzcxODY0M2E4ZTFjMDQxYzM5YTNkZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEyM2RhZGQ5OWJhZTBjODllZjdkNjE5ZDM5NmZmZDQ1NDI5NWU1Y2I0MzViNTUwZjFjY2JmNTU5ODQ4OWMxYzcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_448aff95507a4236a9c15a69c9332a3e",
+      "statement": "Speaker-hint validation happens before the job slot is claimed: validate_speaker_hint rejects a zero exact count and zero-bound or inverted ranges as INVALID_SPEAKER_HINT before any workspace access, pinned by invalid_hint_is_rejected_before_workspace_access observing zero prepare_job calls.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/application/tests.rs#L385-L400",
+          "version": "repo-lines-v1:sha256:c510592c486a5db1790977b6748fb89e683dbc6f29515ca7208427f1845470f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ0Zjg3ZWQ2NzQ5MjcwZGViZjIyMWNlYTk2MjZlNTk4MTg3NmQ2YTk2NjU2NTFmN2EyYWZhZmM0YzAwOGZlNzYifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L177-L186",
+          "version": "repo-lines-v1:sha256:dfa49fd9263be3c89e89eb4c63e7ec2291b8a5bae3174eb95d81a791c34d737a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1NDJhZTZmZGZiYTBjMTk2MzZkMGEwNjg3ZDBhMDFjODJjMTkzZTg4NGMwNGU2MmNjMDVmYTI3YTg2ZWIwZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViOWEwOGJjMjlmNmViZWJlOWE1ZjAxOTAzZDk4NDVkYmNiNTg0MmE0NTVmMDdkNWY0MDAyZGFjMzJhNWM2MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1NDlmYTc0ZWNjNzQ1MDllNGFiYmU1ZjExNThlNTg1OTI1ODU4YTQ0NmU0ZGI4MjQ2ZjY4ODlmYmNjZjA0NDMifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/domain/job.rs#L47-L56",
+          "version": "repo-lines-v1:sha256:c3310d4f864e56662c6cefe80aab55451f06ed6ea71f4201d266ae2cd439de2d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmYzJjNTU0NDhlNzYwMjUzYjM5Mzc0MjEwODY4OTNmNjUwYWM2MjY4YmE1NjllNjFkMGY0MWVmNzQ4ZjBiY2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2NTA0MmNhOWU5YzM2YzA4MzFmMmJjMjhmZmY4N2UxYjhmOWY0NzFhNWVlOWE0NDEwNzgzMWYyNzQ5ODAyNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiYzk4ZDZiMGRjNDkyYzUwMTZkZjEwODA1YTNhNTRlYjljMTg0YTVhNjEzN2U3ZjRiZWNmYTBjMjIwNTUwZDAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0aac1dbd098e461781d4ba8ee39e6d59",
+      "statement": "run_transcription enforces a readiness gate after the claim: it loads the saved EnginePreset, re-diagnoses, and fails with SETUP_REQUIRED unless engine_ready, models_ready, and ffmpeg_ready all hold, so no meeting folder or worker process is created for an unprepared engine.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/application/model.rs#L23-L27",
+          "version": "repo-lines-v1:sha256:81682bb25fded7be40249d493ae6c7a8fa9dd40fb16a70cb4ae35585ba5e22b7:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmJkMzgxZjU1ODNjOTcwMGI0ZDFhNWZlYjA3ZTc0YzljNzBjZWJjNmJhYjI5NmZlYzUxNTE4NTgwYjdiOWQ1MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzA3YjExYzYzN2JjYmE5YjhmOGFmOGQxMzMxODIzMDc1YjQ4M2JmNTFlNzQ5ZmM4NzU0NGNhMjNhMjNkYmE1NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2Y1YzI4NGUxNWFjZGJlZDZkNDgwMTliMjM5NmE4OTc1ODBmNjQyMzEwY2NmY2I3ZGI4ZDlmNTVlMjczN2IzYSJ9"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L212-L231",
+          "version": "repo-lines-v1:sha256:ba65554eddc601a6fbf9251a70ee7144f7230902cbd8373ef5252ca1434d8bda:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzNzJkMjc4YjcwNDY4ZWJlMDNiYzQ1M2QyNTVjNWY5ZTQwMWQ1MzZkOTRhNTc5ZTNmYzI5ZjU2NzEwNjAxMWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhY2FkMTA1MjE0ODgyZjI3NDJlMTZjNGQ2ZDY3NjExZmY0ZGYxZGE4OThjMTc3Yjk2ZDE0NGUxYmU4NjI1NjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViOWEwOGJjMjlmNmViZWJlOWE1ZjAxOTAzZDk4NDVkYmNiNTg0MmE0NTVmMDdkNWY0MDAyZGFjMzJhNWM2MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4ODk4MTQ4MzgwMDNhN2M5ZWRlYmNkZGNhMzA5Yzc2NThiODhjZTY2ZjRjMWUwOGM0NjM3ZTUwMzI0ZDQ0NzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_300a774db7c24b5194f4cb5579af6643",
+      "statement": "JobRegistry::claim_with_id holds one active-job Option: a second claim is refused BUSY and a job id that already has registered artifacts is refused JOB_ID_CONFLICT; the returned JobGuard releases the slot on Drop so an early error, cancelled future, or panic cannot leak the slot (pinned by failed_transcription_releases_active_job).",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/application/jobs.rs#L21-L71",
+          "version": "repo-lines-v1:sha256:48bb8e8eccebfe36f49fbbd8b3331bdae2f06e14dff53a0161a63e367672bf3b:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjMDgyYTAwNWE5ZDI1NzU2NGJhMTJmOGQyOGQ3NGI2NjcyNTlhMzk2NzZlZGRkZjNhOGM4N2ZkMDJiOTgxZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2MmEzMGYyOGY3NjMyMGMwYmM1NDVlYzEwYmY0YmVjNTBjNTczMGRiOWNiZDAzMWQ3MTk3ZWFhMTJlMzk3ODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MDUzNmY3OTY0YWJjNjc5MmY2YzMwMGFhZWFmNzE5ZDdlZTUyNjA2OWNmNDU5N2E5MjFjNzhmMTMxMDNhMjUifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/tests.rs#L464-L480",
+          "version": "repo-lines-v1:sha256:98f8c82c7eae89c372ac465200776211aa3d3557aa0a18e3ee2de6da3e4c447a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkYWYwZjEyN2Q2ZWQ4ZGU3YWM1NTk5MjBlMjMzODAyYmE5MGIxM2E2Njk1ZTY0ZmUzMzBlMWM1N2RmZTM4YzUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_274dccaeb28f471183dca3c53cf419f7",
+      "statement": "prepare_job_directory validates the input as a regular file (INVALID_AUDIO), canonicalizes the output root, creates the meeting folder with the adoption rule (an input inside {stem}/ reuses that folder; others get a deduplicated fresh {stem}) and seeds the newest sibling <stem>.aligned.v2.json into the fresh folder, leaving the engine-tag check to whichever engine runs.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/desktop.rs#L56-L93",
+          "version": "repo-lines-v1:sha256:52e31f2f4793939c5e772b4951b9f01827c04453ec5ca4c6691727603a8d5df5:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlNGMzNWM0ZTJkYTIwMTczYjlkYzAxMzgzZjQ1NmUzYTExZGJiZDhiY2I5ZTJmNDc2Y2ExZjY4YThlMDYwMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4ODcxMDc3NDJjZDdjYzNhMmQyM2Y2ZDgxODk4MGUxZjZhMjgwZjQzYWU2ZjFmODNhODI3NDFkOTc4MGM0NjgifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/paths.rs#L97-L236",
+          "version": "repo-lines-v1:sha256:0617760449c69248e8b759cc88be4d5472c010a7482898754610242dd4cf863d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiNTIzZjBlMjA0MzhhZDY2ZDgzMDBlZTNlMzQ1ZDgxZDIwZmU3ODliYzkxNmUyZjA1MWUzNTk3ODRmNjIxZGQwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyNzJiZTkyZjE1NDY5ZmFkMzZlOGNmYzBkMGIzNmUwMzM4MjIzNjBhZDBlYjljYjRkZTIyNjVhOTY1Yzg0YzkzIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJkMmYyZmU0YmY1NjM0ODg5YmVmZWNiNzI0NGNhZDZjYTczMGZhZDMzMGFjODlkMzI3ZmQyZmQzODY2OWJlOGFlIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_62658ed1a2dd4c8683484d69bcc4e8b4",
+      "statement": "Application::asr_context builds AsrContext {terms, names, aliases} from the saved glossary terms plus the full participant roster (names and spoken aliases — the attendee selection governs refinement, not transcription); when all three lists are empty the context is None and no context is sent, both pinned by transcription_carries_glossary_and_roster_for_asr_biasing and transcription_sends_no_asr_context_without_saved_context.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/application/tests.rs#L402-L462",
+          "version": "repo-lines-v1:sha256:ae6f50745e385c85c62bc6c514bba5fcd0f947c77a667ed85ef0650ccc9f2af9:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjYjZhMDI4YTU3YzYwODlhYmE0OTQzMDgwZWY0Mjk0NmE5ZjYxMjI5NjdiNzNkMGQ2NTM4ZTQ2YWVlZDU0MmMifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L265-L283",
+          "version": "repo-lines-v1:sha256:2a84b063098708475e9f94b869f9a68de7dd8627f723161af1d365e0d142dd0d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3OWNjYWJkYWFhNjM1ZGRiODI1ZDEzZjk0MDAwNWExZmM4MmM4NTZlMmM0MGFiZjlmZTc4MTg2ZjQ4NmJiZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlNjY4ODllOTA1YWFmYjEwZmQxYmVkYWI4ZDM4NjM1Mjk5ODE1MTU5ODRkNDI4MGQyNDE5Mzk0MDc5OGRhMGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM5ZWU4NDI5Y2Q0M2Q2ODY1NTdmOGZiYTc5MDkyZDMxMzkxOWJmNmVjMWNkZTdiZTFhYThiMmIzOWI1YTI0ZTgifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/domain/worker.rs#L8-L38",
+          "version": "repo-lines-v1:sha256:8a1a64c6dfde97510196e95506b94101d9f25e25d6be446130810e0a8cf04531:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzYjcyMjQ2ZDZlMDQzNmVmMWJlYjUwOTdjZDdhMDdjZmNmNTg3ZWMxYzVjOTQxY2U0MWNiNjNiMzAyNDdlZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwZjYxNjFjYTNlZTE5YjM4MmYwNDcxMWE4MGZmOWEzNTExMzNlZjdkZjlkZWFjNTQ5YjQ5MjEyMjhhZjNjMTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlYjExMzdlMDY3NDJmMjliZTBhNjlkNTcwZGUyN2ZhNDU3ODRmMGI4YTJhZTZiMDFkNjJlZWJkMTJiN2QyNmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9b396500faca489ab40b8fdbb2e60f1f",
+      "statement": "AsrContext::into_wire_json serializes the {terms, names, aliases} JSON shape the worker's parse_asr_context reads; the adapter hands it to the worker through a temporary galpi-asr-context-{job_id} file created with mode 0600 and create_new (never via argv) and removes it after the run regardless of outcome.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/refinement.rs#L168-L192",
+          "version": "repo-lines-v1:sha256:c8a37d4cdd0f82f4cf88552954db50c6733a7235163e12a865d4c5f3f437dc4f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3YjI2MWE0ODBlODViNTQxYWExM2U5NDllNTllOGE5YjgyMjMzODMxZmI2MzgyYmQ0MmE0NjIxMTViNDhhZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgyMDlhMGZhMDNjYzA5NjIxNGVlZTU2Y2I4ZmJjZWMzZDY5YTI5YmM4OTY1NzM0MWM3NjMyY2RhYzY2YTk5ZmYifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/transcription.rs#L24-L53",
+          "version": "repo-lines-v1:sha256:711d143fb4d216078ae4a529e57b72f910125ddc47f8c6c76178e851acf3b9b4:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwODZiZGMzMjljODJlOGJhZjNkMTE5M2NiMDllNTNmMWZkNDVmMmYwN2Y2ZGEwZTViOTRjNDg5NzQ0NjM4MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVjMjJmYzliNjA2M2I3YmE3MWQxN2UyY2RlNzAzODdhMTM2MTUxZDk0MzJhM2FlNjZmOTgwZjhhZGE2OTg3ZWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhNmY5NDllYzk4MmFmOGEyNjNhMmZjN2Q0MWM3YzdlM2FiNjI1YmYzMTI1NmY5NTIwZTVhYzc3YjNlMGRkZmYifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/domain/worker.rs#L28-L38",
+          "version": "repo-lines-v1:sha256:cfc3b4ba5133b63f46c122ab1143381d60b5fac66cabce3dec0b39e3b2bc0c5c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiZjg0ZTZlMWE2OTI4NjhiNmMzNzgzNWNkOTJmZDljOTdjZGMxYTQzNzc4ZmVmYTI1OTY2MzE3MDU3OWUwYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViOWEwOGJjMjlmNmViZWJlOWE1ZjAxOTAzZDk4NDVkYmNiNTg0MmE0NTVmMDdkNWY0MDAyZGFjMzJhNWM2MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlYjExMzdlMDY3NDJmMjliZTBhNjlkNTcwZGUyN2ZhNDU3ODRmMGI4YTJhZTZiMDFkNjJlZWJkMTJiN2QyNmYifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/core.py#L110-L129",
+          "version": "repo-lines-v1:sha256:382a72cf2c49a3730d6f452187bf0eecbee10bd9d59085bca4ce83a03eb791e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1MmQwODc2MzRjOWFhZDViY2IzMDA2ZjNiMTY3YjgyZDg4ZTk3NjY4N2M1ODBiOTRlZWU3ODRiMTk4NmI2M2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3YTM0NTI0MDc2MTJkMjE0YzllMTdhOTM4MjY5MWI1MDkzMTA2MDU1MDk3MjIzYzFjNThhMDMyY2FkNzYwOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwYjIxYmY4OTVmYWUyZDczOTIwZDkzMTc4Y2ZkNTg0MWNkZjhmOTUyNDUxNmM4YTU2NTg0MzZhNGFjNDhmM2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4YWQxMjYzOGM2NjY2ZGU0YzNkZTAwZmFjOWEyN2QyYmVjZDY4Y2U5OTgyODVkMjYxN2ExNWFkZjFmNDVlMDYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9baade0cc4f24c06b0ac914c7626147f",
+      "statement": "The worker is spawned per preset on one call shape: Qwen3 runs the candidate stack's own engine/qwen3/.venv python and WhisperX the pinned engine/.venv python, with --engine plus optional --asr-context, --num-speakers, or --speaker-range, from the worker root as cwd; the preset defaults to Qwen3 and follows the saved preset (transcription_defaults_to_qwen3_and_follows_the_saved_preset).",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/paths.rs#L25-L50",
+          "version": "repo-lines-v1:sha256:3214ad7478a3c84efbaf94ac908be8b899f25b164c4ed8affeed874c4b6f3020:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZjI0NWUyMjhkM2Q5ODU0YzVkYTA1MjdhYjRiMzNiMWQ2MjJhOTM2NGFjOTc0YjJjZWQ5MmEzM2M3MzlkZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlY2U3NzNmN2EzZjM1NjgzMjFiMmMwMGEwMTY2OThkNWY3YWJiNGM2ZGZkYzdmNGZmMDVlOWJkNDM0ZjhkYmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdhNjMyOWExYzFlODY2NzNjNjdiNmU5NjQ5NzQyYzBmMmY2NGQ3ZDFmZWNkZTczYmRmNjJjZjljOWU0ZmM3YzcifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/transcription.rs#L56-L99",
+          "version": "repo-lines-v1:sha256:10b6f4afc67425a7f1a63eb54c18fde431af3931a31d0cdb302841f683f26aef:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3OTMyZjcxYjE5NmFhMTE3MmYzNGFkMjZmMzgwOGRjZGU3ZjRhZmNhNmM4ZDAzZjM0MDM2NGZmZGFlYTQ0YjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVjMjJmYzliNjA2M2I3YmE3MWQxN2UyY2RlNzAzODdhMTM2MTUxZDk0MzJhM2FlNjZmOTgwZjhhZGE2OTg3ZWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJmOTQ3N2M3YjNhMDY5NDUxY2RhODg2ZGRmMGQ0MjJhMDM3MzNjYTRjNzk3ODQ2ZThkMTQ1MDVlMTdjNWY0ODMifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/tests.rs#L710-L739",
+          "version": "repo-lines-v1:sha256:6a2bbf19d1b817ca834093beb4b0c08c31866de2b56f12ea6768d85406d42b5f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4NWRiZmUzYmFiMjlhMDg3MDI2ZTUxNDNiNGZlOWI1ZGFkMjBjY2FiNDU0YmExNDIyMDZhZThjOGFlZjQ0NjYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6adc83b0e9654c618b5f16986c0bf8e2",
+      "statement": "Transcription runs in a scrubbed environment from process_environment (app-cache HF_HOME/TORCH_HOME, Korean locale, telemetry off, pinned uv dirs) with no HF_TOKEN because only the prepared cache is needed; Qwen3 additionally forces HF_HUB_OFFLINE=1 and TRANSFORMERS_OFFLINE=1 so no network round trip can occur mid-meeting.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/environment.rs#L88-L143",
+          "version": "repo-lines-v1:sha256:eb15c54e2c2a84c7994e2948b5a0790f48c471374c9d8cc1e3839e00cc7cc3bc:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzMjJlZTU2OTNmMGFkZjFmODRmMjhmNGQ2OGY4MmVkNjE1YTRmYjY1ZTVhNDBmYWNlNDcyOTVkYTY2NTA3NzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljOTI0NGRjZWE4YTVkYzhjMDFjNjAwYWU3MWZkZTFjZWUxNWUxZTI2ZWU1NmY2NTA5N2E5NDQzMGE1N2NhMmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5MWYyYzg5M2IyNzMxODg1N2I1OGEwNjJkMDAyODE1MDJlMGJiODRkYzk1NDAzNzM5ZDM5N2RiMjdjMTRlMjAifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/transcription.rs#L101-L122",
+          "version": "repo-lines-v1:sha256:3e82c57c48ad3fed1697a8aae881aa654d196a8510abf7111ca254ff20c4870b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlOTQ2OThlMmIyMzhjOWQ5M2EwNDQ4YTk5Njk1OTEyYzIzYWI1ZDBlYTU2NzBmYTE1ZDBlMDUyNzlkMDA1NmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0NjI0MmE5ZDY5M2VhMTVkZmJiY2RkN2I3NmYxYmNhYzNjNGVlMGVlMWY4MWU5YWM2YmExODE5YTQ2ZDQxOTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQzNjhlYmU3ZDM4NDBkZTZiYmVmMGIwNDI0YjUwMzUyNWYzYjgwOTcxODAzMjFlM2Y3NjEzYTRmM2I4MmU1MjUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_673107e9c81d4c3a956986b6e0ba1573",
+      "statement": "run_process starts the child in its own Unix process group with null stdin and kill_on_drop, wrapped in an armed ProcessGroupGuard whose Drop sends SIGKILL to the group, so a dropped future can never orphan the model stack.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L86-L123",
+          "version": "repo-lines-v1:sha256:df3abf4e21b0355f8ddf89693224118023be35a83f04fa6ce195d0e6b20030ee:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyMjIyOTc0NDRhY2YwZTc4ZTMzODZjNDJjODI1NmY1NzRhY2ViNTNmN2I3MGVjMGU4ZmNmMTI0Njc0MDAyNGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZDYzYjMyNmRjNjBhMThkY2FkNjJiMzc0YmJmNjcyMjUwNTMwZGVmMzViZmU1NWI1Yjg2ODZmYTdlZmEzNmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjNjJmYzAzYzUyMmRiMjEwMzAzN2U2YTM1YWZiZjhiYzUyMzU0NmE3YjE1YmY2YTI3MDVkNzIxNDY0NTI4NmMifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/process/guard.rs#L10-L38",
+          "version": "repo-lines-v1:sha256:50ec6b969f9483b1132c8223b8107d828fd73bf94ec0d8fdaa1ccfd3545d3902:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyODVmZGUyN2UxYzhlMmJmNWNkNTU2MDkwOWI2MWNhYzM4MWFjMWViYzg4ZWQ5ZTZhZTYxZWZlMDU0YmVlYzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxMzExNGVmY2QxN2IyMjMxYjlhOGRmNDAzNDI4MjJjNDgyYWJjOTExMTBkZjUzZDdiZWE3YmUzZGZiMWI4MTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_671e88b6efdb4d19bf2a5693883337f6",
+      "statement": "Worker stdout is the protocol: each line must parse as a version-1 envelope (else WORKER_PROTOCOL_ERROR), Completed/Refined events are captured once as the run's completion carrier (a second completion is a protocol error), and every parsed event is re-emitted to the webview as it arrives.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L196-L229",
+          "version": "repo-lines-v1:sha256:8045f7426c988e8d76899a97801e45261bbe83df133fdbc1e8a23cdf1e659edd:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyMDdmNDViZGM3MTA0NWIzYjg0ODgyMWJlNzkyODg5Zjg2OWIzMDY0Y2ZlNjJkZTIxYTg3ZTM1ODA5NjVhZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkNTg3OTk4OTNkZGY2YjE0NTBjZDI2MDM2YjI3NjU4ZGI1ODMxYTY3ZTI2NDQyMzg1MjRkMWRhOTVhNjViNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4MDkyZmI4OWE2ZjUzZWY0MjFiZTY3Yjc2N2VhZjg5NDdiNTBlYmIwOTc2ODVjNWJkNjNhNzQ2ZDgyNWRhNmQifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/domain/worker.rs#L88-L95",
+          "version": "repo-lines-v1:sha256:6938a5b5c6ce728eca342edf44dd5cb553fbda70908c8b253057a8f58da55322:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzY0YmY5MTg2YzJiMjAxZjc5NDc5OTNmYzQzNzM0NTdkMWJlOGZlMTk1MjQyNTkxMDNlOTBmZjE5OTg0ZTMyZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDdmYmRiMmEyYzc3MWIxYzgxNGFhZWVhN2I5MWNlYTczMGY5YmYyNTA4YjllNWFiNjU2MzEzNTQ0ZjQ0YzAwYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2JjOThkNmIwZGM0OTJjNTAxNmRmMTA4MDVhM2E1NGViOWMxODRhNWE2MTM3ZTdmNGJlY2ZhMGMyMjA1NTBkMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_bdd38cf4923b42a890e15e14db6ba6ba",
+      "statement": "Worker stderr is batched logging — flushed at 100 ms or 32 lines — with the last 20 lines retained so a non-zero exit reports PROCESS_FAILED carrying the worker's own final diagnostic; lines are read through a 64 KiB bounded reader that fails rather than growing unbounded.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L130-L190",
+          "version": "repo-lines-v1:sha256:a74bcc30c7ac092bdf453b7335f022911a25015f64c627a4dc454028ef687a5d:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjZDA2MDJkNGJhYWYzYzVlZDA3N2I5YWU5Yjg4NjhmMTBjYjUzNDYzMjMwMGRiMmY3ZmM2M2VjZTIzMmNlMDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhOTMzN2VhODllZGJlNTE0MWE5MjY4Mjk2YTg4YWE0NTI3MzNhMDk0NTg4YTk0MGE0NDM3ZTEyZjIxNTdiNDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcxZmUzZDY1Zjg3N2UyMzBlYWE1NmNmY2NhNTQ3YjY2ZTRiYTEzZTQxMzVjMjgxYmFmOWY3MTc4ZDU2M2Q5YjEifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L231-L273",
+          "version": "repo-lines-v1:sha256:08020860fcb9a6cf2a2b09d5724c920ba28702112190c33986a3c855bf52ed82:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzYjdhZDMyZGJmOWZkZWI5OTk1NjU3MmY0ODU4ZTQzZTMxZWRmZTJlNzVhZDhlOWFiZjFiYTZmMzc1ZTQyMzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJhMWM4OGUzM2UyZTdlNjdmZjcxMjY1NzBlMWJjMjU4NGVlNjBiMWYzNjRlZWUwOTIyNTE1YmNhNjE3ZGU4NGIifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L56-L59",
+          "version": "repo-lines-v1:sha256:ad0d3b7d1a66d2cd8880e298d764bab7a14297623da4381de6a8dc8d0d84afbc:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWI1YzczY2I3Zjc1MWM0OTI5Zjk0YmI1N2M1MjU4MjM2NDFmMzk5MWM1ZDVkMmFjZjM2Nzc4MDczZGM5MzU5MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjVkNGRhNDc4MTE1ZDlhMDY5YTk1MDZjYzNjODJiNzBkZjA1MmQyMjMyZjlmM2RhNjg2MmE4Nzk5YTgzZjUxMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTIzOGE5YWEyNjAzMzUwYzc5OTQ1MTdiYmZiMDU1MzcxYTEyZDllNGUyMzkwZDhmY2Q3Mjc2MjA2NmNhNWJjYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDA0ZjFiNDczZjZhZDUyMDMzODQ2ZWM0ZDkwZWFmZDRhOWRmY2M0YTlhYWMyNmNhY2RlZmQ4OTAwMTQ0Mjc0NiJ9"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/process/tests.rs#L78-L99",
+          "version": "repo-lines-v1:sha256:6e9be71476dc2f45f07303fcc13404a2562564586f7c1a97c8808cf1f3fb2bf2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkY2U1YWYzNWU5NjdhYzU4YmI5N2RhZmJhMDVjODcxZGI1N2RiNjg3ZDI5MGRiMGI3MDNmOTVlOGIwNmJkMmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1ed2ebb7c47f4d8f8b8f420482881f76",
+      "statement": "The worker redirects stdout to stderr during a run so dependency chatter cannot corrupt the protocol, and every abnormal exit still reaches the host as one error event — InvalidInput as INVALID_INPUT with exit 2, any other exception as ENGINE_ERROR with exit 1 — emitted by a lock-serialized, versioned, monotonic-sequence EventWriter.",
+      "evidence": [
+        {
+          "resource": "repo://worker/galpi_worker/__main__.py#L47-L96",
+          "version": "repo-lines-v1:sha256:bdf65339e407b4215bbd4188d2fa3e620543def82885571bde2cd74313b1f48a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMzk3OTMzYTI0YTgwMWVlOTIzMzI3YmQ2OWEwMTA0OWMwNzc5MTUwMjFjZjJlYzM5ZGRhNGY4MWFhODM3ZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzMDg2NmUxYmNjNWFiNzZlM2VmNTkwMTJkMGFkMzlhNjg3YWJlMDAyM2I0MzhhY2IxMTMwYTE4ODI1ZTgxOTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlkZGM4OTM3NTAxN2YxODU1OWFmNDA4Njc2MzUyZDYyYWI0MDY1ODQxM2JhMTAyZWM1MmNmYTlkNjVkMWJjOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNDEzNDBjYzIzOWExNTljZTliNjAyMmU5ZjYzMjI4MzJlMmVhZDc2Y2FlOWU0NzU0ZDIxMGViOGZiNmQ1ZTgifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/protocol.py#L12-L38",
+          "version": "repo-lines-v1:sha256:09c22cfc8eb96bd52ff17f3321018e1195e870fe5b57e47462b08054399f190b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4MWFhZDk0Zjc0Zjk0NGYyMmIwYmYxZTU5ZTQxOTgwNmE5YzkzYWY0YTBhZmExODYwZjgxYTFiNGQ5MWI5Y2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMjQ3NDY2MmM3YjdjZWUyZDllMjAzOTUzMWM1MTQ1ZDY2OTVjMjllNDA2ODU1MzI0YTg4Njc3ZTM5OWQ0OGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMWIxZTRmOGNlMWY4YmViYmY4ZjU2NzI0ZmFlOTFjNTQwYjVjOGFhOGUxNTc0ODU3ZTMyMjdhNWZlOWVlZjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a869d2df097c43b581dbe97ce75401af",
+      "statement": "engine.transcribe dispatches on --engine between the Qwen3 and WhisperX pipelines; both converge on the same ending — filter degenerate segments, write <stem>.srt and <stem>_화자별.txt atomically, and emit one completed event with srt, txt, checkpoint, segments, and filtered.",
+      "evidence": [
+        {
+          "resource": "repo://worker/galpi_worker/artifacts.py#L27-L81",
+          "version": "repo-lines-v1:sha256:c9de72926290030d45517579f6259dfe3b3dbb98c7540d589e2cd01124cdd28f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MzE4YjgxNjYxMTRlNjYwZjYwMjg1NTc5N2I1YTk3ZDlhMmMyNjIyYTU4ZGU5MDg1YjBmMjUzOWQ0ZjRjNGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1NTQ1NGE3ZGVkM2QxZGJhNDAwOTE4MTkzNWM5NjczMzU4ZGI0N2ZlODVjYTQ2ZjBjZGVlNDU3YzVjODAwYWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxYWNiMzA1NzcwNmRiNTg5YWJhNzVhN2EzNzlmZmQ0NmM5N2JjNmY4YWQzODBjNjA3Yjc5ZmVhODM5YWY5YzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3MGY1ZmJjOTM2Y2U4ODA4Y2RlMzVjMDVjZDdlNTc1OTUzZWYwOGNiYzcyZTZhM2FmNWY2Y2JlZjZkNDJkNDEifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/engine.py#L53-L68",
+          "version": "repo-lines-v1:sha256:02889ced3d4ac14e990b191816704c31f83f2637f236fe225cc1621e9d4cd73e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyY2Y2NjNjOGVjMTJmZTI0YTU0ODUzZDAzYzVlMjcxNjc0M2NmZDQ5MWQ4ZmUwODliNDA4YWM3NjdjN2I1NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3NDhiMDYzYzQyZTU3MjJiZjM2OGY1MWNjYTYyZTA4MWNlOGEwYTQ2MTIwMDJiN2ZkNjI5MjlhZThlMjYyNjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4YzAzNjM5MGI1ZWRmYmQ2Mjg4MjNjYTMzMmU4MjkyMmRjMGQ0MTQ3OTUxZGJhNTM3OTFkZDA2MGEwOTJmNTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhYWU5ZGQxNWYyOWM2NmVjNTNhMDFhMmI4MWI5ODc3ODBhZjk0ZDM1M2VkMTY2ZWMzZTA0Zjk3NGViMjNhZTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f476cfa7307b4d9294a9d64f66e7979a",
+      "statement": "The WhisperX pipeline runs large-v3-turbo on CPU (int8, ko, VAD 0.6/0.4) with hotword biasing packed from terms→names→aliases under a 200-character budget, aligns and diarizes on MPS with automatic CPU retry, and treats a checkpoint as reusable only when its engine tag is whisperx or absent — skipping only transcribe and align, since diarization, filtering, and publication always re-run.",
+      "evidence": [
+        {
+          "resource": "repo://worker/galpi_worker/core.py#L132-L157",
+          "version": "repo-lines-v1:sha256:3ef04962fd910e263b57f3a905740819fc714154878d58b7bf233b0e2ff4d09b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmNTc4NjdkZmU5MGNhODUyYmRlY2E1ZDViNzJjN2M5YTQ0MmQ4ODQ1NTY4M2Q3NDYwZjI5NDM2MTFiYTZkYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5YTQyMGM1YTNiOGYxNzUyMjEzZWJiNTAyZWYzZDg1MDg0ZjFiZjk5ZDBkMzZiNTc5YjEwMjhiZjkwNjNkMDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI5OTNjZDEzNjI1N2I5YjNhZjM2MjdkYzViY2JiZWY2YmZkYmUwZDY1NzRjOWQyODg0ZGU1NmI3N2IwM2Y4NmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYyYjgxZjc2Y2RkOWViN2M5NmQzZTc5NWQ0M2ZmYTIwNjgwNjVhNzQyY2U2ZjQzZTRjODZlOWU4YTJiZmViNGQifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/engine.py#L33-L50",
+          "version": "repo-lines-v1:sha256:03a00ac6564b7ab5143ee0bea99c7165cecd361d5710c5da0930c4600453559d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyYzFlM2RjMmY0YWM0NzM1YmYxYjM4ZjIyMGJiNDZkOTJkODMxNjRkZWNhYzdkYTU3NDcyNjQxY2ZjMzU3MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5ZTQ0MDJlZTA0YTU3YWExNzNlZDY0NGU3Mjg2NzI5Y2ZiNDRiYThlNDhmMmQxZWE3Yzk1YTQ4YzAzNmJhNTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlNWVmMzdkMjRkMzkxNGY0ZTY3NTA1NDg0YTRmNjY2NTc4YWZmZTg1NjVhNTJkNWNjYzQ2Zjk2NmJmYmVlNjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0NWYyY2QyYWI2Njg3YTUwZTFlZDc4NzgyZWM0MDVkMzQ5OTEwYzM2YzE5MWU5YWMzN2Q1ZmM0ZTAyODFmZWUifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/engine.py#L71-L183",
+          "version": "repo-lines-v1:sha256:3f13cc45efa9a031f3ab8dff74a1f3ce08fa0d144d9a481afa9a907db66288a6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZDhkNzkxOGJhOTQyYzQyNTAyN2M0Y2FlNWMxOGIxMTVkNGZjZGM5MTM1YjYyNzEyNmJmM2EwYWI1YjQ5MDE2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1OTA5YTUzYTYxOGQwMjhlMWQzMDAwYzBhN2FiY2VlY2JlNWZiMzdmNGU1MTFlZmU0NjY0M2ZhZDZlNjY4NzJmIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJiZGE3ZjA4Y2FjOWMxMzhiZmIwNzYwMmQ5NmFiMjFjY2RmNTU5NzA4YjIzYmEyOTgzNjQ0NDQ4ZjlhMjYzZDFhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjYmQyMzM2NDhhMmJiYjhjNGMyNTZlMTBiMWM0NjQyNzAwZWE4OTBhYWQ2N2E0ODUzNmIwNzgzZjcxNmRjNTc5In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_179ba744598846188fb41ac0639a4a30",
+      "statement": "The Qwen3 pipeline decodes any input through the bundled ffmpeg to 16 kHz mono WAV, plans ~25 s chunks capped at 30 s cut at ffmpeg silencedetect midpoints (staying under mlx-qwen3-asr's own re-split limit), runs the MLX 8-bit session per chunk with language Korean, timestamps, and a freeform bias context built from the ASR-context file and hard-capped at the 500-character BIAS_CONTEXT_CHAR_BUDGET.",
+      "evidence": [
+        {
+          "resource": "repo://worker/galpi_worker/qwen3.py#L185-L242",
+          "version": "repo-lines-v1:sha256:9037fcd7e8b3e58597786e9d899dc87f457b75eb9028a08209bd10b6c436562e:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5YTk4YmQ4NDU3MzFmYmVkM2M5MzViOWUyN2Q1YTg4ZTUwOWY4ODMzMDc4NGNjNzRkMGE3MGVmZDhjYzI4NzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlZjA4ZDczNmE5ZjJjYmFiYmRhM2RjYjQ1ZDRmOTVjOGY0Y2RhNzI1M2Y3MzZiNjIyMTFkYmU1ODE0ZWIzZGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYzRhN2QxY2M3OTZhYmEzZTQ2NzIzMzI3ZjUxN2U5ZjgxMTk4MmQyNTBmMDcwMjk4NmU0YjU3NjRhZDk1ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5ZDQ4OGI0NDhiOTc4NjNmNGFiNjAxY2Y5MTI1OTkyNDM2YzVjYzIyYjc3NjljY2NhMmJjMGU1YzdiNmQzZWEifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/qwen3.py#L363-L394",
+          "version": "repo-lines-v1:sha256:26a4b61a4a1002554b92960fac6bbe4a9fca8cac22cc4fac023ddca15587aa97:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhMDY2MDVjMzRjYTAxOTE4YTNkNTAyZTdjYmNiNWI1MjRjN2JkNjFmNmUwNTBjMzQ3YjUxNDM2MTk5MWNlNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2ZmU2MmFjOWFjMzhhOGI1ZDM1ZWZjZjc4YjBmYmNlYWQwOWI2ZTdlYWFlODI4MTA2ZjlkNTU2OTA1NmM0YWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzZGYyYWNmMDZlOGMzZjAzYzcxMzVjNmU4YWM1YTljYTU0MzJhYmUwNmE3NGFjYTBmZGQ5YTUzYTAwOGY5ODciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjNTBmNTI4NDYzYzI4YzgzYTZjNzRiYTYyOWY0YTE5MjdjNTIwY2U1Y2JjMThjOWZhMWExMTY0YmIwYTE3NWYifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/qwen3.py#L43-L58",
+          "version": "repo-lines-v1:sha256:4b6ceea25da1789620c835e7940d43b8398ff26ad47c740f4e359542c17e76d3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhZTBmNmFjZTQ1M2VkNjA3M2RmNzRjZGViNGE0YjUzYjI3MWZhMGViZTg0YzdhNGU0YzUzNzg1ZTc4YzQzMDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlNjU5MWI1MjkzMzI4NTg1NjcxYjJiYjk4ZmY4YTE2ZDZkN2E1MWI3MTY4YjlmMTEyMDUwMjg2OTgwMGVlNDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3NDgxOTMxY2UwNzIxNTA2ODcwNGE4Y2RiMzM3Y2IyNGMxM2Y2MzQ1MTMxNDczYjY4NDQzNTYxMmQ3Y2UwOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgyNDAxNjZkYTVhYjQzY2E3ZDZhMWIzNzlhNGE1OTVhNjY1NDg2ZTI5YzA5ZmVhOGQyZDQ3ZjBlMGZhMzZiNTkifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/qwen3.py#L510-L525",
+          "version": "repo-lines-v1:sha256:7e86c92ba4442abd2d75c19584a9a8f0eb4c2c4cc593bd7e780886b024a01a6a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1Y2I1OTZkNzUyY2Y0Yjg5ZGY0YWFlYWFkZDJhOTQ0NjdhZTdjYzQ5MWEyZWE0MDViZTIyMWEzYjM0NzlhNDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxZmIwZTNlNzg1Mjk4YTlkM2RkY2Y2YjFlOGMzNjIzZjlmNmI5MmVhMTU5YzI2OTAwNTAwMzUyZjEwNDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhMjhmMzA0MGRmYmViNjhjYzk0NjA4NDdiODVkYjU5ZDNlMGFkNzA5Nzk5NzFhNzM0YzQ5NWEyMTBiOWViN2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI5Y2UzNjUyM2UyMGU0OGIwMTFiY2M2NmE5MjQ3YjZkNGMxNGIzYWQ5NmViZDY3ZjM4MDA5MGE5YWMzM2NhN2UifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9a0b96cabbc848bba4de02b1377d537b",
+      "statement": "Qwen3 checkpoints raw aligner word spans in <stem>.aligned.v2.json and reads one back only when the engine tag is exactly qwen3 (the other engine's file is re-transcribed over, pinned by test_checkpoint_round_trips_and_rejects_the_other_engine); diarization uses pyannote community-1's exclusive speaker variant on MPS with CPU retry and the speaker hint as num_speakers or min/max_speakers, and group_word_spans breaks segments at terminal punctuation, a speaker change, a 0.8 s pause, or a 12 s limit.",
+      "evidence": [
+        {
+          "resource": "repo://worker/galpi_worker/qwen3.py#L280-L329",
+          "version": "repo-lines-v1:sha256:4b6aaca9d50d3cbb466ef525a505142e67268faa5852e1b8850e8d5322462322:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlODIxYjliYjQyOWFiNDlmYmQ3ZjgxYjE1ZGI5YzAzMzA0MTYzYjBiY2ZlMGU5YzExOGE0NTI4ZWMyMGU3ZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwYzFmMTg4ZjE0MmVkN2E4MjQ2ODBiMjA3MTcyYzU1MTliYzYxNGE0OGZkYTdjZjE2N2VkYjhkZGY3OTk1NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM4OTY4MDU1YmVjYTk1YTdlNGM4Y2U4YWIzNDQ3ZTczNjI2ZjBiMjZkYTI3ZjkwMmQ5NDNmN2UxMjhlOGI1ZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4NDg5N2NlYThkNDYwMGM0MmQ3NDBiNDJmMzFmN2JmYmJhNDFlNTIyNTMzYWE0MWNkMjNkNjFlMjljOGUwOTQifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/qwen3.py#L605-L649",
+          "version": "repo-lines-v1:sha256:8a0fba3ac3df030998a425ff26e49dcb83f25e91aaf13ffe26ac0c58a2cae016:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdjOWNhZWJjZjdhZDhhZDYwZTg0ZjhiN2JkNzUwMmMyOGMwOTc4ODZlN2JhOWRhZTllNTJhNWJmZDA2ZGI3MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmMDQyOTUxNDVlNDYwOGRkY2YxYTZmMjk5ZDQ4MDlmMzg0YWZkZDNlMWQ5NWZhMGRhZjllZmQ2OTYxNmJjMmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5MzRkOTMxNzM5OWQ4NzFiMWU1YTVkMWYwNWM2MzMzMjdiNDhhZDIzYTA4YTgxZGU2NmE5Y2U0YzhmYWI4YTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3NDg2YTkxYTA3ZmEyZjQwNDRjYjc5YTlhMTcyYWQ0MGZlM2MwZmIzMWM1YjgxOWVlNDVhMDY1YmU4NDBiZmEifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/qwen3.py#L662-L709",
+          "version": "repo-lines-v1:sha256:758ffd06aac76841fc503b7626315675ab8bd5aab778d42b0a3760ccfa7d3a65:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkMWU1Yjk4NmNjNGFmZWZjZTEyOGRmZTVhYjA3NDdhZDFjYjBkZjBhOGRkNzkwNzM2MjhjMWExNzkzMGRmN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkZDI0NDU4MmI2ZmIwM2QyM2I4NDE1YWJlY2QzNDZiMGM5ZjQ2NmI2Zjc1MmIwNjgxODljZTdlOWEyZGMzNTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlhODJlYmU5ZWQ0MDdjM2E2YmE0YjAwMzQyOTJiYWE1MmMxMWNlNWFlMjg2MTA3NDAyZGU0NzkyZWVlY2FjZmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhZDZlMjBiNmVhMWYzZjQwMjJlNGQ4MmNjNDZjZWNiY2ZkMzc0ZjJhMTdjZmJiNjA2MWNkZTY3MGM2MzU2YWIifQ"
+        },
+        {
+          "resource": "repo://worker/tests/test_qwen3.py#L172-L193",
+          "version": "repo-lines-v1:sha256:431b23d835dacf2fe83c32d5f15d04b03e7faffb68909ad862d1a369184b0d37:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwN2ZhMmZjY2MwNTliZmJmZTQ5MDY2ZTUxYjdiYTBmMGJjYTEyNTBhNDVkZGY2YjcxOTYyMmY4YzBjZGUyNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxNDBjOGU3NzdjMmRlMmQ3NTRmMGJjOGIxOTZjNTQ2NDdhM2YxOGY1ZDUzMjUxNTM5ZTUyMjFmZGQzMjJhNmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ1YmQ0MDJiNmY3Y2FmMWM4YTNhZWVjNDQ5YWEwYTk3YWUxYzQyODU5YWI4MGNlOWNkNDU3ODQ2ZGE5NjQ4YTYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c4266232c44d49c88b48c380373df96e",
+      "statement": "Worker filtering drops known hallucination phrases plus token-dominance repetition loops and repeated-phrase loops by coverage thresholds, and filter_segments additionally drops tail-noise segments after a ≥120 s silence past the audio midpoint; the kept/filtered counts ride the completed event and surface as the result summary.",
+      "evidence": [
+        {
+          "resource": "repo://src/ui/app-view.ts#L271-L275",
+          "version": "repo-lines-v1:sha256:7e5757e6328c95376ecfa3ff3301623781432184adf67358d75a53a4f63ed6e8:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmVlNGNjZTdkZmViMTZjMmY5NTU3MTE1N2VkM2YzNTgzNzRmZWI2MjkyNDhiYjc5NzliZmNhNDk3ZTdkODg4NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzQxNmUxNGZjNGJmMWEzOWNjZTg0NzBhMjU2MTc3MjA2NGUwMzRmZGMyMzI1NGY1ODg0MDEwZmZmZjMzMWJmNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzYxMzZiYTc3ZThkNjdkZmM0MjRlNzk2MTE2ODFiZjNlYzYxZDNiZWU1NDk2Nzk2OGQzYzI0NjgyOTcyNDUwYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzRkOThiZDlhN2Y0NjUwM2NmNzQ0NWM5Yjc2ZGVjYTMwY2M0MjMxNzM3NjQxYjNiNTM1ZmVmMDhkMzgyMDc0NiJ9"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/artifacts.py#L27-L55",
+          "version": "repo-lines-v1:sha256:f8af4987fae4f00552066bd857ad53cbace25ffaaea8fa133a1bfc20c3faa547:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MzE4YjgxNjYxMTRlNjYwZjYwMjg1NTc5N2I1YTk3ZDlhMmMyNjIyYTU4ZGU5MDg1YjBmMjUzOWQ0ZjRjNGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBhZmU1NGQ3MTcyOTJiMjZmZjY3ZDYwODA2ZGExYjY4NGQ3OTZmMDc4NjM4YzFjZmViOTgyYjM4MzEzNTAzMjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxYWNiMzA1NzcwNmRiNTg5YWJhNzVhN2EzNzlmZmQ0NmM5N2JjNmY4YWQzODBjNjA3Yjc5ZmVhODM5YWY5YzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4NzEwMTFkYWY2NWQwMzQzMzVlOWZmZjI4OTZlYjBhMjJhZjUyMDE3ZjM5M2EzMTFlYmI1MjcyOTljNDZmOGUifQ"
+        },
+        {
+          "resource": "repo://worker/galpi_worker/core.py#L36-L107",
+          "version": "repo-lines-v1:sha256:10b7580e60d62ff8de2dcfcea6350ed4e8839e8a7bb29a3a6cbbd5855525dae4:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljZTc4YmZhYzZkZGU4MmNkNWY2MjVhYzJlM2ViYzhlMTZlMzA5NWIzNWUwOWNkNjJjZmU2MjY0OTgyZTJlYWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1YmM0NzExZWNjYTA0NTBhZmM4MzI3NzlhODg2NzZhN2M2OTYwZmEzZGE1YWY0MTBlZTAyZDFlMDE1MTU5MWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3MTUxOWJlNWJlZDNkMWI4NjA2NGI1N2IyNmVhZjkxZGUxYTRmYzFiOTljMjMyZjU0ODM3MjNmZGFmMTBkYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4OTg5MDA5ODIxMDlkNWU4MmM5MTNiOTc5MDI2Y2UwZDk0YjZhZGQzMTkyMGRlNDFjZWI4ZDYzMDUxODdmZDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d2641618429e4a31874b692052e9d1c3",
+      "statement": "TauriEvents forwards each worker event to the webview as a job-event payload of jobId plus the flattened camelCase event, matching the Zod rawJobEventSchema; toJobEvent demotes an unrecognized payload into a frontend-stream log line instead of throwing, because a throw inside Tauri's callback would make a host/window mismatch vanish silently.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/inbound/tauri.rs#L155-L180",
+          "version": "repo-lines-v1:sha256:eef7b01461516db5872b75eb6817772b637242f6828058b5d9c45d7ede307c4d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwN2RlNzNjMjY2MmNjZjJhZTU0NmE3N2Y3ZjIyNDk2ZTcwYmUzYjkzNTI5ZDY0NWYzNzI2YzIzNTE1MmYzNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzYjkxYmJmYmI2MmMxMDBiOWZhMjA0MTYyMTEyYTczNmEwOGNhYjA5M2NiNGYxM2U3NDQ2ODAzNjkyOGM0NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ3OTQyYzVhY2E5YmE1ZGI4OGQ4ZDU1ZmZhNTA4OGIyNGFlNjJiODJlMjg2MjFmODc0YzJmNGFjM2ZiMzYyODMifQ"
+        },
+        {
+          "resource": "repo://src/adapters/tauri-backend.ts#L279-L307",
+          "version": "repo-lines-v1:sha256:af34ac971e5d1ad764ea098e190d0aa36402d4df8139efba2de5d3bab5f79747:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTgwZTk2NGY4M2E0NzNmNDNkNDQzODQ2Mjk0OWQ2OGI1NjAwZmRhNzg3ZjE2Mzc0NWQwMGRlODljYmYzNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1be330a1af734fd18a048d7d7cec7754",
+      "statement": "reduceJobEvent's load-bearing rules are: events with a foreign jobId are ignored, settled statuses drop further phase events, percent is monotonic within a phase via Math.max (new phases adopt their own value), logs are split and capped at 200 lines, and completed settles the job at phase writing and 100%.",
+      "evidence": [
+        {
+          "resource": "repo://src/application/job-machine.test.ts#L45-L91",
+          "version": "repo-lines-v1:sha256:24ed1cbfaea3b754e0d8b3538982111d41622e385e75a90166bfffc640b516ef:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZjQxM2UzMDAwYmVmNjJlMjYyMGY5OTMyYzBjYmU3ZDllYzg4ODRjNDBmNGQ3NTdhNWY5ZDUxNWZlZTAzOWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMzUyNTg5YzM0ZDNjNjA2ODU5MzFiNmVjYzRkNTA5OTFhN2M1NmM4ZmJhMjg5NDExNDY1NzY5MDI3MmNhYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJkMGVjOWI3YWQ3YTFhZDk3MjVmNDM0YmM3ZjFlYmM3NmIwMjU3MWVjMjgyOTU2MmUxYzdjNjc1ZDhjYmM0MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmZGNjNGE2ZjZjZjc2NDg3YWE2MmE1YTc2MmYwYzIzZjk0YTI1ZWQ5NzA2ZmY3MzIyMjJhM2ZkZDU1ZGM1YjUifQ"
+        },
+        {
+          "resource": "repo://src/application/job-machine.ts#L25-L110",
+          "version": "repo-lines-v1:sha256:0e6869acd4ebf5dfd4cd243e0c521209f096cc73af88e956b8e210c0af318880:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMDRhYWVmOTlhOWM4N2NmYTBlMjBmMjJhYjlhZmZjM2U3NDZkZjEzMzI0ZDA3YWMxZWQ3MDNjMTU1ZjE4M2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVlZmIxODYxNWE2MmNlNGVkYjU2ZWI2NWIyYmI0MDI1MGFkNWI3OTcxMjA5MjVlOWRkNDExYjhmNWQ4MWFjZWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1MzM4OGM5ZjU5OGY3ZTZkN2Q1OWUyMTU3N2E0ZTY2NDdjOWQ2YWZlNjVjODkxOTQ1ZmM5ZmVhNmMyNWU5MzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3c4ba00aa1314610926ecb99ca06638b",
+      "statement": "The worker's phase vocabulary (transcribing, aligning, diarizing, writing) drives the transcription panel's waveform rail: phaseState ranks the phase list against the phaseOrder array, marking earlier phases complete, the current one current, and later ones pending.",
+      "evidence": [
+        {
+          "resource": "repo://src/ui/app-template.ts#L124-L129",
+          "version": "repo-lines-v1:sha256:7a6965d3c38bf9c9daa21f510341b1d69185a04ebb5cdd279e0fe68de8785f9a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmFhZjZiOGM3ZmVhZTFmODg5MTE0OTA3NjcyMDE3M2VlY2I2MjI4NjE0Yjk4MGMyOTgxZmI2YWRkYWQ1Zjc0OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmEzZmZiNTk1Yzk3YjBjMDY1YjFkODdlY2QzY2FlMDliOWEzMTg3MmRhNmY5ODJiMzI0ZmVmNzE5MGE5OTJlOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTc1N2NiYWM0OThlMDRjMjI1M2VhNWIzNWY4MDJjZTBkZDQzZWMzNmJhZmQ3NDMwNzNjMDMzYTRiYTc5OTQ2MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDk3OTllZTgxN2U5MDUzY2VhMTQwOWVkMzk0YzhhYWUwOWFjMWRiOTBmMDZmMjA1ZDNlMjBiZWYzYmNjMGE1NiJ9"
+        },
+        {
+          "resource": "repo://src/ui/app-view.ts#L248-L256",
+          "version": "repo-lines-v1:sha256:29193880f9e20ebbb8b757a15d1c123731e62551a8c47d4e329912194c68f736:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTQ1ODdhZjc3M2ZiYWYxMzBjMGMxNjg0Yjk1MzA5MGRlOGU2MmQzOTBlZDA5NGMyNTc4ZDY3M2VmMDQ0YjY0OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWE5MmIyN2MxNTRmYWNjMmJiMGEwN2U4ODk2NjFkNTQwMjBlYjU1NjVkNTk5NzQ5MTRiNmQwOTc4ZDRiYmQ4NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjQyNTBlNGVlM2IwOThkNTY3ZTM5Yzc3OGJhYWVmNTcyMTk0YzdmODgyODk5NGVlYTYxMGIyOTg2NGYwYjc2YiJ9"
+        },
+        {
+          "resource": "repo://src/ui/app-view.ts#L437-L454",
+          "version": "repo-lines-v1:sha256:52e80af139216811d27f762cd62d722214a2e8849935ae149349bf6e8c31607f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZjlkNjQ0NDk4YzhjMjI3OGVmOTQ5OTNjMWQxNzY5NTI2YmNjMDQwNmE4NDI5NzAwNDI3NDNjMGJkYWI3NTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE4MGM4ZWJkYmE5YjM0ZjJkNGViYjJmMTZhNmYwZDE0NzNmZWNiYWVhYTAxYzQyNDE2M2I4MTY5MTQ3MTIyNzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRjNWM0MDI5MDNjN2I4ZGVlOTYxYTMwYjZhM2RmMmZhNzAxMjgzNmNjNjEwMTJlNTJmMmU0ZTIzZDU2NWQwNmEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d118b105c8464e728042ef540eb556c9",
+      "statement": "On completion the adapter contain-checks the returned srt/txt/checkpoint paths under the canonicalized job folder (WORKER_PROTOCOL_ERROR if outside), maps an empty checkpoint string to None, and run_transcription registers the Artifacts under the job id — the registration that later makes open_artifact and reveal_output work — before renderResult shows the artifact rows, the counts summary, and hides the checkpoint row when absent.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/transcription.rs#L123-L195",
+          "version": "repo-lines-v1:sha256:5a15b1816a86be1ee80c240965fdfa932f777120e553e874cb4a1649e306c0b8:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzNjk0MzBmNGQ1YTVmNjE3NjYzMDJmZGRkOTY5ODE5YzU4ODI3ZThhYTg5N2RlZjJhN2I3ZDMzZTMzZGJkNTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJiYWZjMTI5ZmE1OTRmNTcxMTJjNzRmNzE4ZjJlYjIzYzUxZDIzYmI0MzhkNDBjN2E5OTY0ZjgzMzU4YTIzNjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L232-L259",
+          "version": "repo-lines-v1:sha256:873780cf93cef949a66f2d6d6acb5cb59a96fd63a687f7323f982c4132c534b0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNTRkYjJhODZiNTU1ZjAwZmE4OGJlZTcxNmRhM2UwMjI4MzVjYTk1NzM0OGQxNzQxMTRmNTJkNWJmZTg0ODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZThhZTUwOWQ2MzY5ODFmMTdlNTdmOGY5OTI5MWZmN2I3Yzc2YTM3YjA1YjkwZDg0YmFjYTlmNDQ5Njk4M2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJkMDQ5MTJmNGIyYjdhYjRjNjMwNzkwZjkxYjg5YTU2ZDI2NGU3MDkzNThjNWM1ODI3MzlmYjA5YzVhODY1ODcifQ"
+        },
+        {
+          "resource": "repo://src/ui/app-view.ts#L271-L292",
+          "version": "repo-lines-v1:sha256:aa0275fdf23fb2185cc2e466c8177a4446ec659f11c2e56a026991f6d958465f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlZTRjY2U3ZGZlYjE2YzJmOTU1NzExNTdlZDNmMzU4Mzc0ZmViNjI5MjQ4YmI3OTc5YmZjYTQ5N2U3ZDg4ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2MTM2YmE3N2U4ZDY3ZGZjNDI0ZTc5NjExNjgxYmYzZWM2MWQzYmVlNTQ5Njc5NjhkM2MyNDY4Mjk3MjQ1MGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5YzNjYjY0NjY1MTlmNDZmZWE4YzQwZDRkMWNhM2M3MjNhMzk2NWFiNzJlYzBmOTVhZjdlMGY1ZThjMDgyMDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6bd86470b127403eb1ce6c7b1b619fb1",
+      "statement": "On failure the worker's error event sets status failed with the cause in the error slot while the message slot keeps the stable \"작업이 실패했습니다.\" line; the subsequent IPC rejection re-applies the same state through failJob without duplicating the announcement, and the JobGuard drop has already freed the slot for the next attempt.",
+      "evidence": [
+        {
+          "resource": "repo://src/application/job-machine.ts#L112-L121",
+          "version": "repo-lines-v1:sha256:66f70e305328ff82cb8501f28cbe25b99cd2c649bf65fc93dfe49905613ac554:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4ZTBjMjNiNTEwOTE0ZDNjZjMxYmVmYjdhZDk2ZWM0ODBkNTMwYTNkOWY4MmQ1MzFiMjNhYjAxZTU5ZmMxYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyOWY1MzY0Mjk0ZWFlNDVkNGY2NGMwNjFjNDg5OWJkY2FjNzA4N2ZhNzU0YzMwZmZmMGE5MjQxNDY2OTdlMTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/application/job-machine.ts#L71-L79",
+          "version": "repo-lines-v1:sha256:53625c2c98db92a3d3b682cc79bb323296787304443ea9d8c432be171798f86c:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjBhMTI1OTJhZWNiZjNiYWZmMmEyZjZiYmRhNzNmZjk2ZjA4YjFlMTMwOTRhYWZmYmNkYTczYTQyZTdlYWNhNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzk3NGViMTcxNDMxOTdmMzQ3ZGQzZjc1NmUwYWRmYmI4NTNmZDI0MjRjZWI3YzJjMzk5OGE0ZWU5ODExOWUwMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2JjZmI2NGFjYWI1MTNkNjg0MjdlZTNkOWJiZjE5M2JhNzYwZDQwMWY5YWI2YzM5ZmFkNWVjOWYzNzNjYzI0ZSJ9"
+        },
+        {
+          "resource": "repo://src/ui/controller.ts#L435-L442",
+          "version": "repo-lines-v1:sha256:ea3beb2d6a080183538f741fbf6370624f4e23fe96373fb7b9f228b48592c7b6:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzVhYTE4NDEyMTM5YTE0NzY3OTA3ZWM2Mjc3OTdjZTk4YTJmNDg3OTBlMWExNDBhMTA5M2RiZDkxMjA2ODVhOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGJiYjZhNzcyMGNjOGQwNWFjZDY1YTk4YzQzMTU5OTY0NjU1MWM1OTRmYmVkM2Y1YTdiOGI0ZWZiOGRiMDY4ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a20437ab136b414ea5824581d727a8f4",
+      "statement": "Cancellation escalates through signals: JobRegistry::cancel (JOB_NOT_FOUND, ALREADY_CANCELLING, or JOB_FINISHED) fires the oneshot; terminate_on_cancel sends SIGTERM, waits 3 s, then SIGKILLs the whole process group and reaps the child, returning CANCELLED; the UI applies cancelJob immediately on the click and failJob no-ops on an already-cancelled state, so cancellation is announced once as a decision rather than a failure.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/process.rs#L42-L54",
+          "version": "repo-lines-v1:sha256:ea2f4473c276ff7e970ad7c1a18e888f4d13d3b9ef2766fe7ff456405300461f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4ZWY0OGI2YTg2MDVjZWJmOTExMjBmOGFlYjIyZjFlYzI0MzhlYTQ3MDAzOWJjZDJiNTZmMTc1YThlMmNjZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxNzc3YWZlMmViNTMxMjAxZjQwNmQ1OGI4YzM3YjEyOWY2NjJmM2MzZjU5YjgxNWM2Y2Q3NmI1NzIzNzZlOWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ0NTZhMTA2Mzg2YjE0NzhjNDhlMTA3ZGE2NmExYzNiMTY5YzI0M2U1YWNhZDNmN2E2ZmQ1YjdiYjhlZDA1ZmEifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/jobs.rs#L81-L94",
+          "version": "repo-lines-v1:sha256:3aa0b7b11a8f48206a9f3c81d657c378e64dc56f96e3afaee5bcf7822f17f042:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0OTQ1NTVjNmFjZDM1ZmQzN2Q4YzUzMjAyYTFlY2U5MDZkNTVjODgyOTE4MWJlMjQ3Mzg0MzVlNjhjOTFkZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2MmVlNTdlNDFhOGMyMGFlMDE2NGRmMjYxNDM5ZGNjNDk5ZDM1MjA4MzQxNTE1MTZkMDQ3ZThkZWFlOGE0NjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4MTg5N2Q1OTVhZjM4Y2VkYTc5ODc1NDc3MjY4NmY3ZGVmOWNmOTc1NjUwYTUxYjk4NzU3ZTM4NzZjOTQyMzAifQ"
+        },
+        {
+          "resource": "repo://src/application/job-machine.ts#L107-L110",
+          "version": "repo-lines-v1:sha256:e1e1d988c444e232d477bc41108c0dad0e2b7259e929b09fe471cc00112968f4:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmEwYzg5ZTI2YmZhMTRlODI3MmNkMzdhZTAyMzcxNzFjZTQ4MjVkMmEzMWVjZDA1NjBlYTQ0YWI0ZjAyYTc4MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmI1ODBlOTY0ZjgzYTQ3M2Y0M2Q0NDM4NDYyOTQ5ZDY4YjU2MDBmZGE3ODdmMTYzNzQ1ZDAwZGU4OWNiZjM2YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDUzMzg4YzlmNTk4ZjdlNmQ3ZDU5ZTIxNTc3YTRlNjY0N2M5ZDZhZmU2NWM4OTE5NDVmYzlmZWE2YzI1ZTkzMiJ9"
+        },
+        {
+          "resource": "repo://src/ui/controller.ts#L359-L371",
+          "version": "repo-lines-v1:sha256:bce700586ba87de2086037706eb0e670bd334100578f7760f2b45439cbc0d17a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxYzFiNWE1ZDY2MTY3OGI2NTc3MGQ5MzdjZTc4NmRjN2I1ODZlNzVhZDc2Mzc4ZGI4ZTBiNDJiNmZmYWUyNDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3ZDg2MzJlNTRlOTI5OGFiYjk1ODcyN2UyZDUxNDA4YWJhZjEzNjYwMzUzNzkxMDE0MGFiZjY1YjMwYWI2MTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2Mjg3ZmUxZmMwMjg1ZjE2NTc0YmRmYWM4NmI3YzhmNzA5NGRjZTQwMGMzZWU1Y2I3NTNlYTg1NjkzNDk4OTgifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-05T11:36:27.677Z"
+  }
+}

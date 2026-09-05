@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:30a95d529a4d7e72ee3b0e7b6be24cb52bea3082ff15d3f61788d14432948b74",
+  "pageVersion": "sha256:957b79c68bb926defe7cf37fd534272119b7a3cc55dd6cd2e7442e5de652a7f6",
   "claims": [
     {
       "id": "claim_bd7c035dd8134259b65b54899ac591dc",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://worker/galpi_worker/assistant_stream.py#L1-L27",
-          "version": "repo-lines-v1:sha256:d1dcfa3047cdeb7c1e499f26ca312a27acfdb9a5356b22c32717bbb90385673f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkNDY1ZmNiNDc2MWE0ZTk4NmNlMmY2NWI5N2Q3ZDJlODAyN2M2NjcxM2MzNGE3ZmY4ZDA2YmQ2N2FiOTM5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMmM4Y2YwOGY4ZGNkMzhmYmM0ZmFkMDBlMjBlY2Y4MDQ2OTA3MzNmODUwY2Y1Y2M3NDg0YjEwOWI5NTY3YjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA0OWRjM2ZiYThhZDc4M2M0ZGU4ZjQzNjc1NDA4ZTRhNmU2YmEyYmIxMjQ3NWE3OWZmYWE5YWYyMTg4NWI0ZmMifQ"
+          "version": "repo-lines-v1:sha256:d97452eab7173a559423f53655b02429ff9e00da8d9cc124845f74ebdb3a367d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkNDY1ZmNiNDc2MWE0ZTk4NmNlMmY2NWI5N2Q3ZDJlODAyN2M2NjcxM2MzNGE3ZmY4ZDA2YmQ2N2FiOTM5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMmM4Y2YwOGY4ZGNkMzhmYmM0ZmFkMDBlMjBlY2Y4MDQ2OTA3MzNmODUwY2Y1Y2M3NDg0YjEwOWI5NTY3YjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA0OWRjM2ZiYThhZDc4M2M0ZGU4ZjQzNjc1NDA4ZTRhNmU2YmEyYmIxMjQ3NWE3OWZmYWE5YWYyMTg4NWI0ZmMifQ"
         },
         {
           "resource": "repo://worker/galpi_worker/preparation.py#L1-L43",
@@ -36,7 +36,7 @@
     },
     {
       "id": "claim_cfda5da1a25543b7804bb9a7e2fdddcd",
-      "statement": "stage-sidecars.ts also refreshes src-tauri/resources/worker with the galpi_worker source (excluding bytecode caches) plus the four requirements/lock files, whose locks are what the installer reads; at runtime uv_binary() resolves the bundled uv from src-tauri/binaries in debug builds and from beside the executable in release builds (tauri.conf.json externalBin).",
+      "statement": "stage-sidecars.ts also refreshes src-tauri/resources/worker with the galpi_worker source (excluding bytecode caches) plus the four requirements/lock files, whose locks are what the installer reads; at runtime uv_binary() resolves the bare path src-tauri/binaries/uv-aarch64-apple-darwin in debug builds and from beside the executable in release builds (tauri.conf.json externalBin).",
       "evidence": [
         {
           "resource": "repo://scripts/stage-sidecars.ts#L56-L78",
@@ -108,7 +108,7 @@
         },
         {
           "resource": "repo://worker/galpi_worker/assistant_stream.py#L1-L27",
-          "version": "repo-lines-v1:sha256:d1dcfa3047cdeb7c1e499f26ca312a27acfdb9a5356b22c32717bbb90385673f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkNDY1ZmNiNDc2MWE0ZTk4NmNlMmY2NWI5N2Q3ZDJlODAyN2M2NjcxM2MzNGE3ZmY4ZDA2YmQ2N2FiOTM5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMmM4Y2YwOGY4ZGNkMzhmYmM0ZmFkMDBlMjBlY2Y4MDQ2OTA3MzNmODUwY2Y1Y2M3NDg0YjEwOWI5NTY3YjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA0OWRjM2ZiYThhZDc4M2M0ZGU4ZjQzNjc1NDA4ZTRhNmU2YmEyYmIxMjQ3NWE3OWZmYWE5YWYyMTg4NWI0ZmMifQ"
+          "version": "repo-lines-v1:sha256:d97452eab7173a559423f53655b02429ff9e00da8d9cc124845f74ebdb3a367d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkNDY1ZmNiNDc2MWE0ZTk4NmNlMmY2NWI5N2Q3ZDJlODAyN2M2NjcxM2MzNGE3ZmY4ZDA2YmQ2N2FiOTM5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMmM4Y2YwOGY4ZGNkMzhmYmM0ZmFkMDBlMjBlY2Y4MDQ2OTA3MzNmODUwY2Y1Y2M3NDg0YjEwOWI5NTY3YjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA0OWRjM2ZiYThhZDc4M2M0ZGU4ZjQzNjc1NDA4ZTRhNmU2YmEyYmIxMjQ3NWE3OWZmYWE5YWYyMTg4NWI0ZmMifQ"
         }
       ]
     },
@@ -132,7 +132,7 @@
     },
     {
       "id": "claim_31a4abc49ec94d698f6f4fb5aa8fcd07",
-      "statement": "Model needs are two presets sharing one gated diarizer — Qwen3 uses Qwen/Qwen3-ASR-1.7B, Qwen/Qwen3-ForcedAligner-0.6B and pyannote/speaker-diarization-community-1; WhisperX uses mobiuslabsgmbh/faster-whisper-large-v3-turbo, kresnik/wav2vec2-large-xlsr-korean and the same pyannote model — and models_ready is file-based: a valid manifest (protocol 1 plus engine version) plus the presence of models--Org--Name hub directories derived mechanically from the repo ids.",
+      "statement": "Model needs are two presets sharing one gated diarizer — Qwen3 uses Qwen/Qwen3-ASR-1.7B, Qwen/Qwen3-ForcedAligner-0.6B and pyannote/speaker-diarization-community-1; WhisperX uses mobiuslabsgmbh/faster-whisper-large-v3-turbo, kresnik/wav2vec2-large-xlsr-korean and the same pyannote model — and models_ready is file-based: a valid manifest (protocol 1 plus engine version) plus the presence of models--Org--Name hub directories derived mechanically from the repo ids, with the Qwen3 preset additionally requiring the converted MLX weights file at cache/mlx/qwen3-asr-1.7b-8bit.",
       "evidence": [
         {
           "resource": "repo://src-tauri/src/adapters/outbound/environment.rs#L168-L212",
@@ -149,7 +149,7 @@
       "statement": "The pyannote gate is satisfied by a fine-grained, read-only token (hf_ prefix) scoped to that one repository and needed only for the first download; the settings sheet's token guide documents this and says the token may be left empty once access was approved or the model is already on the Mac, and the model-access button opens the Hugging Face model page through the opener plugin — the webview's only outbound navigation.",
       "evidence": [
         {
-          "resource": "repo://src/adapters/tauri-backend.ts#L264-L266",
+          "resource": "repo://src/adapters/tauri-backend.ts#L268-L270",
           "version": "repo-lines-v1:sha256:50f1d282ae277fa724463f0a9d636fda791bd7927c1e91b998b534f4614641f6:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGI2MjM3ZGQxMDcwOWQyOGZiMDU3M2U4OWZiODE3NGMwYjQ3YTYzYWE4OTRhMTI0ODdhMWQzZmI2NjkwMzVjYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzZjYTg1NWIzYmUzZGFkYWU1MDIwOGE4ZjNmZGQwMmI5NDI2MzUwYjI3YWJkNzllNzQwNDQ3NjE1MzMwMDBlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjA2ZWVkMjZlNDQwYjNiYjA3YTY0NmJmMWFjM2Y4MjdmZDQ1ZTQ4MWZjYjc4NTI1MDkwNjg5NWQwNDVmYTg2YSJ9"
         },
         {
@@ -226,7 +226,7 @@
     },
     {
       "id": "claim_16060ecddb35477184eebae80e6312b8",
-      "statement": "The Hugging Face token is scoped to prepare only: Application::prepare fills a missing token from settings, setup passes it only into the model environment (process_environment inserts HF_TOKEN for a non-blank trimmed value), while the install environment and every transcription environment are built with None — and Qwen3 transcription instead forces both offline flags because it runs only after the readiness gate, so no network round trip can occur mid-meeting.",
+      "statement": "The Hugging Face token is scoped to prepare only: Application::prepare fills a missing token from settings, setup passes it only into the model environment (process_environment inserts HF_TOKEN for a non-blank trimmed rules) while the install environment and every transcription environment are built with None — and Qwen3 transcription instead forces both offline flags because it runs only after the readiness gate, so no network round trip can occur mid-meeting.",
       "evidence": [
         {
           "resource": "repo://src-tauri/src/adapters/outbound/environment.rs#L139-L143",
@@ -266,15 +266,15 @@
     },
     {
       "id": "claim_1e02743308734c968f95b2d91d783676",
-      "statement": "The minutes request is POST {base_url}/chat/completions with stream=true, Accept: text/event-stream, Authorization: Bearer <key>, temperature 0.2 and a 600-second timeout; the base URL defaults to https://api.z.ai/api/coding/paas/v4 (overridable via GALPI_ASSISTANT_BASE_URL), the model defaults to glm-5.3 on both host and worker sides, GLM models on the default endpoint get max_tokens 131072 while everything else gets 32768, and reasoning_effort is sent only when one of low/medium/high/max was chosen so other providers receive a clean OpenAI-compatible body.",
+      "statement": "The minutes request is POST {base_url}/chat/completions with stream=true, Accept: text/event-stream, Authorization: Bearer <key>, temperature 0.2 and a 600-second timeout; the base URL defaults to https://api.z.ai/api/coding/paas/v4 (overridable via GALPI_ASSISTANT_BASE_URL), the model defaults to glm-5.3-flash on both host and worker sides (frontend DEFAULT_ASSISTANT_MODEL, worker DEFAULT_MODEL), GLM models on the default endpoint get max_tokens 131072 while everything else gets 32768, and reasoning_effort is sent only when one of low/medium/high/max was chosen so other providers receive a clean OpenAI-compatible body.",
       "evidence": [
         {
-          "resource": "repo://src/ui/assistant-settings.ts#L11-L47",
-          "version": "repo-lines-v1:sha256:e79789ba11a9b363c7a1cb38803f3cf50670a9e83c4b4ab1380541cdada576b1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiZWI2ODkyMTY5OWQwOGIxMDEzNTNkMWQwZGE1ZWQ2YzJiZTFiNGVhMDRhM2YwMWE0ZTI2YjE3NzM3MDkwODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyZGJhMDU5NDk2MTU0Y2ZmOTIzMGY5ZTIwNGVjNmFmNzc1NWZlZjZjNzNhODBkMWQxZDk1YTg2ZGEzZjdiNTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3MjNjMmY3MzE2YzBiMGZhZTllNWFkZGQxMDAzZThhZTcwZmZjOTcwNDcwYmQxNGRmZWEzYTQ4NWQwMmViNzEifQ"
+          "resource": "repo://src/ui/assistant-settings.ts",
+          "version": "repo-file-v1:sha256:5868cbc9966d0b76f1b2e471a9eba64a018922a01543d3bd821d6637fc1b641b"
         },
         {
           "resource": "repo://worker/galpi_worker/assistant_stream.py#L15-L27",
-          "version": "repo-lines-v1:sha256:efc86f2421802c2bb7d69a87f1695bfeea56717169cfdc0293e65eab1b96dfa7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiZjkyN2I5Mjg5NDcyZGU3YTcxOTU5ZWM3NGE2MTg1OGQ1YWVhMzk3NDliZTc0YTc4NjRlNGU4YTk0Y2I0ZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMmM4Y2YwOGY4ZGNkMzhmYmM0ZmFkMDBlMjBlY2Y4MDQ2OTA3MzNmODUwY2Y1Y2M3NDg0YjEwOWI5NTY3YjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRmY2RiZDAwMGNjMTRjNDdlMTU4MmY2OWFhNGRhY2FjNmE3ZjYwZDNlN2U3YWM1YzA5N2YwN2FkOTY1ZDhlMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA0OWRjM2ZiYThhZDc4M2M0ZGU4ZjQzNjc1NDA4ZTRhNmU2YmEyYmIxMjQ3NWE3OWZmYWE5YWYyMTg4NWI0ZmMifQ"
+          "version": "repo-lines-v1:sha256:21d3501f70676d9e079ccc47a073120673dc41e9f364c4b7c42846cdc3582b8f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiZjkyN2I5Mjg5NDcyZGU3YTcxOTU5ZWM3NGE2MTg1OGQ1YWVhMzk3NDliZTc0YTc4NjRlNGU4YTk0Y2I0ZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMmM4Y2YwOGY4ZGNkMzhmYmM0ZmFkMDBlMjBlY2Y4MDQ2OTA3MzNmODUwY2Y1Y2M3NDg0YjEwOWI5NTY3YjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRmY2RiZDAwMGNjMTRjNDdlMTU4MmY2OWFhNGRhY2FjNmE3ZjYwZDNlN2U3YWM1YzA5N2YwN2FkOTY1ZDhlMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA0OWRjM2ZiYThhZDc4M2M0ZGU4ZjQzNjc1NDA4ZTRhNmU2YmEyYmIxMjQ3NWE3OWZmYWE5YWYyMTg4NWI0ZmMifQ"
         },
         {
           "resource": "repo://worker/galpi_worker/assistant_stream.py#L189-L269",
@@ -287,8 +287,8 @@
       "statement": "The allowed reasoning efforts (low, medium, high, max) are enforced on both sides: AssistantSettings::trimmed lowercases the saved value and drops anything else, and the worker silently ignores an unknown GALPI_ASSISTANT_REASONING_EFFORT rather than sending it.",
       "evidence": [
         {
-          "resource": "repo://src-tauri/src/domain/roster.rs#L82-L94",
-          "version": "repo-lines-v1:sha256:8da7b03cfbd723e0ae856c4fb8432835ec78c5d733e542849d5b9f9afede6e5a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5OTE2ZDNlYmQzMWE0MjkxNjEwMjliNDZmZWQ3NDYwYzdiNWJkNzE3YTliN2U2MzQxY2ExYjJkYWRjNjg4M2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmNmMwYzEyMTBhZjM4NWVkNWYxMjBiMmQ1ZDg5ZmIyZjg1ODkzZGIzMDg4ZjY0NmRhN2Q0ZDc2YzBhODJkMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVhMDJiMDQ1ODZmMzQ0NGE3ZjViNjExNjI1MTlmYjY5YWE1ZDJjN2U3YzgxNjQ3YWIxMzhjYjUxOGQzYzhjZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhNjQ0MmZjMDNmMDIyYTYxYzJmYTVmZTg5OGNlMzgzMTIxY2M1Njk5MTg0YmY4OWEzN2U3YWYzZjliZDFlZGIifQ"
+          "resource": "repo://src-tauri/src/domain/roster.rs#L86-L95",
+          "version": "repo-lines-v1:sha256:e2786881a6b879d0550e517da18b49ca8543d0a0fdc74c94bad96bc588b5c902:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmMTI2MmNiNWI3YzUyZjA0MDI4NDA0ZjE4YWRiYjM1Yzk2YmU0YjM3ZTY4YTU1Y2UzYjE4NTM2YjM0YTg0YzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmNmMwYzEyMTBhZjM4NWVkNWYxMjBiMmQ1ZDg5ZmIyZjg1ODkzZGIzMDg4ZjY0NmRhN2Q0ZDc2YzBhODJkMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNTE1OGE4ZDBiNmRmMWRmZTJiNTUxYjAxNmE2YjQ3OWQwZWFlZjAxMTRlOTg5NDFjODA5ZDFmMzk1NzhmNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhNjQ0MmZjMDNmMDIyYTYxYzJmYTVmZTg5OGNlMzgzMTIxY2M1Njk5MTg0YmY4OWEzN2U3YWYzZjliZDFlZGIifQ"
         },
         {
           "resource": "repo://worker/galpi_worker/assistant_stream.py#L235-L239",
@@ -350,11 +350,11 @@
         },
         {
           "resource": "repo://src-tauri/src/adapters/outbound/settings.rs#L285-L302",
-          "version": "repo-lines-v1:sha256:982add9034592b76a1d9aa262c6cd916f7120a1267a5eea203bdfcab1b974663:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwYmRhOGYwOGYzZGVlZTRmZmY1Y2I1MTFhMjQ0NDJmZTEwZTY1YjBjMjliYWNhMTU1MzY1YzViM2I2NjkzYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkZTlkNjZkYWU4OGZmZmJkOWI4OTYxNTE1ZDcwYThhMDFlNzE0ZTE4ZGJlNDY5OWE1OTkyNmU4M2FmYTE0YjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYyMmNkYjc1YjYxYTczZTViYTMyOTA3MzZhNDBmODczNTQ4NzcwODU1YmQwNzBlMjQxYjQ3MzI4Yzg3ZTlhYjMifQ"
+          "version": "repo-lines-v1:sha256:ad2af7cff505d22f310c30f21e109ad4cd6aa4a4b2dde961921f184d444c4d34:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwYmRhOGYwOGYzZGVlZTRmZmY1Y2I1MTFhMjQ0NDJmZTEwZTY1YjBjMjliYWNhMTU1MzY1YzViM2I2NjkzYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1ZjY2M2Y5YmJkNmMxNWJkOWU2NjRlYWVjMjJkMDAwOGRhODQwYWY5ZTJiOWU4YmE0ZjVmNDhjNGE5ODRhOTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkZTlkNjZkYWU4OGZmZmJkOWI4OTYxNTE1ZDcwYThhMDFlNzE0ZTE4ZGJlNDY5OWE1OTkyNmU4M2FmYTE0YjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjNGNlNmMzZGVjODdkMmEzOTMyMmY0MjVjZmZkZWRjY2JlOWJiM2U4MmZkMGQ0NzVjOWRmYTZjY2Y5OWUwZjkifQ"
         },
         {
-          "resource": "repo://src-tauri/src/application/use_cases.rs#L125-L138",
-          "version": "repo-lines-v1:sha256:787fd469b2b5a0bab01873c5e9ed9f9dd3ae534ecb9d5aefcfc2256db111e7bb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxM2QzYzRhODAyYThiNTJkYzY3M2U5ZDhlMDYwNTM3ZTYzZmI0OWUwMzI3MDU5OTNjMjAxMDI0M2M4YjhkNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzYjNjOWFlYTQwNjJkMDYyMjgxNzk0OWU0MjBiODdjMjA0YzMxZGE2MmJkZWUxZjEzNWU3MDMwNWQwYTE5MTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYzYzEwYzczNWU4MzQ4YzU1ZTE2YTQ5YzljZTdhMWM4NGNmMDI2M2JhYTQ0YTY5YzcxZjk3MmEwNmUzNGJlNjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5M2VjMmEwMzg0YmE2ZTE4MTNmNjY4ODU1MGY4ZDU2NTJiNGZkYTg2ODJlOGU2YTliOGE4YjczNTM4YWY5MDMifQ"
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L126-L146",
+          "version": "repo-lines-v1:sha256:d123bd4c5c4916d73511e08e823e66b72b2cdcafa93e96c22b808cf9a099fe99:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmMDk1NmNlYjZjYWJmMmE2YWY2MGU0OTFhODBiMjc3NGU5ZWVjODQ0M2M1MjliNTdkNjFjYWIwMzk4OTkyMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzYjNjOWFlYTQwNjJkMDYyMjgxNzk0OWU0MjBiODdjMjA0YzMxZGE2MmJkZWUxZjEzNWU3MDMwNWQwYTE5MTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYxMjU4YWE3NWMzMzczZGU2ZmU3MDBkZDQ5ZmU4ZmMxZjhjMzc1OWZmYTAzZjQ2MjIwYWYwNDgwM2RlYmY3YTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5M2VjMmEwMzg0YmE2ZTE4MTNmNjY4ODU1MGY4ZDU2NTJiNGZkYTg2ODJlOGU2YTliOGE4YjczNTM4YWY5MDMifQ"
         },
         {
           "resource": "repo://worker/galpi_worker/refine.py#L144-L146",
@@ -421,10 +421,66 @@
           "version": "repo-lines-v1:sha256:411229b502db2b0118d9350c4d35efa266459f3519a40e6f38abfad29070b893:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGM2Njg1OTJjZGRlODI0ZjE2ZjkxZDk5YTFlMmZjNTM1OTk1MWNlZDU0YzIyODUyMjFkOWRiOGMxNjVjNjhlZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGI0NzdiMjIyMWExZDkwODY2MTZmNGQyNDdlMWEwN2MxMDNhMTg4MWFhMzQ0ODYyMzk0NDFmOWI4MTQwZWU2OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGRmZWYyNTllZDJjNjA4MWU2NzFmZWRhNDI2MTg4ZTdlMzk0NDQ0OGJjNWUyMmI3YzI3ZTM3OWVjMjMwMjc2YSJ9"
         }
       ]
+    },
+    {
+      "id": "claim_c64c5ecb8ca5404f9610a117247c1d86",
+      "statement": "The privacy boundary is user-triggered and payload-bounded: audio recording and transcription (both presets) never leave the Mac, and only pressing AI augmentation sends anything outside — the transcript plus the user-chosen context (participants selected for that meeting, glossary, background) to the configured API, as the README warns.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L125-L126",
+          "version": "repo-lines-v1:sha256:f6299114e2970385decca499d90c0508146d83a8b3fbb5af2a8d741f962c2585:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWI2MzNlODE4ZGUwZjY1MzUyM2U5MThjYTBlMjhhMDM5OTgxNTNjMTQzN2E2M2RlOTIwZTgyNzA5OWI5MGJhZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGUyYmIyYTFkN2Y5YTI2Zjg2ODlkZDkwYzFmYTQxMGRiNDlmMjUxMjFkYWMyNDk4YjRiZmJlN2M4YWU4NDc5MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmU0NjhlZDBmZDFkYjU4YTA0MGY4YTg1Zjk1ZWZhZmE3YTlkNDE1OTU5ZGNlYTE1Yzc1ZmJkNjBjODJiOWY1NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTVlM2FmZjFjOGQ4MzBhNTYxNDM4NTgyZWUwN2ZmNmFhODBkMWE0ZmE4YzczNzU1MjhmZmNmM2QzZDNhN2JlNSJ9"
+        },
+        {
+          "resource": "repo://src-tauri/src/application/use_cases.rs#L147-L168",
+          "version": "repo-lines-v1:sha256:feec8071af6ba212192e9c4f937d4c21e92f73eeec34a2b0e97588e866661d98:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdjNTJjY2MwOGI1YWE0OGU2MzFjM2M4MTQ1MmI3OTAwMDkwYjYyZmYxN2Y4NThmOWU0ZGQ3NDFiN2YyMGZiNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3NmM3NjNlMmYzZmVjMDkzMTc1NmE5ZWE0ZjNiNGY4MDMwZWM0NjY5MjM3OGNkZmJiYmU1MDY3NTBmYzgwNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3OTQ5MmE0ZmVlNzk2YjE5OGUyYzI5OTljMzhlNDFjMmZlNTFmNTQ4OTgyMjNkNzE0NzM4Mjg0ZGEwODYwYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlZGVkN2ZkOTY3ZjVjMWU4ZDg1ZDRkNmVjMDg2MDAxMmRkMzBhMDU3Njk3YWQ0MWU0ZTM2ZWZmZjVjYTE5YjcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_50389050167949dd8916d32fbf95be20",
+      "statement": "The base worker environment is privacy-shaped regardless of preset: HF_HOME and TORCH_HOME are redirected into the app cache so models live and die with Galpi's data folder, and HF_HUB_DISABLE_IMPLICIT_TOKEN=1, HF_HUB_DISABLE_TELEMETRY=1, PYANNOTE_METRICS_ENABLED=false and DO_NOT_TRACK=1 are always set, so Hugging Face libraries authenticate only via the explicit HF_TOKEN the host passes and never report telemetry.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/environment.rs#L101-L125",
+          "version": "repo-lines-v1:sha256:a12abd26357458f8a729954e66ea913db79a1b0dad34094dbfec33e76a34d7e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NGM2NmRhNDZjYTgxOTVkZTUxZDc1M2ZkY2UzMTUxM2U3Yjg0YmQyY2NhOGUyNzUwNThiMWNiZGQxYThhYTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2NTQ4N2UzNWM2ZTlhNDU3YjJiMjk3NDFmNWVjMTQ3ZDRmNjBmMDg3M2QzZjE4MzViYjJlNzk2MDEzZjc4NTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViZWY0ZjFlNmRhNmY0N2Q5NjMwNTA5YzJhOTBiNjUxYjdhYzhiYzQ3MmJjNjVhMDEyNjQ3OWFhMGJmZDI3NjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0MThkMjIxNzUzNWE1MmZkMDgzZjJmZmExYTExMGQzOTBlOTdkNmM0MjZkYjJiM2U3YmI0Y2Q4N2JlMjZiNjAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6f1f41117e8d432ea526e901e582ddef",
+      "statement": "Microphone access is a user-granted macOS permission rather than a config flag: Info.plist declares NSMicrophoneUsageDescription so macOS prompts at the first recording that opens the default input device, CPAL's PermissionDenied maps to the dedicated MICROPHONE_PERMISSION_DENIED error code (beside MICROPHONE_UNAVAILABLE / MICROPHONE_BUSY / UNSUPPORTED_AUDIO_CONFIG), and partial recording files are cleaned up on failure.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/Info.plist#L4-L7",
+          "version": "repo-lines-v1:sha256:23985fef30c95640abfaca02968ae14fe4e7d3fcc53bc591ccb0083b388c40e2:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTYzYjY3NWY1ZWM0ZGUyZmE3OGIwM2M1ZDRiZTAxZTA1MzZkZWZlYmI0MzcwYmJjZjdiNzQ5ZjQ5ZDFmN2Y2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGJjMTAwMmRlZGI1MTg0MjZjYjBmNTRkMGMxYjQ4NmVkMmQxNTc1NDUxNjgwMjg0YzM3MDQxZTQwMjM5ODU4YyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTA5OTgxYWI3MWNiZWUzOWZjYzAxMTUzNzZhM2YzOGY5ZmZiYTU4OWU1NTZhZDMyMjNhNWZiMzI0ODE5NjFhYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTIwMmJkZDdhZmJmOTE1YzRjZjBlOWI1MGVkZTk1NzFkN2RjMmRjYmVkZjhmNTQ2N2IyZWZkODc5M2JiY2RiNCJ9"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/cleanup.rs#L30-L39",
+          "version": "repo-lines-v1:sha256:2367a10bd0b54e98172878f29d117e1cd5cd5816e2ef9d8912ce553b37bc1e26:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjZjNlNGRlOTgzM2ZiNzVhMmUzMGQwOWExMmQ4MmIzZWM0MzBjMGIxMTQ4OGE0YTI5ODY4YTBmMWM4YmE0ODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ4ZDE5NzIxNTA3YmUzNjhjNWJkYTUwODYzNWUwZWJlOGJlMTk4YzM1YTA3Y2ZkNTVkNmZmMWFmOTRhMGMyODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0OGQ2YWMxNjMzMTNiM2EzZTE5ZDkwMjYxZDZhMWNmMTQxYjJmYzVhNmExOTg4ZjU3M2EwMTBjOGJmZWI5NTIifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/mod.rs#L107-L118",
+          "version": "repo-lines-v1:sha256:c7790414fa5a72c1eaf4a36b269ebd637f97cd455f2e077477487f7a05848105:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5MWZjNjc4NGE2OGI1ODMzYzQzNmIwMGVkMDk4M2Q2NzI4MGRlNTNkNjQ1NTdmNDMxMzI2MDI0MTQ4YTI3NzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwYjFhODcxYmI5ZTQ0MDE1MzM5M2NhNWFmM2I3MTc3MDkzMDliMDNhNjY0Mjg4YmVhYWE3YzdmMDQ5YTMyNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkwNDAxMGJkOThhYTZjY2Q3NzhiYjBiNmI3NDMwYzhiODVmNTQ1MDNlNWVjYzA2OWIyZjBiODU0ZTZkMGFhYjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJlMTU0OTk1MzU0MWM5MjQxZmUyZWZjZTYzYTkzNGJkNzkwZThlNzg0OWY4NzcwOGNiZjQwYjUxZTczYTJjMmIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a972cde1559a4eb3adcbb969a06dff68",
+      "statement": "Recording blocks app sleep for its whole lifetime: start_sync acquires a PreventUserIdleSystemSleep IOPMAssertion through the RAII SleepBlocker held inside ActiveRecording, so stop/cancel/drop releases it immediately; the display may still sleep, and if powerd rejects the assertion, recording logs a warning and proceeds without sleep protection instead of failing.",
+      "evidence": [
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/mod.rs#L151-L160",
+          "version": "repo-lines-v1:sha256:1239e88835465d2cd367d5eda1f60e5687af5051fdbac7c0730f2b4c9b73e63b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1YTk5ZGI0ZDZiYzg0N2FmMjE2ZmE4YjY1YjlkNTRmNzA3NWQ0ZDBkY2M4NmEwODhlY2E5MjliMzExYzUxYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQzZTQwZjZlMGY2Y2ZkN2M2NDA5OWJjMDAxOTk2MTEyMWUwZTA2NGI3ZTkzMTVmOTQ3NjQ3MGMxNWZmMmRhZGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1ZWI3YTNhOTczMjQxZTlhNDMxNDc5MmE1MDlmOGMyZDUyODVlYzEzMjVmZDYxNjEzOWQwMzViYTA3MTJjYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFmYWI4MzlhNmIyOTllZWUzZThlYzEzZjllYTdjMmZlMWVlNGYwMDljMGZiYTY2NzBhYTFmNTJhYTA2NmU2MjcifQ"
+        },
+        {
+          "resource": "repo://src-tauri/src/adapters/outbound/recording/power.rs#L45-L89",
+          "version": "repo-lines-v1:sha256:b3940260ec3b57d5ad9ddf59036d44d903aaccd333f058d1b19e94606ae430be:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MTRlZGIzNTQ5ZDkwYWFmOWE0MGFlN2UwZjk3MDE2MjYwMGM2Yjc4YTI4MWRhN2MwZDEyNTk1MjFiYTYzMTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkMWU2NWIyY2IxNTFhODQ4YTQyM2QxY2EyMDU5MTk0NzU2MzYzOTI2OGZlNDhhMzFkMmM1YWJiNjM0Nzg5OGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5NTk2NjY1MmEzNWNhYWNjMmJhNThhZjIyZGU3NzBhNzcyZmRhMWRhMDI0MGNkZmM4ZTVlZWM0NzFiNWRhYmMifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.4.3",
-    "at": "2026-08-29T12:09:06.549Z"
+    "at": "2026-09-05T11:36:27.677Z"
   }
 }

@@ -1,16 +1,17 @@
 ---
 type: integration
 title: External Services & Bundled Runtimes
-description: Catalog of every outside dependency Galpi touches — Hugging Face model downloads and their gating, the OpenAI-compatible minutes API, the bundled uv/Python/ffmpeg runtimes — plus credential storage and the CSP that keeps everything else local.
-tags: [integrations, hugging-face, openai-compatible, zai, glm, uv, python, ffmpeg, secrets, keychain, csp, offline, setup]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
+description: Catalog of every outside dependency Galpi touches — Hugging Face model downloads and their gating, the OpenAI-compatible minutes API, the bundled uv/Python/ffmpeg runtimes — plus credential storage, macOS platform behaviors, and the CSP that keeps everything else local.
+tags: [integrations, hugging-face, openai-compatible, zai, glm, uv, python, ffmpeg, secrets, keychain, csp, offline, setup, macos]
 sources:
+  - id: openwiki-source-23775c3de52f3ab95a13cb8b
+    resource: repo://README.md
   - id: openwiki-source-6229fc7315005e295371fb06
     resource: repo://scripts/stage-sidecars.ts
   - id: openwiki-source-7d9c2c95cd6f848332130fbd
     resource: repo://src-tauri/build.rs
+  - id: openwiki-source-3603704595d6f088d32021e8
+    resource: repo://src-tauri/Info.plist
   - id: openwiki-source-87d1f8af141955ca8bda47d2
     resource: repo://src-tauri/src/adapters/outbound/environment.rs
   - id: openwiki-source-50d7224d8200d7e5105680c0
@@ -19,6 +20,12 @@ sources:
     resource: repo://src-tauri/src/adapters/outbound/paths.rs
   - id: openwiki-source-07c2f942d8b752165e98f3e6
     resource: repo://src-tauri/src/adapters/outbound/process.rs
+  - id: openwiki-source-2452ca055a13a74e08841276
+    resource: repo://src-tauri/src/adapters/outbound/recording/cleanup.rs
+  - id: openwiki-source-a2eb5989fa751c658b9cef90
+    resource: repo://src-tauri/src/adapters/outbound/recording/mod.rs
+  - id: openwiki-source-b46f99e0f4bfb1e9e280f100
+    resource: repo://src-tauri/src/adapters/outbound/recording/power.rs
   - id: openwiki-source-7337133a31c82ce450d3f861
     resource: repo://src-tauri/src/adapters/outbound/refinement.rs
   - id: openwiki-source-58d014256acfdb73f4007636
@@ -55,20 +62,27 @@ sources:
     resource: repo://worker/galpi_worker/refine.py
   - id: openwiki-source-756f49236467f760abc5144f
     resource: repo://worker/requirements-qwen3.txt
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
+verified:
+  - by: openwiki/0.4.3
+    at: 2026-09-05T11:36:27.677Z
 ---
 
 # External Services & Bundled Runtimes
 
 Galpi is a local-first app: recording, transcription, alignment, and
-diarization never leave the machine. Exactly two outside services are touched
-at runtime — **Hugging Face** (model downloads, prepare-time only) and an
-**OpenAI-compatible chat completions API** (minutes refinement only). Build
-time adds two more: the pinned **uv** release that is staged into the bundle,
-and the **PyPI** wheels uv installs into the app-private virtualenvs. This
-page catalogs each touchpoint, the credential it needs, how failures surface,
-and the boundaries that keep new integrations from leaking outside the
-adapters.
+diarization never leave the machine, and audio never does. Exactly two outside
+services are touched at runtime — **Hugging Face** (model downloads, prepare-time
+only) and an **OpenAI-compatible chat completions API** (minutes refinement
+only). Even the second boundary is user-triggered and payload-limited: only
+when the user runs AI augmentation does the speaker-labeled transcript plus the
+context they chose — the participants selected for that meeting, the glossary,
+the background text — cross to the configured API. Build time adds two more
+touchpoints: the pinned **uv** release that is staged into the bundle, and the
+**PyPI** wheels uv installs into the app-private virtualenvs. This page
+catalogs each touchpoint, the credential it needs, how failures surface, the
+macOS platform behaviors around the local path, and the boundaries that keep
+new integrations from leaking outside the adapters.
 
 ## Inventory of outside touchpoints
 
@@ -167,14 +181,15 @@ Two presets, one shared diarizer:
 | Qwen3 (default) | `Qwen/Qwen3-ASR-1.7B`, `Qwen/Qwen3-ForcedAligner-0.6B`, `pyannote/speaker-diarization-community-1` |
 | WhisperX (legacy) | `mobiuslabsgmbh/faster-whisper-large-v3-turbo`, `kresnik/wav2vec2-large-xlsr-korean`, `pyannote/speaker-diarization-community-1` |
 
-`pyannote/speaker-diarization-community-1` is a **gated** repository: the
-user must accept its terms and needs a token for the first download only. The
-settings sheet's token guide spells out the recipe — a **Fine-grained**,
+`pyannote/speaker-diarization-community-1` is the **only gated** repository:
+the user must accept its terms and needs a token for the first download only.
+The settings sheet's token guide spells out the recipe — a **Fine-grained**,
 read-only token whose read permission covers only that repository, whose
-value starts with `hf_` — and notes that once access was approved, or the
+value starts with `hf_`, with write and Inference Providers permissions
+explicitly unnecessary — and notes that once access was approved, or the
 model is already on the Mac, the token can be left empty. The "model access"
-button opens the model page in the system browser (`openUrl`), the only
-outbound action the webview performs itself.
+button opens the model page in the system browser (`openUrl` via the opener
+plugin), the only outbound URL the webview asks the host to open.
 
 Readiness is file-based, not history-based: `models_ready` for each preset
 requires its manifest (`models/ready.json` / `models/qwen3-ready.json`,
@@ -182,6 +197,9 @@ requires its manifest (`models/ready.json` / `models/qwen3-ready.json`,
 expected hub directories inside the app cache. Directory names are derived
 mechanically from repo ids (`Org/Name` → `models--Org--Name` via
 `cache_dir_name`), which is why a setup test pins the `Qwen/…` repo-id shape.
+The Qwen3 preset adds one more file to the gate: the converted 8-bit MLX
+weights must exist at `cache/mlx/qwen3-asr-1.7b-8bit`, since transcription
+loads from that conversion, not from the raw snapshot.
 
 ### Download mechanics
 
@@ -234,6 +252,17 @@ model environment gains `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1` —
 with a complete tokenless cache the network cannot improve anything, and a
 token would suggest the user intends gated access.
 
+### The base worker environment is privacy-shaped
+
+Every worker environment (`process_environment`) is built from scratch by the
+host, and its Hugging Face posture is fixed regardless of preset: `HF_HOME`
+and `TORCH_HOME` are redirected into the app cache (so models live — and die
+— with Galpi's data folder), while `HF_HUB_DISABLE_IMPLICIT_TOKEN`,
+`HF_HUB_DISABLE_TELEMETRY`, `PYANNOTE_METRICS_ENABLED=false`, and
+`DO_NOT_TRACK=1` are always set. Model downloads authenticate only through the
+explicit `HF_TOKEN` the host decides to pass, and the libraries never phone
+home about usage.
+
 ### Credential flow: HF token reaches only the prepare environment
 
 The token is stored via settings (see [Credential storage](#credential-storage))
@@ -243,6 +272,9 @@ setup. In `setup.rs`, only the **model** environment carries it:
 value is non-empty, while the install environment and — critically — every
 **transcription** environment are built with `None`. The token exists solely
 so the gated download can authenticate; it never rides along to inference.
+Qwen3 transcription additionally forces `HF_HUB_OFFLINE=1` and
+`TRANSFORMERS_OFFLINE=1` because it only runs after the readiness gate — no
+network round trip can occur mid-meeting.
 
 ### Failure surfaces
 
@@ -270,17 +302,26 @@ Hugging Face problems never fail silently:
   `GALPI_ASSISTANT_BASE_URL` and defaults to
   `https://api.z.ai/api/coding/paas/v4`; any OpenAI-compatible endpoint
   works (the UI suggests OpenRouter as `https://openrouter.ai/api/v1`).
-- **Model**: defaults to `glm-5.3` (the worker CLI's `--model` default and the
-  frontend's `DEFAULT_ASSISTANT_MODEL` agree).
+- **Model**: defaults to `glm-5.3-flash` — the worker CLI's `--model` default
+  (`DEFAULT_MODEL`) and the frontend's `DEFAULT_ASSISTANT_MODEL` agree.
 - **Timeout**: 600 seconds (`REQUEST_TIMEOUT_SECONDS`).
 - **Body**: `stream: true`, `temperature: 0.2`, and `max_tokens` of **131072**
   for GLM models on the default z.ai endpoint (the budget must cover
   reasoning plus the document) versus **32768** everywhere else.
 - **Reasoning effort**: `GALPI_ASSISTANT_REASONING_EFFORT` is included as
   `reasoning_effort` only when it is one of `low`, `medium`, `high`, `max`;
-  other providers receive a clean OpenAI-compatible body. The host validates
+  other providers receive a clean OpenAI-compatible body. The host enforces
   the same four values when trimming `AssistantSettings`, and the settings
   sheet defaults GLM models to `max`.
+
+The settings the sheet submits are shaped by `AssistantSettings::trimmed`
+before they are saved: `model`, `base_url`, and `background` are trimmed and
+blank values dropped; `reasoning_effort` is lowercased and discarded unless it
+is one of the four allowed values; nameless participants and termless
+glossary rows are dropped. The sheet itself never holds the key once stored —
+`apiKeyStored` is a boolean flag (set when the host holds a key or the user
+has just typed one), because reading the value is a keychain access and the
+autosave resubmits the whole document on every keystroke.
 
 ### Streaming, reasoning, and progress
 
@@ -338,6 +379,29 @@ selected participant roster, the glossary — is handed to the worker through
 **0600 temporary files** created with `create_new` (so an existing file is
 never written through) and deleted after the run, never through the argument
 vector where it would be world-visible in a process listing.
+
+## macOS platform behaviors
+
+The local path has its own platform contract:
+
+- **Microphone permission is granted at first recording.** The app declares
+  `NSMicrophoneUsageDescription` in `Info.plist`; macOS shows the TCC prompt
+  the first time a recording opens the default input device. A user who
+  declines does not get a cryptic failure — CPAL's `ErrorKind::PermissionDenied`
+  is mapped to the dedicated `MICROPHONE_PERMISSION_DENIED` error code (next
+  to `MICROPHONE_UNAVAILABLE`, `MICROPHONE_BUSY`, and
+  `UNSUPPORTED_AUDIO_CONFIG`), and the partial recording files are cleaned up.
+- **Recording blocks app sleep.** Starting a recording acquires a
+  `PreventUserIdleSystemSleep` `IOPMAssertion` via the RAII `SleepBlocker`
+  (`recording/power.rs`); the guard lives inside `ActiveRecording`, so
+  stopping, cancelling, or dropping the recording releases the assertion
+  immediately. The display may still sleep — only the system stays awake. If
+  powerd rejects the assertion, recording logs a warning and proceeds
+  unprotected rather than failing the meeting.
+- **Keychain is prepared but deliberately unwired.** Both credentials are
+  stored in the settings file, not the login keychain — see
+  [Credential storage](#credential-storage) for why ad-hoc signing forces
+  that posture and what flips it.
 
 ## Credential storage
 
@@ -450,10 +514,12 @@ When Galpi talks to Hugging Face, and when it deliberately refuses to.
   endpoint, `reasoning_effort` included only when chosen, reasoning-only
   progress reporting, and finish-reason-specific empty-document errors.
 - `src-tauri/src/application/tests.rs` — refinement sends the saved trimmed
-  key/model/base URL/effort and only the selected attendees.
+  key/model/base URL/effort and only the selected attendees; refinement is
+  rejected with `ASSISTANT_KEY_MISSING` before a key is saved.
 - `src-tauri/src/adapters/outbound/settings.rs` (tests) — assistant settings
   survive clearing the Hugging Face token; secrets round-trip through the
-  `SecretStore`.
+  `SecretStore`, are read once per launch, and an unchanged value never
+  reaches the store again.
 - `src/ui/app-view.dom.test.ts` — a refinement failure (e.g.
   `assistant request failed (401)`) surfaces in the augment panel and
   survives the busy reset.
@@ -464,9 +530,11 @@ When Galpi talks to Hugging Face, and when it deliberately refuses to.
 
 - [Engine Presets & Environment Readiness](../concepts/engines-and-environment.md)
   — the markers, manifests, and prepare orchestration these runtimes feed.
-<!-- openwiki: broken internal link [../concepts/roster-and-assistant-settings.md] file "../concepts/roster-and-assistant-settings.md" does not exist. Fix the href or restore the target, then delete this comment. -->
-- [Roster & Assistant Settings](../concepts/roster-and-assistant-settings.md)
-  — what travels to the minutes API besides the transcript.
+- [Settings & Secret Storage](../concepts/settings-and-secrets.md)
+  — the settings document, the autosave contract, and what travels to the
+  minutes API besides the transcript.
+- [Build & Packaging](../operations/build-and-packaging.md) — how the staged
+  uv and worker resources end up inside the bundle.
 - [AI Minutes Workflow](../workflows/ai-minutes.md) — the product flow around
   refinement.
 - [Engine Setup Workflow](../workflows/engine-setup.md) — the user-facing

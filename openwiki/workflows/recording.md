@@ -5,7 +5,7 @@ description: Traces the native microphone recording pipeline end to end — the 
 tags: [recording, microphone, cpal, coreaudio, wav, realtime, bounded-queue, backpressure, sleep-blocker, macos, tauri, cancellation, cleanup]
 verified:
   - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
+    at: 2026-09-05T11:36:27.677Z
 sources:
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
@@ -29,6 +29,8 @@ sources:
     resource: repo://src-tauri/src/adapters/outbound/recording/writer_tests.rs
   - id: openwiki-source-8e47055d0c3daeb7ad1442e6
     resource: repo://src-tauri/src/adapters/outbound/recording/writer.rs
+  - id: openwiki-source-2f0342428f8826cab75a467b
+    resource: repo://src-tauri/src/application/jobs.rs
   - id: openwiki-source-048f3b42276b6edc241e9386
     resource: repo://src-tauri/src/application/model.rs
   - id: openwiki-source-aedbb2decf760c195dd2edcf
@@ -41,6 +43,8 @@ sources:
     resource: repo://src/adapters/tauri-backend.ts
   - id: openwiki-source-627c59af158a20640fe52afa
     resource: repo://src/application/recording-machine.ts
+  - id: openwiki-source-4cd7ade02c7980045548012d
+    resource: repo://src/ui/app-view.ts
   - id: openwiki-source-7fce012a6f5ad5b4facc3ac7
     resource: repo://src/ui/controller.ts
   - id: openwiki-source-3912e7c689846fd3b4e941c5
@@ -49,7 +53,7 @@ sources:
     resource: repo://src/ui/recording-controller.test.ts
   - id: openwiki-source-be38b550d1a0f76f6bd6a48e
     resource: repo://src/ui/recording-controller.ts
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
 ---
 
 # Workflow: Microphone Recording
@@ -233,14 +237,17 @@ capture callback, the writer thread, and the stop path:
 
 - `record_failure` is the audio-thread-safe variant: it stores the code and
   message only, because emitting JSON across the IPC boundary must never
-  happen on the realtime thread. The callback uses it when it discovers the
-  writer thread is gone (`WAV_WRITER_FAILED`).
+  happen on the realtime thread. The callback uses it when a `try_send`
+  comes back `Disconnected` — the writer thread is gone, so the recording is
+  dead and the state only has to be visible to `stop`
+  (`WAV_WRITER_FAILED`).
 - `set_failure` stores **and** emits a `RecordingFailure { recordingId, code,
   message }` through the `RecordingEvents` port. `TauriEvents` implements it
   by emitting the `recording-event` Tauri event, which the frontend parses
-  with Zod in `listenToRecordingFailures`. The writer thread, the stream error
-  handler's `MICROPHONE_DISCONNECTED`, and the writer's `WAV_TOO_LARGE` all
-  emit this way, so the UI can surface native errors the moment they happen.
+  with Zod in `listenToRecordingFailures`. The stream error handler's
+  `MICROPHONE_DISCONNECTED` and the writer's `WAV_WRITE_FAILED` /
+  `WAV_TOO_LARGE` all emit this way, so the UI can surface native errors the
+  moment they happen.
 - `take_failure` drains the slot. `stop_sync` calls it after the writer
   finishes: a stored failure — including one emitted *during* the recording —
   turns the stop into an error and removes the partial file. This is what
@@ -327,6 +334,15 @@ The belt-and-braces design means a misbehaving or future second client of the
 port cannot bypass the UI-level guard, and id verification means a stale
 frontend cannot stop a session it did not start.
 
+The recording slot is also independent of the job slot. `Application` holds
+`active_recording` beside — not inside — the `JobRegistry` that owns the
+single active engine job, and the recording commands never claim or release a
+job slot, so recording and an engine job (engine setup, transcription,
+refinement) cannot block each other at the host layer. The shipped UI
+serializes them anyway: while a recording is active, `AppView.refreshActions`
+disables the transcription, import, transcript/output selection, and refine
+controls so nothing can race the capture.
+
 ## Frontend: RecordingController
 
 The frontend controller (`src/ui/recording-controller.ts`) and its pure state
@@ -350,9 +366,7 @@ nothing. The controller installs 1-second `setInterval` ticks plus
 `visibilitychange` and `focus` listeners — the visibility event is the first
 moment a frozen counter can catch up after 90 hidden seconds (pinned by the
 DOM test). A tick that only advances the clock takes the narrow
-`setRecordingTime` path, leaving buttons and messages untouched. While a
-recording is active, `AppView.refreshActions` disables transcription, import,
-output-folder, and refine actions so nothing can race the capture.
+`setRecordingTime` path, leaving buttons and messages untouched.
 
 **The recorder, not the clock, is authoritative at the end.** On a successful
 stop the controller passes `result.path` into the `selectAudio` callback wired
@@ -384,6 +398,9 @@ audio was replaced by silence.
   `NativeRecorder`; stop/cancel verify the recording id
   (`RECORDING_ID_MISMATCH`), and the native layer is the sole owner of the
   `ActiveRecording` slot.
+- The recording slot is separate from the job slot: recording commands never
+  touch the `JobRegistry`, so capture and engine jobs are independent at the
+  host layer.
 - A recording owns its meeting folder from the start instant; the finished
   WAV and every later artifact share one predictable name.
 - The `.wav.part` exists only while the recording is unresolved: stop
@@ -406,6 +423,5 @@ audio was replaced by silence.
   artifact.
 - [Rust Host Architecture](../architecture/rust-host.md) — where
   `NativeRecorder` sits in the hexagonal wiring.
-<!-- openwiki: broken internal link [../workflows/transcription.md] file "../workflows/transcription.md" does not exist. Fix the href or restore the target, then delete this comment. -->
 - [Transcription workflow](../workflows/transcription.md) — what happens to
   the auto-selected WAV after the recording completes.

@@ -1,10 +1,9 @@
 ---
 type: "Reference"
 title: "Workflow: AI Meeting Minutes (Refine)"
+description: "From refine button to published minutes: settings and attendee selection, the API key read at the one moment of need, 0600 context files, single-pass versus map/reduce routing at the 48,000-character boundary, SSE streaming with honest progress, and the imported-transcript variant."
+tags: [ai-minutes, refinement, minutes, assistant, sse, streaming, map-reduce, prompts, meeting-date, api-key, worker, tauri]
 openwiki_generated: true
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T12:09:06.549Z
 sources:
   - id: openwiki-source-87d1f8af141955ca8bda47d2
     resource: repo://src-tauri/src/adapters/outbound/environment.rs
@@ -36,6 +35,8 @@ sources:
     resource: repo://src/ui/app-view.ts
   - id: openwiki-source-7fce012a6f5ad5b4facc3ac7
     resource: repo://src/ui/controller.ts
+  - id: openwiki-source-d0fc2900c268a60d53ba1eb3
+    resource: repo://src/ui/participant-picker.ts
   - id: openwiki-source-e2187f531b128035d6432652
     resource: repo://worker/galpi_worker/__main__.py
   - id: openwiki-source-5f25284a6a84e2b7c5a07f23
@@ -52,7 +53,10 @@ sources:
     resource: repo://worker/tests/minutes_prompt_cases.py
   - id: openwiki-source-3721238f0160a6c818d5a60d
     resource: repo://worker/tests/refine_stream_cases.py
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T12:09:06.549Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-09-05T11:36:27.677Z" }
+verified:
+  - by: openwiki/0.4.3
+    at: 2026-09-05T11:36:27.677Z
 ---
 
 
@@ -73,11 +77,10 @@ attendees, decisions, and dates.
 The flow spans three runtimes and one page cannot be read without its
 neighbors: [worker protocol](../architecture/worker-protocol.md) owns the JSONL
 events shown here, [meetings and artifacts](../concepts/meetings-and-artifacts.md)
-owns the folder and naming rules, [roster and assistant
-settings](../concepts/roster-and-assistant-settings.md) owns where the
-participants and glossary come from, [external
+owns the folder and naming rules, [settings and
+secrets](../concepts/settings-and-secrets.md) owns where the participants,
+glossary, and API key come from, [external
 services](../integrations/external-services.md) owns the API contract and
-<!-- openwiki: broken internal link [transcription.md] file "transcription.md" does not exist. Fix the href or restore the target, then delete this comment. -->
 credential storage, and [transcription](transcription.md) documents the
 pipeline that produces the transcript this workflow consumes.
 
@@ -132,10 +135,12 @@ The two ids play different roles for the whole run:
   "open minutes" and "reveal output" keep working from the original result
   row.
 
-The attendee selection arrives as roster ids. `retainSelection`
-(`src/domain/participant.ts`) returns only ids that still exist in the roster,
-in roster order — so a stale selection survives a roster edit harmlessly, and
-the host's filter preserves roster order rather than click order.
+The attendee selection arrives as roster ids. `selectedIds()`
+(`src/ui/participant-picker.ts`) delegates to `retainSelection`
+(`src/domain/participant.ts`), which returns only ids that still exist in the
+roster, in roster order — so a stale selection survives a roster edit
+harmlessly, and the host's filter preserves roster order rather than click
+order.
 
 On the way back, the `refined` protocol event completes the job in the
 frontend state machine (phase `writing`, percent 100, message "회의록을
@@ -153,11 +158,12 @@ occupied:
 1. **Target lookup** — `jobs.artifacts(target)` fetches the meeting's
    `Artifacts`; an unknown id fails with `ARTIFACT_NOT_FOUND`.
 2. **Settings load** — `load_assistant()` returns the *trimmed* settings with
-   the key deliberately absent (`api_key: None`, boolean `api_key_stored`
-   only). This is why roster edits never touch the keychain.
+   the key deliberately absent: there is no key field at all, only the boolean
+   `api_key_stored`. This is why roster edits never touch the keychain.
 3. **Attendee filter** — participants are filtered by the selected ids, in
-   roster order. The glossary is not selectable: every saved term travels on
-   every refinement, because a term correction is global context.
+   roster order; an empty selection sends no participant context at all. The
+   glossary is not selectable: every saved term travels on every refinement,
+   because a term correction is global context.
 4. **API key gate** — `load_assistant_api_key()` is called at this one moment,
    because this is the one moment the key is actually needed; nothing stored
    fails with `ASSISTANT_KEY_MISSING` before any process is spawned.
@@ -176,30 +182,37 @@ existing entry — before returning `RefinementResult { job_id, minutes }`.
 Before registration the minutes artifact simply does not exist:
 `open_artifact(minutes)` fails with `ARTIFACT_NOT_FOUND`.
 
-## Host adapter: temp files, argv, environment
+## Host adapter: the payload boundary
 
 `DesktopAdapter` implements `RefinementPort` by delegating to
 `adapters/outbound/refinement.rs`, which owns everything security-sensitive
-about the handoff:
+about the handoff. One refinement run crosses the host↔worker boundary through
+channels split by sensitivity, under the rules below:
 
-- **0600 temporary context files.** Background text, the selected participants
-  JSON, and the glossary JSON are written to
+- **The key travels by environment only.** `assistant_environment`
+  (`environment.rs`) extends the worker's scrubbed base environment with
+  `GALPI_ASSISTANT_API_KEY`, plus the optional `GALPI_ASSISTANT_BASE_URL` and
+  `GALPI_ASSISTANT_REASONING_EFFORT` overrides. The key never appears in
+  argv, where a process listing would expose it, and never in a file.
+- **The context travels by 0600 temporary files.** Background text, the
+  selected participants JSON, and the glossary JSON are written to
   `std::env::temp_dir()/galpi-{kind}-{job_id}` through
   `write_private_file`: `OpenOptions` with `.mode(0o600)` **and**
   `.create_new(true)` in the same call. The mode is set at creation rather
   than chmod'ed afterwards because between a default-mode create and the
   chmod the attendee roster would be world-readable on a shared machine;
   `create_new` additionally refuses to write through an existing file. The
-  worker receives only the file paths as CLI arguments.
+  worker receives only the file paths as CLI arguments — the context never
+  rides in the environment.
+- **Only protocol events come back over stdout.** The worker's JSONL output
+  carries `phase` progress events, the final `refined` event, and an `error`
+  event on failure — nothing else. Every stdout line is parsed as a versioned
+  envelope; a non-JSON line is itself a `WORKER_PROTOCOL_ERROR`, so the
+  stream cannot smuggle unstructured text past the host.
 - **Removal regardless of outcome.** After `run_worker` returns — success,
   error, or cancellation — every temporary file is removed before the result
   is propagated. A cancelled or failed refinement never leaves context in
   `/tmp`.
-- **The key travels by environment only.** `assistant_environment`
-  (`environment.rs`) extends the worker's scrubbed base environment with
-  `GALPI_ASSISTANT_API_KEY`, plus the optional `GALPI_ASSISTANT_BASE_URL` and
-  `GALPI_ASSISTANT_REASONING_EFFORT` overrides. The key never appears in
-  argv, where a process listing would expose it, and never in a file.
 - **The meeting date comes from the audio.** When the meeting has
   `source_audio`, `recorded_on` formats the file's modification time as a
   local `YYYY-MM-DD` and passes `--meeting-date`. The rationale is recorded in
@@ -209,10 +222,9 @@ about the handoff:
 - **Worker invocation and protocol.** The child is
   `<venv python> -m galpi_worker refine --transcript … --output …` (plus the
   optional `--background/--participants/--glossary/--model/--meeting-date`),
-  run through `run_process` with `worker_protocol: true`. Every stdout line is
-  parsed as a versioned JSONL envelope; the run only counts as successful if a
-  `Refined { minutes }` event arrived — a missing event or a second completion
-  event fails with `WORKER_PROTOCOL_ERROR`.
+  run through `run_process` with `worker_protocol: true`. The run only counts
+  as successful if exactly one `Refined { minutes }` event arrived — a missing
+  event or a second completion event fails with `WORKER_PROTOCOL_ERROR`.
 - **Containment on the way out.** `canonical_minutes` canonicalizes both the
   transcript's directory and the returned minutes path and requires the
   minutes to be inside the directory, so a compromised worker cannot point the
@@ -292,7 +304,7 @@ The document is published through `write_text_atomic` (a `.tmp` sibling then
 |---|---|
 | Endpoint | `POST {base_url}/chat/completions`, `Accept: text/event-stream` |
 | Default base URL | `https://api.z.ai/api/coding/paas/v4` (`GALPI_ASSISTANT_BASE_URL` overrides) |
-| Default model | `glm-5.3` (the worker CLI default) |
+| Default model | `glm-5.3-flash` (the worker CLI default) |
 | Timeout | 600 s (`REQUEST_TIMEOUT_SECONDS`) |
 | Body | `stream: true`, `temperature: 0.2` |
 | `max_tokens` | 131072 for GLM models on the default z.ai endpoint; 32768 everywhere else |
@@ -350,9 +362,10 @@ rules that matter for trust are encoded in the template and the map prompt:
 - **Empty sections stay.** Sections without evidence keep their titles with
   `해당 없음`, so the document shape is stable.
 - **The date is anchored, not inferred.** When the host derived a meeting date
-  from the audio mtime, the prompt states it as the estimated date and tells
-  the model to use it unless the transcript itself contains explicit contrary
-  evidence.
+  from the audio mtime, the prompt states it as the estimated date (회의
+  추정일, 녹음 파일 기준) and tells the model to use it unless the transcript
+  itself contains explicit contrary date evidence; with no date the line is
+  omitted entirely rather than left blank.
 
 Missing roster or glossary context renders as the placeholder blocks described
 above, so the model is never left to guess whether context was empty or
@@ -367,8 +380,11 @@ case, the same claim rules, the same worker command, the same prompts, and the
 minutes registering onto the import's job id. The one observable difference is
 the date: with no audio there is no `--meeting-date`, so the transcript's own
 mtime stands in, and imported minutes are dated by when the file was written
-rather than when the meeting happened. (Imported transcripts also cannot open
-an SRT or checkpoint — only artifacts that exist are addressable.)
+rather than when the meeting happened. This is an honest, documented
+limitation — the domain comments say outright that `source_audio` is the only
+artifact whose timestamp is the day the meeting happened, and that an
+imported transcript has no audio. (Imported transcripts also cannot open an
+SRT or checkpoint — only artifacts that exist are addressable.)
 
 ## Progress and failure semantics
 
